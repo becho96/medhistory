@@ -1,0 +1,79 @@
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
+
+from app.api.v1.router import api_router
+from app.core.config import settings
+from app.db.postgres import engine, Base
+from app.db.mongodb import mongodb_client
+from app.db.minio_client import minio_client, ensure_bucket_exists
+
+# Import models to register them with SQLAlchemy
+from app.models.user import User
+from app.models.document import Document, Tag, DocumentTag, Specialty, DocumentType
+from app.models.report import Report
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Startup and shutdown events"""
+    # Startup
+    print("🚀 Starting MedHistory API...")
+    
+    # Create database tables
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    
+    # Initialize MinIO bucket
+    ensure_bucket_exists()
+    
+    print("✅ Database and storage initialized")
+    
+    yield
+    
+    # Shutdown
+    print("🛑 Shutting down MedHistory API...")
+    mongodb_client.close()
+
+app = FastAPI(
+    title="MedHistory API",
+    description="Персональная система управления медицинской историей",
+    version="1.0.0",
+    lifespan=lifespan
+)
+
+# CORS middleware
+# Allow localhost for development and production domain
+cors_origins = ["http://localhost:5173", "http://localhost:3000"]
+
+# Add production domain if not in development
+if settings.ENVIRONMENT == "production":
+    # Allow any origin in production (alternatively, specify exact domain)
+    cors_origins = ["*"]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Include API router
+app.include_router(api_router, prefix="/api/v1")
+
+@app.get("/")
+async def root():
+    return {
+        "message": "MedHistory API",
+        "version": "1.0.0",
+        "docs": "/docs"
+    }
+
+@app.get("/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "database": "connected",
+        "storage": "connected"
+    }
+
