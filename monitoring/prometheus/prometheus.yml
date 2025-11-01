@@ -1,0 +1,77 @@
+# Prometheus Configuration
+global:
+  scrape_interval: 15s # Интервал сбора метрик
+  evaluation_interval: 15s # Интервал оценки правил
+  external_labels:
+    monitor: 'medhistory-monitor'
+    environment: '${ENVIRONMENT:-development}'
+
+# Правила алертов (опционально)
+rule_files:
+  - 'alert_rules.yml'
+
+# Конфигурация сбора метрик
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+        labels:
+          service: 'prometheus'
+
+  # Custom Business Metrics Exporter
+  - job_name: 'medhistory_business_metrics'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['custom_exporter:9100']
+        labels:
+          service: 'custom_exporter'
+          type: 'business_metrics'
+
+  # Backend API Metrics
+  - job_name: 'medhistory_backend'
+    scrape_interval: 15s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['backend:8000']
+        labels:
+          service: 'backend'
+          type: 'api'
+
+  # PostgreSQL Exporter
+  - job_name: 'postgresql'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['postgres_exporter:9187']
+        labels:
+          service: 'postgresql'
+          type: 'database'
+
+  # MongoDB Exporter
+  - job_name: 'mongodb'
+    scrape_interval: 30s
+    static_configs:
+      - targets: ['mongodb_exporter:9216']
+        labels:
+          service: 'mongodb'
+          type: 'database'
+
+  # Node Exporter (System Metrics)
+  - job_name: 'node'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['node_exporter:9101']
+        labels:
+          service: 'node_exporter'
+          type: 'system'
+
+  # MinIO Metrics (built-in)
+  - job_name: 'minio'
+    scrape_interval: 30s
+    metrics_path: '/minio/v2/metrics/cluster'
+    static_configs:
+      - targets: ['minio:9000']
+        labels:
+          service: 'minio'
+          type: 'storage'
+

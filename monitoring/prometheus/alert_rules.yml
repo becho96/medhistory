@@ -1,0 +1,100 @@
+# Prometheus Alert Rules
+groups:
+  - name: medhistory_alerts
+    interval: 30s
+    rules:
+      # Алерт: Высокий процент ошибок API
+      - alert: HighAPIErrorRate
+        expr: |
+          rate(medhistory_api_requests_total{status=~"5.."}[5m]) 
+          / 
+          rate(medhistory_api_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокий процент ошибок API ({{ $value | humanizePercentage }})"
+          description: "API возвращает более 5% ошибок 5xx последние 5 минут"
+
+      # Алерт: Высокая латентность API
+      - alert: HighAPILatency
+        expr: |
+          histogram_quantile(0.95, 
+            rate(medhistory_api_request_duration_seconds_bucket[5m])
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокая латентность API (P95: {{ $value }}s)"
+          description: "95-й перцентиль времени ответа API превышает 2 секунды"
+
+      # Алерт: Сервис недоступен
+      - alert: ServiceDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Сервис {{ $labels.job }} недоступен"
+          description: "Сервис {{ $labels.job }} не отвечает последние 2 минуты"
+
+      # Алерт: Высокое использование CPU
+      - alert: HighCPUUsage
+        expr: |
+          100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокое использование CPU ({{ $value | humanize }}%)"
+          description: "CPU использование превышает 80% последние 10 минут"
+
+      # Алерт: Высокое использование памяти
+      - alert: HighMemoryUsage
+        expr: |
+          (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокое использование памяти ({{ $value | humanize }}%)"
+          description: "Память использована более чем на 85% последние 10 минут"
+
+      # Алерт: Заканчивается место на диске
+      - alert: LowDiskSpace
+        expr: |
+          (node_filesystem_avail_bytes{fstype!~"tmpfs|fuse.lxcfs"} 
+          / 
+          node_filesystem_size_bytes{fstype!~"tmpfs|fuse.lxcfs"}) * 100 < 15
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Мало места на диске (осталось {{ $value | humanize }}%)"
+          description: "На диске {{ $labels.mountpoint }} осталось менее 15% свободного места"
+
+      # Алерт: Высокое количество подключений к PostgreSQL
+      - alert: HighPostgreSQLConnections
+        expr: |
+          pg_stat_database_numbackends > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Много подключений к PostgreSQL ({{ $value }})"
+          description: "Количество активных подключений к PostgreSQL превышает 80"
+
+      # Алерт: Ошибки AI интерпретаций
+      - alert: HighAIInterpretationFailureRate
+        expr: |
+          rate(medhistory_interpretations_failed_total[10m]) 
+          / 
+          rate(medhistory_interpretations_total[10m]) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Высокий процент ошибок AI интерпретаций ({{ $value | humanizePercentage }})"
+          description: "Более 10% AI интерпретаций завершаются с ошибкой"
+

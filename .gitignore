@@ -1,6 +1,7 @@
 # Environment variables
 .env
 .env.local
+.env.staging
 .env.production
 .env.*.local
 
@@ -98,6 +99,10 @@ backend/uploads/
 postgres_data/
 mongodb_data/
 minio_data/
+prometheus_data/
+prometheus_staging_data/
+grafana_data/
+grafana_staging_data/
 
 # Backups
 backups/

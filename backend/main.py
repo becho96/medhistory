@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.api.v1.router import api_router
 from app.core.config import settings
@@ -45,6 +46,10 @@ app = FastAPI(
 # Allow localhost for development and production domain
 cors_origins = ["http://localhost:5173", "http://localhost:3000"]
 
+# Add staging origins
+if settings.ENVIRONMENT == "staging":
+    cors_origins = ["http://localhost:8080", "http://localhost:8001"]
+
 # Add production domain if not in development
 if settings.ENVIRONMENT == "production":
     # Allow any origin in production (alternatively, specify exact domain)
@@ -60,6 +65,9 @@ app.add_middleware(
 
 # Include API router
 app.include_router(api_router, prefix="/api/v1")
+
+# Prometheus metrics instrumentation
+Instrumentator().instrument(app).expose(app, endpoint="/metrics")
 
 @app.get("/")
 async def root():

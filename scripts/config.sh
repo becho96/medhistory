@@ -6,25 +6,68 @@
 # Конфигурационный файл для всех скриптов управления
 # 
 # Использование:
-#   source scripts/config.sh
+#   source scripts/config.sh [environment]
+#   где environment: local, staging, production
 # ==================================================
 
-# Продакшн сервер (Яндекс.Облако)
-export PROD_SERVER_IP="${PROD_SERVER_IP:-46.21.244.23}"
-export PROD_SERVER_USER="${PROD_SERVER_USER:-yc-user}"
-export PROD_SERVER="${PROD_SERVER_USER}@${PROD_SERVER_IP}"
+# Определение текущей среды (по умолчанию local)
+export DEPLOY_ENV="${1:-${DEPLOY_ENV:-local}}"
 
 # Локальные пути
 export PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export SCRIPTS_DIR="${PROJECT_ROOT}/scripts"
-
-# Удаленные пути
-export REMOTE_PROJECT_DIR="${REMOTE_PROJECT_DIR:-~/medhistory}"
-export REMOTE_BACKUP_DIR="${REMOTE_BACKUP_DIR:-~/backups}"
+export ENVIRONMENTS_DIR="${PROJECT_ROOT}/environments"
 
 # Docker Compose файлы
-export DEV_COMPOSE_FILE="docker-compose.yml"
+export BASE_COMPOSE_FILE="docker-compose.base.yml"
+export LOCAL_COMPOSE_FILE="docker-compose.local.yml"
+export STAGING_COMPOSE_FILE="docker-compose.staging.yml"
 export PROD_COMPOSE_FILE="docker-compose.prod.yml"
+export MONITORING_LOCAL_COMPOSE_FILE="docker-compose.monitoring.local.yml"
+export MONITORING_STAGING_COMPOSE_FILE="docker-compose.monitoring.staging.yml"
+export MONITORING_PROD_COMPOSE_FILE="docker-compose.monitoring.prod.yml"
+
+# Конфигурация для разных сред
+case "$DEPLOY_ENV" in
+  local|dev|development)
+    export ENV_NAME="local"
+    export ENV_FILE="${PROJECT_ROOT}/.env.local"
+    export COMPOSE_FILES="-f ${BASE_COMPOSE_FILE} -f ${LOCAL_COMPOSE_FILE}"
+    export MONITORING_COMPOSE="-f ${MONITORING_LOCAL_COMPOSE_FILE}"
+    export IS_REMOTE=false
+    ;;
+    
+  staging|stage|test)
+    export ENV_NAME="staging"
+    export ENV_FILE="${PROJECT_ROOT}/.env.staging"
+    export COMPOSE_FILES="-f ${BASE_COMPOSE_FILE} -f ${STAGING_COMPOSE_FILE}"
+    export MONITORING_COMPOSE="-f ${MONITORING_STAGING_COMPOSE_FILE}"
+    export IS_REMOTE=false
+    ;;
+    
+  production|prod|live)
+    export ENV_NAME="production"
+    export ENV_FILE="${PROJECT_ROOT}/.env.production"
+    export COMPOSE_FILES="-f ${BASE_COMPOSE_FILE} -f ${PROD_COMPOSE_FILE}"
+    export MONITORING_COMPOSE="-f ${MONITORING_PROD_COMPOSE_FILE}"
+    export IS_REMOTE=true
+    
+    # Продакшн сервер (Яндекс.Облако)
+    export PROD_SERVER_IP="${PROD_SERVER_IP:-46.21.244.23}"
+    export PROD_SERVER_USER="${PROD_SERVER_USER:-yc-user}"
+    export PROD_SERVER="${PROD_SERVER_USER}@${PROD_SERVER_IP}"
+    
+    # Удаленные пути
+    export REMOTE_PROJECT_DIR="${REMOTE_PROJECT_DIR:-~/medhistory}"
+    export REMOTE_BACKUP_DIR="${REMOTE_BACKUP_DIR:-~/backups}"
+    ;;
+    
+  *)
+    echo "❌ Неизвестная среда: $DEPLOY_ENV"
+    echo "   Доступные среды: local, staging, production"
+    exit 1
+    ;;
+esac
 
 # Цвета для вывода
 export COLOR_GREEN='\033[0;32m'
@@ -56,28 +99,59 @@ print_header() {
     echo -e "${COLOR_BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${COLOR_NC}"
 }
 
-# Проверка конфигурации
-check_config() {
-    if [ -z "$PROD_SERVER_IP" ]; then
-        print_error "PROD_SERVER_IP не задан!"
+# Проверка наличия .env файла для среды
+check_env_file() {
+    if [ ! -f "$ENV_FILE" ]; then
+        print_error "Файл конфигурации не найден: $ENV_FILE"
+        print_info "Создайте файл из шаблона:"
+        print_info "  cp ${ENVIRONMENTS_DIR}/${ENV_NAME}.env $ENV_FILE"
+        print_info "  # Затем отредактируйте $ENV_FILE и заполните все значения"
         return 1
     fi
-    
-    if [ -z "$PROD_SERVER_USER" ]; then
-        print_error "PROD_SERVER_USER не задан!"
-        return 1
+    return 0
+}
+
+# Проверка продакшн конфигурации
+check_prod_config() {
+    if [ "$IS_REMOTE" = true ]; then
+        if [ -z "$PROD_SERVER_IP" ]; then
+            print_error "PROD_SERVER_IP не задан в $ENV_FILE"
+            return 1
+        fi
+        
+        if [ -z "$PROD_SERVER_USER" ]; then
+            print_error "PROD_SERVER_USER не задан в $ENV_FILE"
+            return 1
+        fi
     fi
     
     return 0
 }
 
-# Определение текущей среды
-detect_environment() {
-    if [ -f "${PROJECT_ROOT}/.env.production" ] && [ -f "${PROJECT_ROOT}/docker-compose.prod.yml" ]; then
-        echo "production"
+# Загрузка переменных окружения из файла
+load_env() {
+    if [ -f "$ENV_FILE" ]; then
+        set -a
+        source "$ENV_FILE"
+        set +a
+        print_success "Загружена конфигурация: $ENV_NAME"
     else
-        echo "development"
+        print_error "Файл конфигурации не найден: $ENV_FILE"
+        return 1
     fi
+}
+
+# Вывод информации о текущей среде
+print_env_info() {
+    print_header "Информация о среде"
+    echo "Среда:           $ENV_NAME"
+    echo "Конфиг файл:     $ENV_FILE"
+    echo "Compose файлы:   $COMPOSE_FILES"
+    echo "Удаленный деплой: $IS_REMOTE"
+    if [ "$IS_REMOTE" = true ]; then
+        echo "Сервер:          $PROD_SERVER"
+    fi
+    echo ""
 }
 
 # Экспорт функций
@@ -86,6 +160,8 @@ export -f print_error
 export -f print_warning
 export -f print_info
 export -f print_header
-export -f check_config
-export -f detect_environment
+export -f check_env_file
+export -f check_prod_config
+export -f load_env
+export -f print_env_info
 

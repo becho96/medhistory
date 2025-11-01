@@ -1,0 +1,55 @@
+# ==================================================
+# MedHistory - Staging Override
+# ==================================================
+# Переопределения для тестовой среды
+# Использование: docker compose -f docker-compose.base.yml -f docker-compose.staging.yml
+# ==================================================
+
+services:
+  postgres:
+    restart: unless-stopped
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+
+  mongodb:
+    restart: unless-stopped
+    ports:
+      - "${MONGODB_PORT:-27018}:27017"
+
+  minio:
+    restart: unless-stopped
+    ports:
+      - "${MINIO_PORT:-9010}:9000"
+      - "${MINIO_CONSOLE_PORT:-9011}:9001"
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    restart: unless-stopped
+    ports:
+      - "${BACKEND_PORT:-8001}:8000"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8001}
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Nginx не нужен для staging - frontend уже с встроенным nginx
+  # Используется только для production с SSL
+

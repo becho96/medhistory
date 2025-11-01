@@ -1,21 +1,23 @@
-name: medhistory
+# ==================================================
+# MedHistory - Базовая конфигурация Docker Compose
+# ==================================================
+# Этот файл содержит общую конфигурацию для всех сред
+# Используется вместе с override файлами
+# ==================================================
 
 services:
   # PostgreSQL Database
   postgres:
     image: postgres:16-alpine
-    container_name: medhistory_postgres
     environment:
-      POSTGRES_DB: medhistory
-      POSTGRES_USER: medhistory_user
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-medhistory_secure_pass}
+      POSTGRES_DB: ${POSTGRES_DB:-medhistory}
+      POSTGRES_USER: ${POSTGRES_USER:-medhistory_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
-    ports:
-      - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U medhistory_user"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-medhistory_user} -d ${POSTGRES_DB:-medhistory}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -25,15 +27,12 @@ services:
   # MongoDB Database
   mongodb:
     image: mongo:7
-    container_name: medhistory_mongodb
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-mongodb_secure_pass}
-      MONGO_INITDB_DATABASE: medhistory
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-medhistory}
     volumes:
       - mongodb_data:/data/db
-    ports:
-      - "27017:27017"
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
@@ -45,16 +44,12 @@ services:
   # MinIO Object Storage
   minio:
     image: minio/minio:latest
-    container_name: medhistory_minio
     command: server /data --console-address ":9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio_admin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio_secure_pass_123}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - minio_data:/data
-    ports:
-      - "9000:9000"
-      - "9001:9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
@@ -65,24 +60,15 @@ services:
 
   # Backend API
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    container_name: medhistory_backend
     environment:
-      DATABASE_URL: postgresql+asyncpg://medhistory_user:${POSTGRES_PASSWORD:-medhistory_secure_pass}@postgres:5432/medhistory
-      MONGODB_URL: mongodb://admin:${MONGO_PASSWORD:-mongodb_secure_pass}@mongodb:27017/medhistory?authSource=admin
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-medhistory_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-medhistory}
+      MONGODB_URL: mongodb://${MONGO_INITDB_ROOT_USERNAME:-admin}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_INITDB_DATABASE:-medhistory}?authSource=admin
       MINIO_ENDPOINT: minio:9000
       MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minio_admin}
-      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minio_secure_pass_123}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
-      JWT_SECRET: ${JWT_SECRET:-jwt_super_secret_key_change_in_production}
-      ENVIRONMENT: development
-    volumes:
-      - ./backend:/app
-      - backend_uploads:/app/uploads
-    ports:
-      - "8000:8000"
+      JWT_SECRET: ${JWT_SECRET}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
     depends_on:
       postgres:
         condition: service_healthy
@@ -95,17 +81,6 @@ services:
 
   # Frontend
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: medhistory_frontend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    ports:
-      - "5173:5173"
-    environment:
-      VITE_API_URL: http://localhost:8000
     depends_on:
       - backend
     networks:
@@ -113,9 +88,11 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
   mongodb_data:
+    driver: local
   minio_data:
-  backend_uploads:
+    driver: local
 
 networks:
   medhistory_network:

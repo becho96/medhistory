@@ -1,0 +1,147 @@
+version: '3.8'
+
+services:
+  # Prometheus - сбор и хранение метрик (только внутренний доступ в проде)
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: medhistory_prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--storage.tsdb.retention.size=10GB'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/prometheus/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - medhistory_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Grafana - визуализация метрик (доступ через nginx)
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: medhistory_grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=${GF_SERVER_ROOT_URL}
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+      - GF_SERVER_DOMAIN=${GF_SERVER_DOMAIN}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/grafana.ini:/etc/grafana/grafana.ini:ro
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
+    ports:
+      - "3000:3000"
+    networks:
+      - medhistory_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Custom Exporter - бизнес-метрики
+  custom_exporter:
+    build:
+      context: ./monitoring/exporters
+      dockerfile: Dockerfile
+    container_name: medhistory_exporter
+    restart: unless-stopped
+    environment:
+      - BACKEND_URL=http://backend:8000
+      - SCRAPE_INTERVAL=30
+      - EXPORTER_PORT=9100
+    expose:
+      - "9100"
+    networks:
+      - medhistory_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # PostgreSQL Exporter
+  postgres_exporter:
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    container_name: medhistory_postgres_exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://medhistory_user:${POSTGRES_PASSWORD}@postgres:5432/medhistory?sslmode=disable"
+    expose:
+      - "9187"
+    networks:
+      - medhistory_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # MongoDB Exporter
+  mongodb_exporter:
+    image: percona/mongodb_exporter:0.40
+    container_name: medhistory_mongodb_exporter
+    restart: unless-stopped
+    command:
+      - '--mongodb.uri=mongodb://admin:${MONGO_PASSWORD}@mongodb:27017'
+      - '--collect-all'
+    expose:
+      - "9216"
+    networks:
+      - medhistory_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Node Exporter - системные метрики
+  node_exporter:
+    image: prom/node-exporter:v1.7.0
+    container_name: medhistory_node_exporter
+    restart: unless-stopped
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    expose:
+      - "9100"
+    networks:
+      - medhistory_network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+networks:
+  medhistory_network:
+    driver: bridge
+
