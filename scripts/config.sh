@@ -53,7 +53,8 @@ case "$DEPLOY_ENV" in
     export IS_REMOTE=true
     
     # Продакшн сервер (Яндекс.Облако)
-    export PROD_SERVER_IP="${PROD_SERVER_IP:-46.21.244.23}"
+    # Note: PROD_SERVER_IP must be set in .env.production
+    export PROD_SERVER_IP="${PROD_SERVER_IP}"
     export PROD_SERVER_USER="${PROD_SERVER_USER:-yc-user}"
     export PROD_SERVER="${PROD_SERVER_USER}@${PROD_SERVER_IP}"
     

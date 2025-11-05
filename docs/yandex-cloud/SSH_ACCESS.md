@@ -8,7 +8,7 @@
 
 | Параметр | Значение |
 |----------|----------|
-| **IP адрес** | `46.21.244.23` |
+| **IP адрес** | `158.160.96.107` |
 | **Пользователь** | `yc-user` ⚠️ (НЕ ubuntu!) |
 | **Порт** | `22` (стандартный) |
 | **SSH ключ** | `~/.ssh/id_rsa` |
@@ -21,18 +21,18 @@
 ### 1. Простое подключение (рекомендуется)
 
 ```bash
-ssh -l yc-user 46.21.244.23
+ssh -l yc-user 158.160.96.107
 ```
 
 Или альтернативный синтаксис:
 ```bash
-ssh yc-user@46.21.244.23
+ssh yc-user@158.160.96.107
 ```
 
 ### 2. С явным указанием SSH ключа
 
 ```bash
-ssh -i ~/.ssh/id_rsa -l yc-user 46.21.244.23
+ssh -i ~/.ssh/id_rsa -l yc-user 158.160.96.107
 ```
 
 ### 3. Через Yandex Cloud CLI
@@ -59,7 +59,7 @@ ssh -i ~/.ssh/id_rsa -l yc-user 46.21.244.23
 ```bash
 # MedHistory Server
 Host medhistory
-    HostName 46.21.244.23
+    HostName 158.160.96.107
     User yc-user
     IdentityFile ~/.ssh/id_rsa
     StrictHostKeyChecking no
@@ -81,22 +81,22 @@ ssh medhistory
 
 ```bash
 # Проверка времени работы
-ssh -l yc-user 46.21.244.23 'uptime'
+ssh -l yc-user 158.160.96.107 'uptime'
 
 # Проверка Docker контейнеров
-ssh -l yc-user 46.21.244.23 'docker ps'
+ssh -l yc-user 158.160.96.107 'docker ps'
 
 # Просмотр использования диска
-ssh -l yc-user 46.21.244.23 'df -h'
+ssh -l yc-user 158.160.96.107 'df -h'
 
 # Просмотр логов
-ssh -l yc-user 46.21.244.23 'cd ~/medhistory && docker compose -f docker-compose.prod.yml logs --tail=50 backend'
+ssh -l yc-user 158.160.96.107 'cd ~/medhistory && docker compose -f docker-compose.prod.yml logs --tail=50 backend'
 ```
 
 ### Множество команд (heredoc)
 
 ```bash
-ssh -l yc-user 46.21.244.23 << 'EOF'
+ssh -l yc-user 158.160.96.107 << 'EOF'
 echo "=== Статус сервера ==="
 hostname
 uptime
@@ -110,7 +110,7 @@ EOF
 
 ```bash
 # Открыть интерактивный shell внутри контейнера
-ssh -t -l yc-user 46.21.244.23 'docker exec -it medhistory_backend bash'
+ssh -t -l yc-user 158.160.96.107 'docker exec -it medhistory_backend bash'
 ```
 
 Флаг `-t` выделяет псевдо-терминал для интерактивных команд.
@@ -124,25 +124,25 @@ ssh -t -l yc-user 46.21.244.23 'docker exec -it medhistory_backend bash'
 #### Загрузка на сервер
 ```bash
 # Один файл
-scp file.txt yc-user@46.21.244.23:~/medhistory/
+scp file.txt yc-user@158.160.96.107:~/medhistory/
 
 # Папка
-scp -r ./backend yc-user@46.21.244.23:~/medhistory/
+scp -r ./backend yc-user@158.160.96.107:~/medhistory/
 
 # С явным указанием ключа
-scp -i ~/.ssh/id_rsa file.txt yc-user@46.21.244.23:~/medhistory/
+scp -i ~/.ssh/id_rsa file.txt yc-user@158.160.96.107:~/medhistory/
 ```
 
 #### Скачивание с сервера
 ```bash
 # Один файл
-scp yc-user@46.21.244.23:~/medhistory/backup.tar.gz ~/Downloads/
+scp yc-user@158.160.96.107:~/medhistory/backup.tar.gz ~/Downloads/
 
 # Папка
-scp -r yc-user@46.21.244.23:~/medhistory/logs ~/Downloads/
+scp -r yc-user@158.160.96.107:~/medhistory/logs ~/Downloads/
 
 # Все бэкапы
-scp yc-user@46.21.244.23:~/backups/*.tar.gz ~/Downloads/
+scp yc-user@158.160.96.107:~/backups/*.tar.gz ~/Downloads/
 ```
 
 ### Rsync (рекомендуется для больших файлов)
@@ -152,19 +152,19 @@ scp yc-user@46.21.244.23:~/backups/*.tar.gz ~/Downloads/
 rsync -avz --progress \
   --exclude 'node_modules' \
   --exclude '__pycache__' \
-  ./backend/ yc-user@46.21.244.23:~/medhistory/backend/
+  ./backend/ yc-user@158.160.96.107:~/medhistory/backend/
 
 # Синхронизация с сервера
 rsync -avz --progress \
-  yc-user@46.21.244.23:~/backups/ ~/local-backups/
+  yc-user@158.160.96.107:~/backups/ ~/local-backups/
 
 # С удалением лишних файлов на сервере
 rsync -avz --progress --delete \
-  ./frontend/ yc-user@46.21.244.23:~/medhistory/frontend/
+  ./frontend/ yc-user@158.160.96.107:~/medhistory/frontend/
 
 # Dry-run (проверка без изменений)
 rsync -avz --progress --dry-run \
-  ./backend/ yc-user@46.21.244.23:~/medhistory/backend/
+  ./backend/ yc-user@158.160.96.107:~/medhistory/backend/
 ```
 
 ---
@@ -175,24 +175,24 @@ rsync -avz --progress --dry-run \
 
 ```bash
 # SSH подключение
-alias ssh-med='ssh -l yc-user 46.21.244.23'
+alias ssh-med='ssh -l yc-user 158.160.96.107'
 
 # Просмотр логов
-alias med-logs='ssh -l yc-user 46.21.244.23 "cd ~/medhistory && docker compose -f docker-compose.prod.yml logs -f"'
-alias med-logs-backend='ssh -l yc-user 46.21.244.23 "cd ~/medhistory && docker compose -f docker-compose.prod.yml logs -f backend"'
-alias med-logs-frontend='ssh -l yc-user 46.21.244.23 "cd ~/medhistory && docker compose -f docker-compose.prod.yml logs -f frontend"'
+alias med-logs='ssh -l yc-user 158.160.96.107 "cd ~/medhistory && docker compose -f docker-compose.prod.yml logs -f"'
+alias med-logs-backend='ssh -l yc-user 158.160.96.107 "cd ~/medhistory && docker compose -f docker-compose.prod.yml logs -f backend"'
+alias med-logs-frontend='ssh -l yc-user 158.160.96.107 "cd ~/medhistory && docker compose -f docker-compose.prod.yml logs -f frontend"'
 
 # Статус
-alias med-status='ssh -l yc-user 46.21.244.23 "docker ps"'
-alias med-stats='ssh -l yc-user 46.21.244.23 "docker stats --no-stream"'
+alias med-status='ssh -l yc-user 158.160.96.107 "docker ps"'
+alias med-stats='ssh -l yc-user 158.160.96.107 "docker stats --no-stream"'
 
 # Управление
-alias med-restart='ssh -l yc-user 46.21.244.23 "cd ~/medhistory && docker compose -f docker-compose.prod.yml restart"'
-alias med-stop='ssh -l yc-user 46.21.244.23 "cd ~/medhistory && docker compose -f docker-compose.prod.yml down"'
-alias med-start='ssh -l yc-user 46.21.244.23 "cd ~/medhistory && docker compose -f docker-compose.prod.yml --env-file .env.production up -d"'
+alias med-restart='ssh -l yc-user 158.160.96.107 "cd ~/medhistory && docker compose -f docker-compose.prod.yml restart"'
+alias med-stop='ssh -l yc-user 158.160.96.107 "cd ~/medhistory && docker compose -f docker-compose.prod.yml down"'
+alias med-start='ssh -l yc-user 158.160.96.107 "cd ~/medhistory && docker compose -f docker-compose.prod.yml --env-file .env.production up -d"'
 
 # Информация о сервере
-alias med-info='ssh -l yc-user 46.21.244.23 "echo \"=== Server Info ===\" && hostname && uptime && df -h / && free -h"'
+alias med-info='ssh -l yc-user 158.160.96.107 "echo \"=== Server Info ===\" && hostname && uptime && df -h / && free -h"'
 
 # Загрузка файлов
 alias med-upload='rsync -avz --progress --exclude \"node_modules\" --exclude \"__pycache__\" --exclude \".git\"'
@@ -216,7 +216,7 @@ med-logs
 med-status
 
 # Загрузить проект
-med-upload ./backend/ yc-user@46.21.244.23:~/medhistory/backend/
+med-upload ./backend/ yc-user@158.160.96.107:~/medhistory/backend/
 ```
 
 ---
@@ -265,7 +265,7 @@ ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519 -C "your_email@example.com"
 После первого подключения к серверу:
 
 ```bash
-ssh -l yc-user 46.21.244.23
+ssh -l yc-user 158.160.96.107
 
 # Отредактируйте конфиг SSH
 sudo nano /etc/ssh/sshd_config
@@ -301,7 +301,7 @@ sudo systemctl restart sshd
 ### Настройка fail2ban (защита от брутфорса)
 
 ```bash
-ssh -l yc-user 46.21.244.23
+ssh -l yc-user 158.160.96.107
 
 # Установка
 sudo apt update
@@ -341,8 +341,8 @@ sudo fail2ban-client status sshd
 /Users/boris/yandex-cloud/bin/yc compute instance get medhistory-server | grep status
 
 # Проверьте доступность порта 22
-nc -zv 46.21.244.23 22
-telnet 46.21.244.23 22
+nc -zv 158.160.96.107 22
+telnet 158.160.96.107 22
 ```
 
 ### Проблема: Permission denied (publickey)
@@ -352,7 +352,7 @@ telnet 46.21.244.23 22
 chmod 600 ~/.ssh/id_rsa
 
 # 2. Очистите known_hosts
-ssh-keygen -R 46.21.244.23
+ssh-keygen -R 158.160.96.107
 
 # 3. Добавьте ключ в метаданные ВМ
 /Users/boris/yandex-cloud/bin/yc compute instance add-metadata medhistory-server \
@@ -360,7 +360,7 @@ ssh-keygen -R 46.21.244.23
 
 # 4. Подождите 10-15 секунд и попробуйте снова
 sleep 15
-ssh -l yc-user 46.21.244.23
+ssh -l yc-user 158.160.96.107
 ```
 
 ### Проблема: Connection timeout
@@ -377,7 +377,7 @@ ssh -l yc-user 46.21.244.23
 
 ```bash
 # Отключите DNS lookup на сервере
-ssh -l yc-user 46.21.244.23
+ssh -l yc-user 158.160.96.107
 sudo nano /etc/ssh/sshd_config
 # Добавьте: UseDNS no
 sudo systemctl restart sshd
@@ -387,13 +387,13 @@ sudo systemctl restart sshd
 
 ```bash
 # SSH с максимальной детализацией
-ssh -vvv -l yc-user 46.21.244.23
+ssh -vvv -l yc-user 158.160.96.107
 
 # Проверка SSH сервиса на сервере
-ssh -l yc-user 46.21.244.23 'sudo systemctl status sshd'
+ssh -l yc-user 158.160.96.107 'sudo systemctl status sshd'
 
 # Проверка логов SSH на сервере
-ssh -l yc-user 46.21.244.23 'sudo tail -100 /var/log/auth.log'
+ssh -l yc-user 158.160.96.107 'sudo tail -100 /var/log/auth.log'
 ```
 
 ---
@@ -413,7 +413,7 @@ cat ~/.ssh/known_hosts
 ### На сервере
 
 ```bash
-ssh -l yc-user 46.21.244.23
+ssh -l yc-user 158.160.96.107
 
 # Текущие SSH сессии
 who
@@ -454,5 +454,5 @@ sudo tail -100 /var/log/auth.log | grep sshd
 
 ---
 
-**Последнее обновление:** 28 октября 2025
+**Последнее обновление:** 2 ноября 2025 (IP адрес изменен на 158.160.96.107)
 

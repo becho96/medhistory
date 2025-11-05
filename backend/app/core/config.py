@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     
+    # CORS
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"  # Comma-separated list
+    
     # File upload limits
     MAX_FILE_SIZE: int = 20 * 1024 * 1024  # 20 MB
     ALLOWED_EXTENSIONS: set = {".pdf", ".jpg", ".jpeg", ".png", ".docx"}

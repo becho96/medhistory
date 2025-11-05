@@ -14,7 +14,7 @@
 #   --rebuild       Пересобрать образы
 #   --no-backup     Пропустить бэкап (для staging/prod)
 #   --monitoring    Включить мониторинг
-#   --clean-data    ⚠️ УДАЛИТЬ ВСЕ ДАННЫЕ (volumes)
+#   --clean-data    ⚠️ УДАЛИТЬ ВСЕ ДАННЫЕ (volumes) - для production требует подтверждение
 #   --update        Обновить только код (без пересборки образов)
 # ==================================================
 
@@ -63,7 +63,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --no-backup     Пропустить бэкап"
             echo "  --monitoring    Включить мониторинг"
             echo "  --update        Быстрое обновление (без пересборки)"
-            echo "  --clean-data    ⚠️  УДАЛИТЬ ВСЕ ДАННЫЕ БД"
+            echo "  --clean-data    ⚠️  УДАЛИТЬ ВСЕ ДАННЫЕ БД (для prod требует подтверждение)"
             exit 1
             ;;
     esac
@@ -107,6 +107,8 @@ if [ "$IS_REMOTE" = true ]; then
     if ! check_prod_config; then
         exit 1
     fi
+    # Переформировываем PROD_SERVER после загрузки env файла
+    export PROD_SERVER="${PROD_SERVER_USER}@${PROD_SERVER_IP}"
 fi
 
 # Валидация конфигурации (если скрипт существует)
@@ -213,6 +215,18 @@ if [ "$IS_REMOTE" = false ]; then
 else
     print_header "🌐 Удаленное развертывание на Production"
     
+    # Подтверждение для --clean-data на production
+    if [ "$CLEAN_DATA" = true ]; then
+        print_warning "⚠️  ⚠️  ⚠️  ВНИМАНИЕ: УДАЛЕНИЕ ВСЕХ ДАННЫХ БД НА PRODUCTION!"
+        print_warning "Это действие необратимо. Все данные PostgreSQL, MongoDB и MinIO будут удалены."
+        read -p "Вы АБСОЛЮТНО уверены? Введите 'DELETE ALL DATA' для подтверждения: " confirmation
+        if [ "$confirmation" != "DELETE ALL DATA" ]; then
+            print_error "Отменено пользователем"
+            exit 1
+        fi
+        print_warning "Подтверждено. Продолжаем с удалением данных..."
+    fi
+    
     # Проверка SSH подключения
     print_info "🔍 Проверка подключения к серверу ${PROD_SERVER}..."
     if ! ssh -o ConnectTimeout=5 "${PROD_SERVER}" "echo 'Connected'" > /dev/null 2>&1; then
@@ -257,7 +271,8 @@ else
     # Развертывание на сервере
     print_info "🔧 Развертывание на сервере..."
     
-    ssh "${PROD_SERVER}" bash <<ENDSSH
+    # Передача переменных в SSH сессию
+    ssh "${PROD_SERVER}" "CLEAN_DATA=$CLEAN_DATA NO_BACKUP=$NO_BACKUP REBUILD=$REBUILD UPDATE_ONLY=$UPDATE_ONLY WITH_MONITORING=$WITH_MONITORING bash" <<ENDSSH
 set -e
 
 GREEN='\033[0;32m'
@@ -269,6 +284,9 @@ echo -e "\${YELLOW}━━━━━━━━━━━━━━━━━━━━�
 echo -e "\${YELLOW}Production Deployment\${NC}"
 echo -e "\${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\${NC}"
 
+# Флаги переданы через переменные окружения
+echo "Debug: CLEAN_DATA=$CLEAN_DATA, NO_BACKUP=$NO_BACKUP"
+
 # Бэкап если есть старая версия
 if [ -d ~/medhistory ] && [ "$NO_BACKUP" != true ]; then
     echo -e "\${YELLOW}📦 Создание бэкапа...${NC}"
@@ -279,7 +297,14 @@ if [ -d ~/medhistory ] && [ "$NO_BACKUP" != true ]; then
     
     echo -e "\${YELLOW}🛑 Остановка старых контейнеров...${NC}"
     cd ~/medhistory
-    docker compose -f docker-compose.base.yml -f docker-compose.prod.yml --env-file .env.production down || echo "Контейнеры не запущены"
+    
+    # Очистка данных если установлен флаг --clean-data
+    if [ "$CLEAN_DATA" = true ]; then
+        echo -e "\${RED}⚠️  ВНИМАНИЕ: Удаление ВСЕХ данных БД (volumes)!${NC}"
+        docker compose -f docker-compose.base.yml -f docker-compose.prod.yml --env-file .env.production down -v || echo "Контейнеры не запущены"
+    else
+        docker compose -f docker-compose.base.yml -f docker-compose.prod.yml --env-file .env.production down || echo "Контейнеры не запущены"
+    fi
     
     echo -e "\${YELLOW}📁 Архивация старой версии...${NC}"
     mv ~/medhistory ~/medhistory_old_\$(date +%Y%m%d_%H%M%S)
@@ -297,11 +322,22 @@ rm -rf ~/medhistory_temp
 
 # Сборка и запуск
 cd ~/medhistory
-echo -e "\${YELLOW}🔨 Сборка Docker образов...${NC}"
-docker compose -f docker-compose.base.yml -f docker-compose.prod.yml --env-file .env.production build --no-cache
 
-echo -e "\${YELLOW}🚀 Запуск контейнеров...${NC}"
-docker compose -f docker-compose.base.yml -f docker-compose.prod.yml --env-file .env.production up -d
+if [ "$UPDATE_ONLY" = true ]; then
+    echo -e "\${YELLOW}⚡ Быстрое обновление (без пересборки образов)...${NC}"
+    echo -e "\${YELLOW}🚀 Перезапуск контейнеров...${NC}"
+    docker compose -f docker-compose.base.yml -f docker-compose.prod.yml --env-file .env.production up -d --force-recreate
+else
+    echo -e "\${YELLOW}🔨 Сборка Docker образов...${NC}"
+    if [ "$REBUILD" = true ]; then
+        docker compose -f docker-compose.base.yml -f docker-compose.prod.yml --env-file .env.production build --no-cache
+    else
+        docker compose -f docker-compose.base.yml -f docker-compose.prod.yml --env-file .env.production build
+    fi
+    
+    echo -e "\${YELLOW}🚀 Запуск контейнеров...${NC}"
+    docker compose -f docker-compose.base.yml -f docker-compose.prod.yml --env-file .env.production up -d
+fi
 
 # Мониторинг если нужно
 if [ "$WITH_MONITORING" = true ]; then

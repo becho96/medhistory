@@ -43,17 +43,8 @@ app = FastAPI(
 )
 
 # CORS middleware
-# Allow localhost for development and production domain
-cors_origins = ["http://localhost:5173", "http://localhost:3000"]
-
-# Add staging origins
-if settings.ENVIRONMENT == "staging":
-    cors_origins = ["http://localhost:8080", "http://localhost:8001"]
-
-# Add production domain if not in development
-if settings.ENVIRONMENT == "production":
-    # Allow any origin in production (alternatively, specify exact domain)
-    cors_origins = ["*"]
+# Parse CORS origins from environment variable (comma-separated)
+cors_origins = [origin.strip() for origin in settings.CORS_ORIGINS.split(",")]
 
 app.add_middleware(
     CORSMiddleware,
