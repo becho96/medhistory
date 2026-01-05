@@ -5,6 +5,7 @@ import { useAuthStore } from './stores/authStore'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
+import GoogleCallback from './pages/GoogleCallback'
 import Dashboard from './pages/Dashboard'
 import Documents from './pages/Documents'
 import Reports from './pages/Reports'
@@ -19,6 +20,9 @@ function App() {
 
   return (
     <Routes>
+      {/* Google OAuth callback - always accessible */}
+      <Route path="/auth/google/callback" element={<GoogleCallback />} />
+      
       {!isAuthenticated ? (
         <>
           <Route path="/" element={<Landing />} />

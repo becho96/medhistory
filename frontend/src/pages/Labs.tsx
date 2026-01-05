@@ -1,22 +1,34 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { documentsService } from '../services/documents'
+import { Search, ChevronDown, ChevronRight, FlaskConical } from 'lucide-react'
 
 interface ChartPoint {
   date?: string
   value_num: number
   value_str?: string
-  unit?: string
+  unit?: string | null
+  document_id?: string
+  reference_range?: string | null
+  flag?: string | null
+  _id?: string
 }
 
-function LineChart({ points }: { points: Array<ChartPoint> }) {
+interface LineChartProps {
+  points: Array<ChartPoint>
+  excludedPoints: Set<string>
+  onTogglePoint: (pointId: string) => void
+  standardUnit: string | null
+}
+
+function LineChart({ points, excludedPoints, onTogglePoint, standardUnit }: LineChartProps) {
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null)
   const width = 1000
   const height = 400
   const padding = { top: 40, right: 40, bottom: 70, left: 80 }
 
   const data = points
-    .filter((p) => typeof p.value_num === 'number' && p.date)
+    .filter((p) => typeof p.value_num === 'number' && p.date && !excludedPoints.has(p._id || ''))
     .sort((a, b) => new Date(a.date || '').getTime() - new Date(b.date || '').getTime())
 
   if (data.length === 0) {
@@ -28,7 +40,6 @@ function LineChart({ points }: { points: Array<ChartPoint> }) {
   const maxValue = Math.max(...values)
   const avgValue = values.reduce((a, b) => a + b, 0) / values.length
   
-  // Calculate trend
   const firstValue = values[0]
   const lastValue = values[values.length - 1]
   const trend = lastValue > firstValue ? 'up' : lastValue < firstValue ? 'down' : 'stable'
@@ -38,7 +49,6 @@ function LineChart({ points }: { points: Array<ChartPoint> }) {
   const minX = Math.min(...dates)
   const maxX = Math.max(...dates)
 
-  // Add some padding to Y axis for better visualization
   const yPadding = (maxValue - minValue) * 0.15 || 1
   const minY = minValue - yPadding
   const maxY = maxValue + yPadding
@@ -56,7 +66,6 @@ function LineChart({ points }: { points: Array<ChartPoint> }) {
     return padding.top + chartHeight - ((v - minY) / (maxY - minY)) * chartHeight
   }
 
-  // Create path for line
   const linePath = data
     .map((p, i) => {
       const x = xScale(new Date(p.date!).getTime())
@@ -65,12 +74,10 @@ function LineChart({ points }: { points: Array<ChartPoint> }) {
     })
     .join(' ')
 
-  // Create path for gradient area
   const areaPath = data.length > 0
     ? `${linePath} L ${xScale(new Date(data[data.length - 1].date!).getTime())} ${padding.top + chartHeight} L ${xScale(new Date(data[0].date!).getTime())} ${padding.top + chartHeight} Z`
     : ''
 
-  // Grid lines
   const yGridLines = 6
   const xGridLines = Math.min(data.length, 8)
   
@@ -86,6 +93,8 @@ function LineChart({ points }: { points: Array<ChartPoint> }) {
     return v % 1 === 0 ? v.toString() : v.toFixed(2)
   }
 
+  const displayUnit = standardUnit || data[0]?.unit || ''
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Statistics Cards */}
@@ -93,25 +102,19 @@ function LineChart({ points }: { points: Array<ChartPoint> }) {
         <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-lg sm:rounded-xl p-2 sm:p-4 border border-blue-200">
           <div className="text-xs font-medium text-blue-600 mb-0.5 sm:mb-1">Минимум</div>
           <div className="text-base sm:text-2xl font-bold text-blue-900">{formatValue(minValue)}</div>
-          <div className="text-xs text-blue-600 mt-0.5 sm:mt-1 truncate">
-            {data.find(p => p.value_num === minValue)?.date && 
-              new Date(data.find(p => p.value_num === minValue)!.date!).toLocaleDateString('ru-RU')}
-          </div>
+          <div className="text-xs text-blue-600 mt-0.5 sm:mt-1">{displayUnit}</div>
         </div>
 
         <div className="bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-lg sm:rounded-xl p-2 sm:p-4 border border-purple-200">
           <div className="text-xs font-medium text-purple-600 mb-0.5 sm:mb-1">Максимум</div>
           <div className="text-base sm:text-2xl font-bold text-purple-900">{formatValue(maxValue)}</div>
-          <div className="text-xs text-purple-600 mt-0.5 sm:mt-1 truncate">
-            {data.find(p => p.value_num === maxValue)?.date && 
-              new Date(data.find(p => p.value_num === maxValue)!.date!).toLocaleDateString('ru-RU')}
-          </div>
+          <div className="text-xs text-purple-600 mt-0.5 sm:mt-1">{displayUnit}</div>
         </div>
 
         <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-lg sm:rounded-xl p-2 sm:p-4 border border-emerald-200">
           <div className="text-xs font-medium text-emerald-600 mb-0.5 sm:mb-1">Среднее</div>
           <div className="text-base sm:text-2xl font-bold text-emerald-900">{formatValue(avgValue)}</div>
-          <div className="text-xs text-emerald-600 mt-0.5 sm:mt-1">за весь период</div>
+          <div className="text-xs text-emerald-600 mt-0.5 sm:mt-1">{displayUnit}</div>
         </div>
 
         <div className={`bg-gradient-to-br rounded-lg sm:rounded-xl p-2 sm:p-4 border ${
@@ -146,20 +149,17 @@ function LineChart({ points }: { points: Array<ChartPoint> }) {
       <div className="relative">
         <svg width={width} height={height} className="w-full h-auto" style={{ maxWidth: '100%' }}>
           <defs>
-            {/* Gradient for area fill */}
             <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3" />
               <stop offset="100%" stopColor="#6366f1" stopOpacity="0.05" />
             </linearGradient>
             
-            {/* Gradient for line */}
             <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor="#8b5cf6" />
               <stop offset="50%" stopColor="#6366f1" />
               <stop offset="100%" stopColor="#3b82f6" />
             </linearGradient>
 
-            {/* Shadow filter */}
             <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
               <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
               <feOffset dx="0" dy="2" result="offsetblur"/>
@@ -220,7 +220,7 @@ function LineChart({ points }: { points: Array<ChartPoint> }) {
             fill="#10b981"
             fontWeight="600"
           >
-            Среднее: {formatValue(avgValue)}
+            Среднее: {formatValue(avgValue)} {displayUnit}
           </text>
 
           {/* Area fill */}
@@ -256,7 +256,6 @@ function LineChart({ points }: { points: Array<ChartPoint> }) {
             
             return (
               <g key={i}>
-                {/* Outer glow circle on hover */}
                 {isHovered && (
                   <circle
                     cx={x}
@@ -274,7 +273,6 @@ function LineChart({ points }: { points: Array<ChartPoint> }) {
                   </circle>
                 )}
                 
-                {/* Main point */}
                 <circle
                   cx={x}
                   cy={y}
@@ -291,7 +289,6 @@ function LineChart({ points }: { points: Array<ChartPoint> }) {
                   filter={isHovered ? "url(#shadow)" : undefined}
                 />
 
-                {/* Tooltip on hover */}
                 {isHovered && (
                   <g>
                     <rect
@@ -322,7 +319,7 @@ function LineChart({ points }: { points: Array<ChartPoint> }) {
                       fill="#6366f1"
                       fontWeight="bold"
                     >
-                      {formatValue(p.value_num)} {p.unit || ''}
+                      {formatValue(p.value_num)} {displayUnit}
                     </text>
                   </g>
                 )}
@@ -401,7 +398,7 @@ function LineChart({ points }: { points: Array<ChartPoint> }) {
             fontWeight="600"
             transform={`rotate(-90 ${padding.left - 60} ${padding.top + chartHeight / 2})`}
           >
-            Значение
+            {displayUnit || 'Значение'}
           </text>
           
           <text
@@ -419,13 +416,21 @@ function LineChart({ points }: { points: Array<ChartPoint> }) {
 
       {/* Data Table */}
       <div className="overflow-hidden rounded-lg sm:rounded-xl border border-gray-200">
-        <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-3 sm:px-6 py-2 sm:py-3 border-b border-gray-200">
+        <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-3 sm:px-6 py-2 sm:py-3 border-b border-gray-200 flex items-center justify-between">
           <h4 className="text-xs sm:text-sm font-semibold text-gray-900">Таблица значений</h4>
+          {excludedPoints.size > 0 && (
+            <span className="text-xs text-gray-600">
+              Исключено: {excludedPoints.size} из {points.filter((p) => typeof p.value_num === 'number' && p.date).length}
+            </span>
+          )}
         </div>
         <div className="max-h-80 overflow-x-auto overflow-y-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50 sticky top-0">
               <tr>
+                <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Включить
+                </th>
                 <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   №
                 </th>
@@ -441,42 +446,73 @@ function LineChart({ points }: { points: Array<ChartPoint> }) {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {data.map((p, i) => {
-                const deviation = ((p.value_num - avgValue) / avgValue * 100).toFixed(1)
-                const isAboveAvg = p.value_num > avgValue
-                
-                return (
-                  <tr 
-                    key={i}
-                    className="hover:bg-gray-50 transition-colors cursor-pointer"
-                    onMouseEnter={() => setHoveredPoint(i)}
-                    onMouseLeave={() => setHoveredPoint(null)}
-                  >
-                    <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium text-gray-900">
-                      {data.length - i}
-                    </td>
-                    <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm text-gray-700">
-                      {formatDate(new Date(p.date!).getTime())}
-                    </td>
-                    <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
-                      <span className="text-xs sm:text-sm font-semibold text-gray-900">
-                        {formatValue(p.value_num)} {p.unit || ''}
-                      </span>
-                    </td>
-                    <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap hidden sm:table-cell">
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
-                        Math.abs(parseFloat(deviation)) < 5
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : isAboveAvg
-                          ? 'bg-orange-100 text-orange-800'
-                          : 'bg-blue-100 text-blue-800'
+              {points
+                .filter((p) => typeof p.value_num === 'number' && p.date)
+                .sort((a, b) => new Date(b.date || '').getTime() - new Date(a.date || '').getTime())
+                .map((p, originalIndex) => {
+                  const isExcluded = excludedPoints.has(p._id || '')
+                  const deviationValue = isExcluded ? 0 : ((p.value_num - avgValue) / avgValue * 100)
+                  const deviation = deviationValue.toFixed(1)
+                  const isAboveAvg = p.value_num > avgValue
+                  const pointIndex = data.findIndex(d => d._id === p._id)
+                  
+                  return (
+                    <tr 
+                      key={p._id || originalIndex}
+                      className={`hover:bg-gray-50 transition-colors ${
+                        isExcluded ? 'opacity-50 bg-gray-50' : ''
+                      }`}
+                      onMouseEnter={() => !isExcluded && pointIndex !== -1 && setHoveredPoint(pointIndex)}
+                      onMouseLeave={() => setHoveredPoint(null)}
+                    >
+                      <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
+                        <label className="flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={!isExcluded}
+                            onChange={() => onTogglePoint(p._id || '')}
+                            className="w-4 h-4 text-[#4A90E2] border-gray-300 rounded focus:ring-[#4A90E2] focus:ring-2 cursor-pointer"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </label>
+                      </td>
+                      <td className={`px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium ${
+                        isExcluded ? 'text-gray-400 line-through' : 'text-gray-900'
                       }`}>
-                        {isAboveAvg ? '↑' : '↓'} {Math.abs(parseFloat(deviation))}%
-                      </span>
-                    </td>
-                  </tr>
-                )
-              })}
+                        {points.filter((p) => typeof p.value_num === 'number' && p.date).length - originalIndex}
+                      </td>
+                      <td className={`px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap text-xs sm:text-sm ${
+                        isExcluded ? 'text-gray-400 line-through' : 'text-gray-700'
+                      }`}>
+                        {formatDate(new Date(p.date!).getTime())}
+                      </td>
+                      <td className={`px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap ${
+                        isExcluded ? 'text-gray-400 line-through' : ''
+                      }`}>
+                        <span className={`text-xs sm:text-sm font-semibold ${
+                          isExcluded ? 'text-gray-400' : 'text-gray-900'
+                        }`}>
+                          {formatValue(p.value_num)} {displayUnit}
+                        </span>
+                      </td>
+                      <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap hidden sm:table-cell">
+                        {!isExcluded ? (
+                          <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${
+                            Math.abs(parseFloat(deviation)) < 5
+                              ? 'bg-emerald-100 text-emerald-800'
+                              : isAboveAvg
+                              ? 'bg-orange-100 text-orange-800'
+                              : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {isAboveAvg ? '↑' : '↓'} {Math.abs(parseFloat(deviation))}%
+                          </span>
+                        ) : (
+                          <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
             </tbody>
           </table>
         </div>
@@ -485,36 +521,252 @@ function LineChart({ points }: { points: Array<ChartPoint> }) {
   )
 }
 
+// Category icons mapping
+const categoryIcons: Record<string, string> = {
+  'Общий анализ крови': '🩸',
+  'Биохимия крови': '🧪',
+  'Липидный профиль': '💧',
+  'Коагулограмма': '🩹',
+  'Гормоны': '⚗️',
+  'Витамины и микроэлементы': '💊',
+  'Маркеры воспаления': '🔥',
+  'Общий анализ мочи': '🚽',
+  'Инфекции': '🦠',
+  'Микробиология': '🔬',
+  'Онкомаркеры': '🎯',
+  'Аутоиммунные маркеры': '🛡️',
+  'Другое': '📋'
+}
+
+interface AnalyteSelectorProps {
+  categories: Array<{
+    name: string
+    analytes: Array<{
+      canonical_name: string
+      standard_unit: string | null
+      count: number
+    }>
+  }>
+  selectedAnalyte: string
+  onSelect: (analyteName: string) => void
+}
+
+function AnalyteSelector({ categories, selectedAnalyte, onSelect }: AnalyteSelectorProps) {
+  const [searchQuery, setSearchQuery] = useState('')
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
+
+  // Filter analytes based on search
+  const filteredCategories = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return categories
+    }
+
+    const query = searchQuery.toLowerCase()
+    return categories
+      .map(category => ({
+        ...category,
+        analytes: category.analytes.filter(a => 
+          a.canonical_name.toLowerCase().includes(query)
+        )
+      }))
+      .filter(category => category.analytes.length > 0)
+  }, [categories, searchQuery])
+
+  // Auto-expand categories with search results
+  useEffect(() => {
+    if (searchQuery.trim()) {
+      const matchingCategories = new Set(
+        filteredCategories.map(c => c.name)
+      )
+      setExpandedCategories(matchingCategories)
+    }
+  }, [searchQuery, filteredCategories])
+
+  // Expand category of selected analyte on mount
+  useEffect(() => {
+    if (selectedAnalyte) {
+      for (const category of categories) {
+        if (category.analytes.some(a => a.canonical_name === selectedAnalyte)) {
+          setExpandedCategories(prev => new Set([...prev, category.name]))
+          break
+        }
+      }
+    }
+  }, [selectedAnalyte, categories])
+
+  const toggleCategory = (categoryName: string) => {
+    setExpandedCategories(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(categoryName)) {
+        newSet.delete(categoryName)
+      } else {
+        newSet.add(categoryName)
+      }
+      return newSet
+    })
+  }
+
+  const totalAnalytes = categories.reduce((sum, c) => sum + c.analytes.length, 0)
+
+  return (
+    <div className="space-y-3">
+      {/* Search input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder={`Поиск среди ${totalAnalytes} анализов...`}
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A90E2] focus:border-[#4A90E2] bg-white"
+        />
+        {searchQuery && (
+          <button
+            onClick={() => setSearchQuery('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+          >
+            ×
+          </button>
+        )}
+      </div>
+
+      {/* Categories tree */}
+      <div className="max-h-[400px] overflow-y-auto border border-gray-200 rounded-lg bg-white">
+        {filteredCategories.length === 0 ? (
+          <div className="p-4 text-center text-sm text-gray-500">
+            Анализы не найдены
+          </div>
+        ) : (
+          filteredCategories.map((category) => (
+            <div key={category.name} className="border-b border-gray-100 last:border-b-0">
+              {/* Category header */}
+              <button
+                onClick={() => toggleCategory(category.name)}
+                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{categoryIcons[category.name] || '📋'}</span>
+                  <span className="text-sm font-medium text-gray-900">{category.name}</span>
+                  <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                    {category.analytes.length}
+                  </span>
+                </div>
+                {expandedCategories.has(category.name) ? (
+                  <ChevronDown className="h-4 w-4 text-gray-400" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-gray-400" />
+                )}
+              </button>
+
+              {/* Analytes list */}
+              {expandedCategories.has(category.name) && (
+                <div className="bg-gray-50/50 border-t border-gray-100">
+                  {category.analytes.map((analyte) => (
+                    <button
+                      key={analyte.canonical_name}
+                      onClick={() => onSelect(analyte.canonical_name)}
+                      className={`w-full flex items-center justify-between px-4 py-2 text-left hover:bg-gray-100 transition-colors ${
+                        selectedAnalyte === analyte.canonical_name
+                          ? 'bg-blue-50 border-l-2 border-l-blue-500'
+                          : 'border-l-2 border-l-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm ${
+                          selectedAnalyte === analyte.canonical_name
+                            ? 'font-medium text-blue-900'
+                            : 'text-gray-700'
+                        }`}>
+                          {analyte.canonical_name}
+                        </span>
+                        {analyte.standard_unit && (
+                          <span className="text-xs text-gray-500">
+                            ({analyte.standard_unit})
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-xs text-gray-400">
+                        {analyte.count} изм.
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function Labs() {
   const [selected, setSelected] = useState<string>('')
+  const [excludedPoints, setExcludedPoints] = useState<Set<string>>(new Set())
 
-  const { data: analytesData } = useQuery({
+  // Fetch categories with analytes
+  const { data: analytesData, isLoading: loadingAnalytes } = useQuery({
     queryKey: ['labs_analytes'],
     queryFn: () => documentsService.listAnalytes(),
   })
 
+  const categories = analytesData?.categories || []
+
+  // Fetch time series for selected analyte
   const { data: seriesData, isLoading: loadingSeries } = useQuery({
     queryKey: ['labs_series', selected],
-    queryFn: () => (selected ? documentsService.getLabTimeSeries(selected) : Promise.resolve({ analyte: selected, points: [] })),
+    queryFn: () => documentsService.getLabTimeSeries(selected),
     enabled: !!selected,
   })
 
-  const analytes = analytesData || []
-  const points = (seriesData?.points || []) as Array<{ date?: string; value_num: number }>
+  const rawPoints = (seriesData?.points || []) as Array<{ 
+    date?: string
+    value_num: number
+    unit?: string | null
+    document_id?: string
+    reference_range?: string | null
+    flag?: string | null
+  }>
 
+  const points = rawPoints.map((p, index) => ({
+    ...p,
+    _id: `${p.document_id || 'unknown'}_${p.date || 'nodate'}_${p.value_num}_${index}`,
+  }))
+
+  // Reset excluded points when switching analytes
   useEffect(() => {
-    if (!selected && analytes.length > 0) {
-      setSelected(analytes[0].name)
+    setExcludedPoints(new Set())
+  }, [selected])
+
+  // Auto-select first analyte
+  useEffect(() => {
+    if (!selected && categories.length > 0) {
+      const firstCategory = categories[0]
+      if (firstCategory.analytes.length > 0) {
+        setSelected(firstCategory.analytes[0].canonical_name)
+      }
     }
-  }, [analytes, selected])
+  }, [categories, selected])
+
+  const togglePoint = (pointId: string) => {
+    setExcludedPoints(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(pointId)) {
+        newSet.delete(pointId)
+      } else {
+        newSet.add(pointId)
+      }
+      return newSet
+    })
+  }
 
   return (
     <div className="space-y-4 md:space-y-8 page-transition">
-      {/* Modern Header */}
+      {/* Header */}
       <div>
         <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
           <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-gradient-to-br from-red-100 to-pink-50 flex items-center justify-center shadow-lg shadow-red-200/50">
-            <span className="text-xl sm:text-2xl">🔬</span>
+            <FlaskConical className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" />
           </div>
           <div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900">Анализы</h1>
@@ -525,20 +777,52 @@ export default function Labs() {
         </p>
       </div>
 
-      {/* Selector */}
+      {/* Analyte selector */}
       <div className="medical-card">
-        <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2 sm:mb-3">🧪 Выберите анализ</label>
-        <select
-          value={selected}
-          onChange={(e) => setSelected(e.target.value)}
-          className="w-full md:w-1/2 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4A90E2] focus:border-[#4A90E2] bg-white text-gray-900 font-medium"
-        >
-          {analytes.map((a) => (
-            <option key={a.name} value={a.name}>
-              {a.name} {a.count ? `(${a.count} измерений)` : ''}
-            </option>
-          ))}
-        </select>
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-lg">🧪</span>
+          <h3 className="text-sm sm:text-base font-semibold text-gray-900">Выберите анализ</h3>
+        </div>
+        
+        {loadingAnalytes ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4A90E2]"></div>
+          </div>
+        ) : categories.length > 0 ? (
+          <AnalyteSelector
+            categories={categories}
+            selectedAnalyte={selected}
+            onSelect={setSelected}
+          />
+        ) : (
+          <div className="text-center py-8 text-sm text-gray-500">
+            Нет доступных анализов
+          </div>
+        )}
+
+        {/* Selected analyte info */}
+        {selected && seriesData && (
+          <div className="mt-4 pt-4 border-t border-gray-100">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">Выбран:</span>
+                <span className="text-sm font-medium text-gray-900">{selected}</span>
+              </div>
+              {seriesData.standard_unit && (
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-blue-50 rounded-md">
+                  <span className="text-xs text-blue-600">Единица измерения:</span>
+                  <span className="text-xs font-medium text-blue-700">{seriesData.standard_unit}</span>
+                </div>
+              )}
+              {seriesData.category && (
+                <div className="flex items-center gap-1.5 px-2 py-1 bg-purple-50 rounded-md">
+                  <span className="text-xs text-purple-600">Категория:</span>
+                  <span className="text-xs font-medium text-purple-700">{seriesData.category}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Chart */}
@@ -555,19 +839,24 @@ export default function Labs() {
           </div>
         ) : points.length > 0 ? (
           <div className="bg-gradient-to-br from-gray-50 to-white p-3 sm:p-6 rounded-lg sm:rounded-xl border border-gray-100">
-            <LineChart points={points} />
+            <LineChart 
+              points={points} 
+              excludedPoints={excludedPoints}
+              onTogglePoint={togglePoint}
+              standardUnit={seriesData?.standard_unit || null}
+            />
           </div>
         ) : (
           <div className="text-center py-12">
             <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 rounded-full bg-gray-100 flex items-center justify-center">
               <span className="text-2xl sm:text-3xl">📈</span>
             </div>
-            <p className="text-xs sm:text-sm text-gray-500">Нет данных для отображения</p>
+            <p className="text-xs sm:text-sm text-gray-500">
+              {selected ? 'Нет данных для отображения' : 'Выберите анализ для просмотра'}
+            </p>
           </div>
         )}
       </div>
     </div>
   )
 }
-
-

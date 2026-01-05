@@ -14,7 +14,7 @@ from app.schemas.document import (
 )
 from app.services.report_service import ReportService
 from app.services.document_service import DocumentService
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_profile_user_id
 
 router = APIRouter()
 
@@ -22,13 +22,14 @@ router = APIRouter()
 async def generate_report(
     request: ReportGenerateRequest,
     current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
     db: AsyncSession = Depends(get_db)
 ):
     """Generate a PDF report based on filters"""
     
     try:
         report = await ReportService.generate_report(
-            user_id=current_user.id,
+            user_id=profile_user_id,
             filters=request.filters,
             db=db
         )
@@ -55,12 +56,13 @@ async def get_reports(
     skip: int = 0,
     limit: int = 50,
     current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
     db: AsyncSession = Depends(get_db)
 ):
     """Get user reports"""
     
     reports = await ReportService.get_reports(
-        user_id=current_user.id,
+        user_id=profile_user_id,
         db=db,
         skip=skip,
         limit=limit
@@ -72,13 +74,14 @@ async def get_reports(
 async def get_report(
     report_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
     db: AsyncSession = Depends(get_db)
 ):
     """Get report metadata"""
     
     report = await ReportService.get_report_by_id(
         report_id=report_id,
-        user_id=current_user.id,
+        user_id=profile_user_id,
         db=db
     )
     
@@ -94,13 +97,14 @@ async def get_report(
 async def download_report(
     report_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
     db: AsyncSession = Depends(get_db)
 ):
     """Download report PDF"""
     
     report = await ReportService.get_report_by_id(
         report_id=report_id,
-        user_id=current_user.id,
+        user_id=profile_user_id,
         db=db
     )
     

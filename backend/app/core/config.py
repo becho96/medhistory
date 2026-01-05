@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     
+    # Google OAuth
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    GOOGLE_REDIRECT_URI: str = "http://localhost:5173/auth/google/callback"
+    
     # CORS
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"  # Comma-separated list
     
@@ -35,7 +40,8 @@ class Settings(BaseSettings):
     ALLOWED_EXTENSIONS: set = {".pdf", ".jpg", ".jpeg", ".png", ".docx"}
     
     class Config:
-        env_file = ".env"
+        # Переменные окружения передаются через docker-compose из .env.local/.env.staging/.env.production
+        # Для локальной разработки без Docker создайте .env.local и запустите: source .env.local
         case_sensitive = True
 
 settings = Settings()

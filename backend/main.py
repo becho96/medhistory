@@ -5,7 +5,7 @@ from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.api.v1.router import api_router
 from app.core.config import settings
-from app.db.postgres import engine, Base
+from app.db.postgres import engine, Base, AsyncSessionLocal
 from app.db.mongodb import mongodb_client
 from app.db.minio_client import minio_client, ensure_bucket_exists
 
@@ -13,6 +13,13 @@ from app.db.minio_client import minio_client, ensure_bucket_exists
 from app.models.user import User
 from app.models.document import Document, Tag, DocumentTag, Specialty, DocumentType
 from app.models.report import Report
+from app.models.analyte import (
+    AnalyteCategory, AnalyteStandard, AnalyteSynonym, 
+    UnitConversion, UserAnalyteMapping
+)
+
+# Import analyte normalization service
+from app.services.analyte_normalization_service_db import analyte_normalization_service_db
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -26,6 +33,20 @@ async def lifespan(app: FastAPI):
     
     # Initialize MinIO bucket
     ensure_bucket_exists()
+    
+    # Load analyte normalization data from DB
+    try:
+        async with AsyncSessionLocal() as db:
+            await analyte_normalization_service_db.load_from_db(db)
+            stats = analyte_normalization_service_db.get_stats()
+            if stats["categories_count"] > 0:
+                print(f"✅ Справочник анализов загружен: {stats['categories_count']} категорий, "
+                      f"{stats['analytes_count']} анализов, {stats['synonyms_count']} синонимов")
+            else:
+                print("⚠️ Справочник анализов пуст! Выполните: python scripts/seed_analyte_mappings.py")
+    except Exception as e:
+        print(f"⚠️ Не удалось загрузить справочник анализов: {e}")
+        print("   Выполните миграцию и seed: python scripts/seed_analyte_mappings.py")
     
     print("✅ Database and storage initialized")
     

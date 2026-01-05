@@ -4,7 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
 from io import BytesIO
 import uuid
+import logging
 from urllib.parse import quote
+
+logger = logging.getLogger(__name__)
 
 from app.db.postgres import get_db
 from app.models.user import User
@@ -14,7 +17,9 @@ from app.schemas.document import (
     DocumentUploadResponse
 )
 from app.services.document_service import DocumentService
-from app.api.deps import get_current_user
+from app.services.unit_normalization_service import unit_normalization_service
+from app.services.analyte_normalization_service_db import analyte_normalization_service_db
+from app.api.deps import get_current_user, get_profile_user_id
 from app.db.mongodb import document_metadata_collection
 
 router = APIRouter()
@@ -23,14 +28,18 @@ router = APIRouter()
 async def upload_document(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
     db: AsyncSession = Depends(get_db)
 ):
-    """Upload a new document"""
+    """Upload a new document
+    
+    Use X-Profile-Id header to upload to a family member's profile.
+    """
     
     try:
         document = await DocumentService.upload_document(
             file=file,
-            user_id=current_user.id,
+            user_id=profile_user_id,
             db=db
         )
         
@@ -68,6 +77,7 @@ async def get_documents(
     document_subtype: Optional[List[str]] = Query(None),
     research_area: Optional[List[str]] = Query(None),
     current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
     db: AsyncSession = Depends(get_db)
 ):
     """Get user documents with optional filters
@@ -89,7 +99,7 @@ async def get_documents(
     """
     
     documents = await DocumentService.get_documents(
-        user_id=current_user.id,
+        user_id=profile_user_id,
         db=db,
         skip=skip,
         limit=limit,
@@ -167,12 +177,13 @@ async def get_documents_count(
     document_subtype: Optional[List[str]] = Query(None),
     research_area: Optional[List[str]] = Query(None),
     current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
     db: AsyncSession = Depends(get_db)
 ):
     """Get total count of user documents with optional filters"""
     
     count = await DocumentService.get_documents_count(
-        user_id=current_user.id,
+        user_id=profile_user_id,
         db=db,
         document_type=document_type,
         patient_name=patient_name,
@@ -192,13 +203,14 @@ async def get_documents_count(
 async def get_document(
     document_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
     db: AsyncSession = Depends(get_db)
 ):
     """Get document by ID with MongoDB metadata"""
     
     document = await DocumentService.get_document_by_id(
         document_id=document_id,
-        user_id=current_user.id,
+        user_id=profile_user_id,
         db=db
     )
     
@@ -252,13 +264,14 @@ async def get_document(
 async def download_document(
     document_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
     db: AsyncSession = Depends(get_db)
 ):
     """Download document file"""
     
     document = await DocumentService.get_document_by_id(
         document_id=document_id,
-        user_id=current_user.id,
+        user_id=profile_user_id,
         db=db
     )
     
@@ -321,13 +334,14 @@ async def download_document(
 async def delete_document(
     document_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
     db: AsyncSession = Depends(get_db)
 ):
     """Delete document"""
     
     success = await DocumentService.delete_document(
         document_id=document_id,
-        user_id=current_user.id,
+        user_id=profile_user_id,
         db=db
     )
     
@@ -344,13 +358,14 @@ async def delete_document(
 async def get_document_labs(
     document_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """Return extracted lab results for a document from MongoDB."""
 
     document = await DocumentService.get_document_by_id(
         document_id=document_id,
-        user_id=current_user.id,
+        user_id=profile_user_id,
         db=db,
     )
 
@@ -376,13 +391,14 @@ async def get_document_labs(
 async def get_document_labs_summary(
     document_id: uuid.UUID,
     current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """Return quick summary whether labs exist and how many."""
 
     document = await DocumentService.get_document_by_id(
         document_id=document_id,
-        user_id=current_user.id,
+        user_id=profile_user_id,
         db=db,
     )
 
@@ -409,55 +425,272 @@ async def get_document_labs_summary(
 @router.get("/labs/analytes")
 async def list_available_analytes(
     current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    """Return distinct analyte names found across user's documents (from MongoDB)."""
+    """Return distinct analyte names grouped by categories with standard units.
+    
+    Response format:
+    {
+        "categories": [
+            {
+                "name": "Общий анализ крови",
+                "analytes": [
+                    {"canonical_name": "Гемоглобин", "standard_unit": "г/л", "count": 5},
+                    ...
+                ]
+            },
+            ...
+        ]
+    }
+    """
+    # Проверяем, загружен ли справочник. Если нет - пробуем загрузить
+    if not analyte_normalization_service_db.is_loaded:
+        logger.warning("⚠️ Справочник анализов не загружен, пробуем загрузить...")
+        try:
+            await analyte_normalization_service_db.load_from_db(db)
+            logger.info(f"✅ Справочник загружен: {analyte_normalization_service_db.get_stats()}")
+        except Exception as e:
+            logger.error(f"❌ Не удалось загрузить справочник: {e}")
+    
+    # Получаем все уникальные комбинации названий анализов и единиц из MongoDB
+    # Группируем по (test_name, unit) чтобы различать например "Лимфоциты %" и "Лимфоциты абс"
     pipeline = [
-        {"$match": {"user_id": str(current_user.id)}},
+        {"$match": {"user_id": str(profile_user_id)}},
         {"$project": {"extracted_data.lab_results": 1}},
         {"$unwind": "$extracted_data.lab_results"},
-        {"$group": {"_id": {"$toLower": "$extracted_data.lab_results.test_name"}, "name": {"$first": "$extracted_data.lab_results.test_name"}, "count": {"$sum": 1}}},
+        {
+            "$group": {
+                "_id": {
+                    "name_lower": {"$toLower": "$extracted_data.lab_results.test_name"},
+                    "unit": "$extracted_data.lab_results.unit"
+                },
+                "name": {"$first": "$extracted_data.lab_results.test_name"},
+                "unit": {"$first": "$extracted_data.lab_results.unit"},
+                "count": {"$sum": 1}
+            }
+        },
         {"$sort": {"name": 1}},
     ]
+    
     cursor = document_metadata_collection.aggregate(pipeline)
-    items = []
+    
+    # Собираем анализы и группируем по каноническим названиям
+    canonical_analytes = {}  # canonical_name -> {count, standard_unit, category}
+    unknown_analytes = []  # Анализы без канонического названия
+    
     async for doc in cursor:
-        if doc.get("name"):
-            items.append({"name": doc["name"], "count": doc.get("count", 0)})
-    return {"analytes": items}
+        original_name = doc.get("name", "")
+        unit = doc.get("unit", "")
+        count = doc.get("count", 0)
+        
+        if not original_name:
+            continue
+        
+        # Пытаемся найти каноническое название с учётом единицы измерения
+        canonical_name = analyte_normalization_service_db.get_canonical_name(original_name, unit)
+        
+        if canonical_name:
+            analyte_data = analyte_normalization_service_db.get_analyte(canonical_name)
+            
+            if canonical_name in canonical_analytes:
+                # Суммируем count для синонимов
+                canonical_analytes[canonical_name]["count"] += count
+            else:
+                canonical_analytes[canonical_name] = {
+                    "canonical_name": canonical_name,
+                    "standard_unit": analyte_data.standard_unit if analyte_data else None,
+                    "category": analyte_data.category_name if analyte_data else "Другие анализы",
+                    "count": count
+                }
+        else:
+            # Неизвестный анализ - группируем по оригинальному названию
+            # Используем комбинацию name+unit как ключ для избежания дубликатов
+            unknown_key = f"{original_name}|{unit or ''}"
+            existing = next((a for a in unknown_analytes if f"{a['canonical_name']}|{a.get('_unit', '')}" == unknown_key), None)
+            if existing:
+                existing["count"] += count
+            else:
+                unknown_analytes.append({
+                    "canonical_name": original_name,  # Используем оригинальное название
+                    "standard_unit": unit,
+                    "category": "Другие анализы",
+                    "count": count,
+                    "_unit": unit  # Временное поле для группировки
+                })
+    
+    # Объединяем все анализы
+    all_analytes = list(canonical_analytes.values()) + unknown_analytes
+    
+    # Группируем по категориям
+    categories_dict = {}
+    for analyte in all_analytes:
+        category = analyte.get("category", "Другое")
+        if category not in categories_dict:
+            categories_dict[category] = []
+        categories_dict[category].append({
+            "canonical_name": analyte["canonical_name"],
+            "standard_unit": analyte["standard_unit"],
+            "count": analyte["count"]
+        })
+    
+    # Сортируем категории по порядку из БД
+    db_categories = analyte_normalization_service_db.get_all_categories()
+    category_order = [c["name"] for c in db_categories]
+    result_categories = []
+    
+    for category_name in category_order:
+        if category_name in categories_dict:
+            result_categories.append({
+                "name": category_name,
+                "analytes": sorted(
+                    categories_dict[category_name],
+                    key=lambda x: x["canonical_name"]
+                )
+            })
+    
+    # Добавляем категории, которых нет в порядке (неизвестные)
+    for category_name, analytes_list in categories_dict.items():
+        if category_name not in category_order:
+            result_categories.append({
+                "name": category_name,
+                "analytes": sorted(analytes_list, key=lambda x: x["canonical_name"])
+            })
+    
+    return {"categories": result_categories}
+
+
+@router.get("/labs/analytes/debug")
+async def debug_analytes_mapping(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Debug endpoint to check analyte normalization service status."""
+    stats = analyte_normalization_service_db.get_stats()
+    
+    # Тестовые примеры маппинга
+    test_names = ["Лимфоциты", "Гемоглобин", "Hemoglobin", "HGB", "Глюкоза"]
+    test_results = {}
+    for name in test_names:
+        canonical = analyte_normalization_service_db.get_canonical_name(name)
+        test_results[name] = canonical
+    
+    return {
+        "service_stats": stats,
+        "test_mappings": test_results,
+        "all_categories": analyte_normalization_service_db.get_all_categories(),
+    }
 
 
 @router.get("/labs/timeseries")
 async def get_lab_timeseries(
-    analyte: str = Query(..., description="Название анализа, например: гемоглобин"),
+    analyte: str = Query(..., description="Каноническое название анализа, например: Гемоглобин"),
     current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """Return time series for a given analyte across user's documents.
-
-    Each point: { date, value, unit, document_id, reference_range, flag }
+    
+    All values are converted to standard units automatically.
+    
+    Response:
+    {
+        "analyte": "Гемоглобин",
+        "standard_unit": "г/л",
+        "category": "Общий анализ крови",
+        "points": [
+            {
+                "date": "2024-01-15",
+                "value_num": 145.0,
+                "unit": "г/л",
+                "document_id": "...",
+                "reference_range": "120-160",
+                "flag": "N"
+            }
+        ]
+    }
     """
+    # Получаем данные анализа из справочника
+    analyte_data = analyte_normalization_service_db.get_analyte(analyte)
+    
+    # Определяем, это процентный или абсолютный вариант анализа
+    is_percentage_analyte = analyte.endswith("(%)")
+    is_absolute_analyte = analyte.endswith("(абс)")
+    
+    # Собираем все синонимы для поиска
+    if analyte_data:
+        synonyms = analyte_data.synonyms if analyte_data.synonyms else [analyte]
+        standard_unit = analyte_data.standard_unit
+        category = analyte_data.category_name
+    else:
+        # Если анализ не в справочнике, ищем по точному совпадению
+        synonyms = [analyte]
+        standard_unit = None
+        category = "Другие анализы"
+    
+    # Строим regex для поиска всех синонимов
+    # Экранируем специальные символы в названиях
+    import re
+    escaped_synonyms = [re.escape(s) for s in synonyms]
+    regex_pattern = f"^({'|'.join(escaped_synonyms)})$"
+    
     pipeline = [
-        {"$match": {"user_id": str(current_user.id)}},
+        {"$match": {"user_id": str(profile_user_id)}},
         {"$project": {"document_id": 1, "extracted_data.lab_results": 1}},
         {"$unwind": "$extracted_data.lab_results"},
-        {"$match": {"extracted_data.lab_results.test_name": {"$regex": f"^{analyte}$", "$options": "i"}}},
+        {"$match": {"extracted_data.lab_results.test_name": {"$regex": regex_pattern, "$options": "i"}}},
     ]
 
     cursor = document_metadata_collection.aggregate(pipeline)
     points = []
     doc_ids = set()
+    
     async for doc in cursor:
         lr = doc.get("extracted_data", {}).get("lab_results", {})
         if not isinstance(lr, dict):
             continue
+        
         doc_id = doc.get("document_id")
+        original_value = lr.get("value")
+        original_unit = lr.get("unit") or ""
+        
+        # Фильтрация по типу анализа (процентный/абсолютный)
+        # Если запрошен процентный анализ - берём только записи с unit содержащим %
+        # Если запрошен абсолютный анализ - пропускаем записи с unit содержащим %
+        unit_has_percent = "%" in original_unit
+        
+        if is_percentage_analyte and not unit_has_percent:
+            # Запрошен процентный, но unit не содержит % - пропускаем
+            continue
+        if is_absolute_analyte and unit_has_percent:
+            # Запрошен абсолютный, но unit содержит % - пропускаем
+            continue
+        
+        # Конвертируем значение в стандартную единицу
+        if analyte_data:
+            converted_value, converted_unit = analyte_normalization_service_db.convert_value(
+                original_value, original_unit, analyte
+            )
+        else:
+            # Для неизвестных анализов - просто парсим число
+            try:
+                converted_value = float(str(original_value).replace(',', '.').strip())
+            except (ValueError, TypeError):
+                converted_value = None
+            converted_unit = original_unit
+        
+        if converted_value is None:
+            continue
+        
         if doc_id:
             doc_ids.add(doc_id)
+            
         points.append({
             "document_id": doc_id,
-            "value": lr.get("value"),
-            "unit": lr.get("unit"),
+            "value_num": converted_value,
+            "unit": converted_unit or standard_unit,
+            "original_value": original_value,
+            "original_unit": original_unit,
             "reference_range": lr.get("reference_range"),
             "flag": lr.get("flag"),
         })
@@ -467,31 +700,23 @@ async def get_lab_timeseries(
         import uuid as _uuid
         from sqlalchemy import select
         from app.models.document import Document as DocumentModel
-        q = select(DocumentModel.id, DocumentModel.document_date).where(DocumentModel.id.in_([_uuid.UUID(x) for x in doc_ids]))
+        q = select(DocumentModel.id, DocumentModel.document_date).where(
+            DocumentModel.id.in_([_uuid.UUID(x) for x in doc_ids])
+        )
         result = await db.execute(q)
         id_to_date = {str(r[0]): r[1] for r in result.all()}
         for p in points:
-            p["date"] = id_to_date.get(p["document_id"])  # may be None
+            p["date"] = id_to_date.get(p["document_id"])
 
-    # Keep only points with a numeric-like value
-    def try_float(v):
-        try:
-            return float(str(v).replace(',', '.'))
-        except Exception:
-            return None
-    series = [
-        {
-            **p,
-            "value_num": try_float(p.get("value")),
-        }
-        for p in points
-    ]
-    series = [p for p in series if p["value_num"] is not None]
+    # Sort by date
+    points.sort(key=lambda x: (x.get("date") is None, x.get("date") or ""))
 
-    # Sort by date if present
-    series.sort(key=lambda x: (x.get("date") is None, x.get("date") or ""))
-
-    return {"analyte": analyte, "points": series}
+    return {
+        "analyte": analyte,
+        "standard_unit": standard_unit,
+        "category": category,
+        "points": points
+    }
 
 
 @router.get("/filters/values")
@@ -500,6 +725,7 @@ async def get_filter_values(
     q: Optional[str] = Query(None, description="Search query to filter values"),
     limit: int = Query(50, ge=1, le=100),
     current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
     db: AsyncSession = Depends(get_db),
 ):
     """Get distinct values for filter fields.
@@ -517,7 +743,7 @@ async def get_filter_values(
     
     if field in postgres_fields:
         values = await DocumentService.get_distinct_field_values(
-            user_id=current_user.id,
+            user_id=profile_user_id,
             db=db,
             field=field,
             q=q,
@@ -527,7 +753,7 @@ async def get_filter_values(
     
     elif field in mongodb_fields:
         values = await DocumentService.get_distinct_mongodb_field_values(
-            user_id=current_user.id,
+            user_id=profile_user_id,
             field=field,
             q=q,
             limit=limit

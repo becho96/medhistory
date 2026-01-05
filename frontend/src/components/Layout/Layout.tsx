@@ -1,12 +1,32 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Home, FileText, BarChart3, LogOut, FlaskConical, Brain, User, Heart, Menu, X } from 'lucide-react'
+import { Home, FileText, BarChart3, LogOut, FlaskConical, Brain, User, Heart, Menu, X, AlertCircle } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import ProfileSwitcher from '../ProfileSwitcher'
+import FamilyManagementModal from '../FamilyManagementModal'
+import { familyService } from '../../services/family'
 
 export default function Layout() {
   const location = useLocation()
-  const { user, logout } = useAuthStore()
+  const { user, logout, activeProfileId, activeProfile, setFamilyProfiles } = useAuthStore()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false)
+
+  const isViewingOwnProfile = !activeProfileId || activeProfileId === user?.id
+
+  // Загружаем профили при монтировании
+  useEffect(() => {
+    loadProfiles()
+  }, [])
+
+  const loadProfiles = async () => {
+    try {
+      const profiles = await familyService.getAccessibleProfiles()
+      setFamilyProfiles(profiles)
+    } catch (error) {
+      console.error('Failed to load profiles:', error)
+    }
+  }
 
   const navigation = [
     { name: 'Главная', href: '/', icon: Home },
@@ -46,11 +66,8 @@ export default function Layout() {
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-4">
-              <div className="hidden md:flex items-center gap-3 px-4 py-2 rounded-xl bg-gray-50 border border-gray-100">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#4A90E2] to-[#3A7BC8] flex items-center justify-center">
-                  <User className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-sm font-medium text-gray-700">{user?.email}</span>
+              <div className="hidden md:block">
+                <ProfileSwitcher onManageFamily={() => setIsFamilyModalOpen(true)} />
               </div>
               <button
                 onClick={logout}
@@ -137,14 +154,12 @@ export default function Layout() {
               </div>
             </div>
 
-            {/* Mobile User Info */}
-            <div className="mt-4 md:hidden p-3 rounded-xl bg-gray-50 border border-gray-100">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#4A90E2] to-[#3A7BC8] flex items-center justify-center">
-                  <User className="w-4 h-4 text-white" />
-                </div>
-                <span className="text-sm font-medium text-gray-700 truncate">{user?.email}</span>
-              </div>
+            {/* Mobile User Info & Profile Switcher */}
+            <div className="mt-4 md:hidden">
+              <ProfileSwitcher onManageFamily={() => {
+                setIsMobileMenuOpen(false)
+                setIsFamilyModalOpen(true)
+              }} />
             </div>
           </nav>
         </aside>
@@ -152,10 +167,33 @@ export default function Layout() {
         {/* Main content with padding */}
         <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-auto">
           <div className="max-w-7xl mx-auto">
+            {/* Profile Banner - показываем когда просматриваем чужой профиль */}
+            {!isViewingOwnProfile && activeProfile && (
+              <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-4">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
+                  <AlertCircle className="w-5 h-5 text-amber-600" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-amber-800">
+                    Вы просматриваете профиль: {activeProfile.full_name}
+                  </p>
+                  <p className="text-xs text-amber-600">
+                    {activeProfile.relation_type_display} • Все действия выполняются от имени этого профиля
+                  </p>
+                </div>
+              </div>
+            )}
             <Outlet />
           </div>
         </main>
       </div>
+
+      {/* Family Management Modal */}
+      <FamilyManagementModal
+        isOpen={isFamilyModalOpen}
+        onClose={() => setIsFamilyModalOpen(false)}
+        onProfilesUpdated={loadProfiles}
+      />
     </div>
   )
 }

@@ -1,8 +1,8 @@
 # ==================================================
-# MedHistory - Базовая конфигурация Docker Compose
+# MedHistory - Docker Compose Configuration
 # ==================================================
-# Этот файл содержит общую конфигурацию для всех сред
-# Используется вместе с override файлами
+# Локальная разработка
+# Использование: ./deploy или docker compose up -d
 # ==================================================
 
 services:
@@ -16,6 +16,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./backend/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-medhistory_user} -d ${POSTGRES_DB:-medhistory}"]
       interval: 10s
@@ -33,6 +35,8 @@ services:
       MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-medhistory}
     volumes:
       - mongodb_data:/data/db
+    ports:
+      - "${MONGODB_PORT:-27017}:27017"
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
@@ -50,6 +54,9 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - minio_data:/data
+    ports:
+      - "${MINIO_PORT:-9000}:9000"
+      - "${MINIO_CONSOLE_PORT:-9001}:9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
@@ -60,6 +67,9 @@ services:
 
   # Backend API
   backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-medhistory_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-medhistory}
       MONGODB_URL: mongodb://${MONGO_INITDB_ROOT_USERNAME:-admin}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_INITDB_DATABASE:-medhistory}?authSource=admin
@@ -68,7 +78,15 @@ services:
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       JWT_SECRET: ${JWT_SECRET}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:5173/auth/google/callback}
       ENVIRONMENT: ${ENVIRONMENT:-development}
+    volumes:
+      - ./backend:/app
+      - backend_uploads:/app/uploads
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -81,6 +99,16 @@ services:
 
   # Frontend
   frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "${FRONTEND_PORT:-5173}:5173"
     depends_on:
       - backend
     networks:
@@ -92,6 +120,8 @@ volumes:
   mongodb_data:
     driver: local
   minio_data:
+    driver: local
+  backend_uploads:
     driver: local
 
 networks:

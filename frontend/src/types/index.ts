@@ -1,9 +1,78 @@
 export interface User {
   id: string
-  email: string
+  email?: string
   full_name?: string
+  birth_date?: string
+  is_active: boolean
+  has_credentials?: boolean
+  created_at: string
+}
+
+// Типы семейных отношений
+export type RelationType = 'parent' | 'child' | 'spouse' | 'grandparent' | 'grandchild' | 'sibling' | 'other'
+
+export const RELATION_TYPE_LABELS: Record<RelationType, string> = {
+  parent: 'Родитель',
+  child: 'Ребенок',
+  spouse: 'Супруг/супруга',
+  grandparent: 'Бабушка/дедушка',
+  grandchild: 'Внук/внучка',
+  sibling: 'Брат/сестра',
+  other: 'Другое',
+}
+
+export interface FamilyMember {
+  id: string
+  full_name: string
+  birth_date?: string
+  email?: string
+  has_credentials: boolean
+  relation_type: RelationType
+  relation_type_display: string
+  custom_relation?: string
   is_active: boolean
   created_at: string
+  is_owner: boolean
+}
+
+export interface FamilyMemberCreate {
+  full_name: string
+  birth_date: string
+  relation_type: RelationType
+  custom_relation?: string
+  email?: string
+}
+
+export interface FamilyMemberUpdate {
+  full_name?: string
+  birth_date?: string
+  relation_type?: RelationType
+  custom_relation?: string
+}
+
+export interface SetCredentials {
+  email: string
+  password: string
+}
+
+export interface FamilyOwnerInfo {
+  id: string
+  full_name?: string
+  email?: string
+  relation_type: RelationType
+  relation_type_display: string
+}
+
+export interface MyFamilyInfo {
+  managed_by: FamilyOwnerInfo[]
+  managing: FamilyMember[]
+  can_detach: boolean
+}
+
+export interface InviteExistingUser {
+  email: string
+  relation_type: RelationType
+  custom_relation?: string
 }
 
 export interface Document {

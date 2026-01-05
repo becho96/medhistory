@@ -2,13 +2,14 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from datetime import date
+import uuid
 
 from app.db.postgres import get_db
 from app.models.user import User
 from app.schemas.document import TimelineResponse, TimelineEvent
 from app.services.document_service import DocumentService
 from app.db.mongodb import document_metadata_collection
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_profile_user_id
 
 router = APIRouter()
 
@@ -21,6 +22,7 @@ async def get_timeline(
     date_from: Optional[str] = None,
     date_to: Optional[str] = None,
     current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
     db: AsyncSession = Depends(get_db)
 ):
     """Get timeline events for user documents
@@ -31,7 +33,7 @@ async def get_timeline(
     # Get documents with filters
     # Convert string filters to lists for DocumentService compatibility
     documents = await DocumentService.get_documents(
-        user_id=current_user.id,
+        user_id=profile_user_id,
         db=db,
         document_type=[document_type] if document_type else None,
         patient_name=[patient_name] if patient_name else None,
@@ -140,6 +142,7 @@ async def get_timeline(
 @router.get("/stats")
 async def get_timeline_stats(
     current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
     db: AsyncSession = Depends(get_db)
 ):
     """Get timeline statistics
@@ -149,7 +152,7 @@ async def get_timeline_stats(
     """
     
     documents = await DocumentService.get_documents(
-        user_id=current_user.id,
+        user_id=profile_user_id,
         db=db,
         limit=10000
     )
@@ -171,7 +174,7 @@ async def get_timeline_stats(
     # Count by specialty (from MongoDB)
     by_specialty = {}
     cursor = document_metadata_collection.find({
-        "user_id": str(current_user.id),
+        "user_id": str(profile_user_id),
         "classification.specialties": {"$exists": True, "$ne": None}
     }, {
         "classification.specialties": 1
@@ -196,6 +199,7 @@ async def get_suggestions(
     q: Optional[str] = Query(None, description="Search substring for suggestions"),
     limit: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
     db: AsyncSession = Depends(get_db)
 ):
     """Get distinct value suggestions for autocomplete filters.
@@ -204,7 +208,7 @@ async def get_suggestions(
     For specialty suggestions, use a separate MongoDB aggregation endpoint.
     """
     values = await DocumentService.get_distinct_field_values(
-        user_id=current_user.id,
+        user_id=profile_user_id,
         db=db,
         field=field,
         q=q,

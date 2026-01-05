@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { FileText, Download, Trash2, FlaskConical, Eye, Upload, ChevronLeft, ChevronRight, List, Clock, Brain, X } from 'lucide-react'
+import { FileText, Download, Trash2, FlaskConical, Eye, Upload, ChevronLeft, ChevronRight, List, Clock, Brain, X, Maximize2, Minimize2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Timeline as VisTimeline, DataSet } from 'vis-timeline/standalone'
 import { documentsService } from '../services/documents'
@@ -94,9 +94,13 @@ export default function Documents() {
   // Timeline-specific state
   const timelineRef = useRef<HTMLDivElement>(null)
   const timelineInstance = useRef<VisTimeline | null>(null)
+  const fullscreenTimelineRef = useRef<HTMLDivElement>(null)
+  const fullscreenTimelineInstance = useRef<VisTimeline | null>(null)
   const eventsMapRef = useRef<Map<string, TimelineEvent>>(new Map())
   const tooltipRef = useRef<HTMLDivElement | null>(null)
   const [lastSelectedDocumentId, setLastSelectedDocumentId] = useState<string | null>(null)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+  const timelineStateRef = useRef<{ range: { start: Date; end: Date } | null }>({ range: null })
   
   // Interpretation mode state
   const [interpretationMode, setInterpretationMode] = useState(false)
@@ -314,7 +318,14 @@ export default function Documents() {
 
   // Timeline visualization effect
   useEffect(() => {
-    if (!timelineRef.current || !timelineData || !timelineData.events || viewMode !== 'timeline') return
+    if (!timelineRef.current || !timelineData || !timelineData.events || viewMode !== 'timeline') {
+      // Clean up timeline if switching away from timeline view
+      if (viewMode !== 'timeline' && timelineInstance.current) {
+        timelineInstance.current.destroy()
+        timelineInstance.current = null
+      }
+      return
+    }
 
     // Reset selection when data changes
     setLastSelectedDocumentId(null)
@@ -425,48 +436,89 @@ export default function Documents() {
     )
 
     // Create or update timeline
-    if (!timelineInstance.current) {
-      timelineInstance.current = new VisTimeline(timelineRef.current, items, {
-        width: '100%',
-        height: '600px',
-        zoomMin: 1000 * 60 * 60 * 24 * 7, // 1 week
-        zoomMax: 1000 * 60 * 60 * 24 * 365 * 10, // 10 years
-        locale: 'ru',
-        orientation: 'top',
-        stack: true,
-        showCurrentTime: false,
-        multiselect: true, // Always enable multiselect
-      })
-    } else {
-      timelineInstance.current.setItems(items)
-    }
-
-    // Remove all existing select event listeners
-    timelineInstance.current.off('select')
+    // Always recreate if container dimensions are not valid (e.g., after fullscreen exit)
+    const container = timelineRef.current
+    const needsRecreate = !timelineInstance.current || 
+      !container || 
+      container.offsetWidth === 0 || 
+      container.offsetHeight === 0
     
-    // Add select event handler with current mode
-    timelineInstance.current.on('select', (properties: any) => {
-      if (properties.items.length > 0) {
-        // Use ref to get current mode value
-        if (interpretationModeRef.current) {
-          // In interpretation mode: update selection
-          setSelectedDocumentsForInterpretation(new Set(properties.items))
-        } else {
-          // Normal mode: open document details (only single selection)
-          const docId = properties.items[0]
-          const event = eventsMapRef.current.get(docId)
-          if (event) {
-            setLastSelectedDocumentId(docId)
-            setSelectedDocumentId(docId)
+    if (needsRecreate) {
+      // Destroy existing instance if it exists
+      if (timelineInstance.current) {
+        timelineInstance.current.destroy()
+        timelineInstance.current = null
+      }
+      
+      // Wait a bit for container to be ready
+      setTimeout(() => {
+        if (timelineRef.current && timelineData && timelineData.events.length > 0) {
+          timelineInstance.current = new VisTimeline(timelineRef.current, items, {
+            width: '100%',
+            height: '600px',
+            zoomMin: 1000 * 60 * 60 * 24 * 7, // 1 week
+            zoomMax: 1000 * 60 * 60 * 24 * 365 * 10, // 10 years
+            locale: 'ru',
+            orientation: 'top',
+            stack: true,
+            showCurrentTime: false,
+            multiselect: true, // Always enable multiselect
+          })
+          
+          // Setup event handlers
+          setupTimelineEventHandlers()
+          
+          // Fit to data
+          if (timelineData.events.length > 0) {
+            timelineInstance.current.fit()
           }
         }
-      } else {
-        // Deselection
-        if (interpretationModeRef.current) {
-          setSelectedDocumentsForInterpretation(new Set())
+      }, 100)
+    } else if (timelineInstance.current) {
+      // Update items and force redraw
+      timelineInstance.current.setItems(items)
+      // Setup event handlers
+      setupTimelineEventHandlers()
+      // Force redraw after a short delay to ensure DOM is ready
+      setTimeout(() => {
+        if (timelineInstance.current && timelineData.events.length > 0) {
+          timelineInstance.current.redraw()
+          timelineInstance.current.fit()
         }
-      }
-    })
+      }, 100)
+    }
+    
+    // Helper function to setup event handlers
+    function setupTimelineEventHandlers() {
+      if (!timelineInstance.current) return
+      
+      // Remove all existing select event listeners
+      timelineInstance.current.off('select')
+      
+      // Add select event handler with current mode
+      timelineInstance.current.on('select', (properties: any) => {
+        if (properties.items.length > 0) {
+          // Use ref to get current mode value
+          if (interpretationModeRef.current) {
+            // In interpretation mode: update selection
+            setSelectedDocumentsForInterpretation(new Set(properties.items))
+          } else {
+            // Normal mode: open document details (only single selection)
+            const docId = properties.items[0]
+            const event = eventsMapRef.current.get(docId)
+            if (event) {
+              setLastSelectedDocumentId(docId)
+              setSelectedDocumentId(docId)
+            }
+          }
+        } else {
+          // Deselection
+          if (interpretationModeRef.current) {
+            setSelectedDocumentsForInterpretation(new Set())
+          }
+        }
+      })
+    }
 
     // Add mouse event listeners for custom tooltip
     const timelineContainer = timelineRef.current
@@ -529,9 +581,15 @@ export default function Documents() {
     timelineContainer.addEventListener('mousemove', handleMouseMove)
     timelineContainer.addEventListener('mouseleave', handleMouseLeave)
 
-    // Fit timeline to data
+    // Fit timeline to data and ensure it's visible
     if (timelineData.events.length > 0) {
-      timelineInstance.current.fit()
+      // Use setTimeout to ensure DOM is ready
+      setTimeout(() => {
+        if (timelineInstance.current && timelineRef.current) {
+          timelineInstance.current.fit()
+          timelineInstance.current.redraw()
+        }
+      }, 50)
     }
 
     return () => {
@@ -542,6 +600,209 @@ export default function Documents() {
       }
     }
   }, [allDocuments, viewMode, timelineData, interpretationMode])
+
+  // Fullscreen timeline visualization effect
+  useEffect(() => {
+    if (!fullscreenTimelineRef.current || !timelineData || !timelineData.events || !isFullscreen) {
+      // Clean up if fullscreen is closed
+      if (!isFullscreen && fullscreenTimelineInstance.current) {
+        fullscreenTimelineInstance.current.destroy()
+        fullscreenTimelineInstance.current = null
+      }
+      return
+    }
+
+    // Store events in a map for quick access (reuse the same map)
+    eventsMapRef.current.clear()
+    timelineData.events.forEach((event) => {
+      eventsMapRef.current.set(event.document_id, event)
+    })
+
+    // Transform data to vis-timeline format (same as regular timeline)
+    const items = new DataSet(
+      timelineData.events.map((event) => {
+        const getDocumentTypeEmoji = (docType: string | undefined, docSubtype: string | undefined): string => {
+          if (!docType) return '📄'
+          const typeLower = docType.toLowerCase()
+          
+          if (typeLower.includes('анализ')) {
+            if (docSubtype) {
+              const subtypeLower = docSubtype.toLowerCase()
+              if (subtypeLower.includes('кров')) return '🩸'
+              if (subtypeLower.includes('моч')) return '💦'
+              if (subtypeLower.includes('кал')) return '💩'
+              if (subtypeLower.includes('гормон')) return '🧪'
+              if (subtypeLower.includes('генетич') || subtypeLower.includes('днк')) return '🧬'
+              if (subtypeLower.includes('микробиолог') || subtypeLower.includes('бактериолог')) return '🦠'
+              if (subtypeLower.includes('аллерг')) return '🤧'
+            }
+            return '🔬'
+          }
+          
+          if (typeLower.includes('инструментальн')) {
+            if (docSubtype) {
+              const subtypeLower = docSubtype.toLowerCase()
+              if (subtypeLower.includes('узи')) return '🔊'
+              if (subtypeLower.includes('мрт') || subtypeLower.includes('кт') || subtypeLower.includes('томограф')) return '🧲'
+              if (subtypeLower.includes('рентген') || subtypeLower.includes('флюорограф')) return '☢️'
+              if (subtypeLower.includes('экг') || subtypeLower.includes('электрокардиограф')) return '💓'
+              if (subtypeLower.includes('эндоскоп') || subtypeLower.includes('гастроскоп') || subtypeLower.includes('колоноскоп')) return '🔍'
+            }
+            return '🏥'
+          }
+          
+          if (typeLower.includes('прием') || typeLower.includes('врач')) return '👨‍⚕️'
+          if (typeLower.includes('функциональн') || typeLower.includes('диагностик')) return '📊'
+          return '📄'
+        }
+        
+        const emoji = getDocumentTypeEmoji(event.document_type, event.document_subtype)
+        
+        let contentHTML = `<div style="line-height: 1.4;">`
+        contentHTML += `<div style="font-size: 12px; font-weight: 700;">${emoji} ${event.document_type || 'Документ'}</div>`
+        
+        if (event.document_subtype) {
+          contentHTML += `<div style="font-size: 10px; color: #6B7280; margin-top: 3px;">Подтип: ${event.document_subtype}</div>`
+        }
+        
+        if (event.specialty) {
+          contentHTML += `<div style="font-size: 10px; color: #6B7280; margin-top: 2px;">Специализация: ${event.specialty}</div>`
+        }
+        
+        contentHTML += `</div>`
+        
+        return {
+          id: event.document_id,
+          content: contentHTML,
+          start: event.date || new Date(),
+          type: 'point',
+          className: 'timeline-item',
+          style: `background-color: ${event.color}; border-color: ${event.color};`,
+        }
+      })
+    )
+
+    // Always recreate timeline instance for fullscreen to ensure clean state
+    // Destroy existing instance if it exists
+    if (fullscreenTimelineInstance.current) {
+      fullscreenTimelineInstance.current.destroy()
+      fullscreenTimelineInstance.current = null
+    }
+
+    // Create new timeline instance
+    fullscreenTimelineInstance.current = new VisTimeline(fullscreenTimelineRef.current, items, {
+      width: '100%',
+      height: '100%', // Will be set via container height
+      zoomMin: 1000 * 60 * 60 * 24 * 7, // 1 week
+      zoomMax: 1000 * 60 * 60 * 24 * 365 * 10, // 10 years
+      locale: 'ru',
+      orientation: 'top',
+      stack: true,
+      showCurrentTime: false,
+      multiselect: true,
+    })
+    
+    // Restore saved state if available
+    if (timelineStateRef.current.range) {
+      fullscreenTimelineInstance.current.setWindow(
+        timelineStateRef.current.range.start,
+        timelineStateRef.current.range.end
+      )
+    } else if (timelineData.events.length > 0) {
+      fullscreenTimelineInstance.current.fit()
+    }
+
+    // Remove all existing select event listeners
+    fullscreenTimelineInstance.current.off('select')
+    
+    // Add select event handler
+    fullscreenTimelineInstance.current.on('select', (properties: any) => {
+      if (properties.items.length > 0) {
+        if (interpretationModeRef.current) {
+          setSelectedDocumentsForInterpretation(new Set(properties.items))
+        } else {
+          const docId = properties.items[0]
+          const event = eventsMapRef.current.get(docId)
+          if (event) {
+            setLastSelectedDocumentId(docId)
+            setSelectedDocumentId(docId)
+          }
+        }
+      } else {
+        if (interpretationModeRef.current) {
+          setSelectedDocumentsForInterpretation(new Set())
+        }
+      }
+    })
+
+    // Add mouse event listeners for custom tooltip
+    const timelineContainer = fullscreenTimelineRef.current
+    
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!tooltipRef.current || !fullscreenTimelineInstance.current) return
+      
+      try {
+        if (typeof fullscreenTimelineInstance.current.getEventProperties === 'function') {
+          const props = fullscreenTimelineInstance.current.getEventProperties(e as any)
+          
+          if (props && props.item !== null && props.item !== undefined) {
+            const itemId = String(props.item)
+            const event = eventsMapRef.current.get(itemId)
+            
+            if (event) {
+              tooltipRef.current.innerHTML = createTooltipHTML(event)
+              tooltipRef.current.style.display = 'block'
+              tooltipRef.current.style.left = `${e.clientX + 15}px`
+              tooltipRef.current.style.top = `${e.clientY + 15}px`
+              return
+            }
+          }
+        }
+        
+        const target = e.target as HTMLElement
+        const visItem = target.closest('.vis-item')
+        
+        if (visItem) {
+          const itemId = visItem.getAttribute('data-item-id') || 
+                        visItem.getAttribute('data-id') ||
+                        visItem.className.match(/vis-item-(\d+)/)?.[1]
+          
+          if (itemId) {
+            const event = eventsMapRef.current.get(itemId)
+            
+            if (event) {
+              tooltipRef.current.innerHTML = createTooltipHTML(event)
+              tooltipRef.current.style.display = 'block'
+              tooltipRef.current.style.left = `${e.clientX + 15}px`
+              tooltipRef.current.style.top = `${e.clientY + 15}px`
+              return
+            }
+          }
+        }
+        
+        tooltipRef.current.style.display = 'none'
+      } catch (error) {
+        console.error('Tooltip error:', error)
+      }
+    }
+    
+    const handleMouseLeave = () => {
+      if (tooltipRef.current) {
+        tooltipRef.current.style.display = 'none'
+      }
+    }
+    
+    timelineContainer.addEventListener('mousemove', handleMouseMove)
+    timelineContainer.addEventListener('mouseleave', handleMouseLeave)
+
+    return () => {
+      timelineContainer.removeEventListener('mousemove', handleMouseMove)
+      timelineContainer.removeEventListener('mouseleave', handleMouseLeave)
+      if (tooltipRef.current) {
+        tooltipRef.current.style.display = 'none'
+      }
+    }
+  }, [isFullscreen, timelineData, interpretationMode])
 
   // Restore selection after closing modal (for timeline) - only in normal mode
   useEffect(() => {
@@ -583,8 +844,76 @@ export default function Documents() {
         timelineInstance.current.destroy()
         timelineInstance.current = null
       }
+      if (fullscreenTimelineInstance.current) {
+        fullscreenTimelineInstance.current.destroy()
+        fullscreenTimelineInstance.current = null
+      }
     }
   }, [])
+
+  // Handle Escape key for exiting fullscreen
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false)
+      }
+    }
+    
+    if (isFullscreen) {
+      document.addEventListener('keydown', handleEscape)
+      // Prevent body scroll when fullscreen
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    
+    return () => {
+      document.removeEventListener('keydown', handleEscape)
+      if (!isFullscreen) {
+        document.body.style.overflow = ''
+      }
+    }
+  }, [isFullscreen])
+
+  // Functions for fullscreen mode
+  const enterFullscreen = () => {
+    // Save current timeline state (range/zoom)
+    if (timelineInstance.current) {
+      const range = timelineInstance.current.getWindow()
+      timelineStateRef.current = { range }
+    }
+    setIsFullscreen(true)
+  }
+
+  const exitFullscreen = () => {
+    // Save fullscreen timeline state before exiting
+    if (fullscreenTimelineInstance.current) {
+      const range = fullscreenTimelineInstance.current.getWindow()
+      timelineStateRef.current = { range }
+      
+      // Destroy fullscreen timeline instance to ensure clean re-initialization
+      fullscreenTimelineInstance.current.destroy()
+      fullscreenTimelineInstance.current = null
+    }
+    setIsFullscreen(false)
+    
+    // Force regular timeline to redraw after exiting fullscreen
+    // Use setTimeout to ensure DOM is ready
+    setTimeout(() => {
+      if (timelineInstance.current && timelineRef.current && timelineData && timelineData.events.length > 0) {
+        timelineInstance.current.redraw()
+        // Restore saved state if available
+        if (timelineStateRef.current.range) {
+          timelineInstance.current.setWindow(
+            timelineStateRef.current.range.start,
+            timelineStateRef.current.range.end
+          )
+        } else {
+          timelineInstance.current.fit()
+        }
+      }
+    }, 200)
+  }
 
   // Все фильтры применяются на сервере
   const filteredDocuments = documents
@@ -1002,7 +1331,16 @@ export default function Documents() {
                   <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4A90E2]"></div>
                 </div>
               ) : timelineData && timelineData.events.length > 0 ? (
-                <div ref={timelineRef} className="timeline-container rounded-xl overflow-hidden"></div>
+                <div className="relative">
+                  <div ref={timelineRef} className="timeline-container rounded-xl overflow-hidden"></div>
+                  <button
+                    onClick={enterFullscreen}
+                    className="absolute top-2 right-2 p-2 bg-white/90 hover:bg-white border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-all z-10 text-gray-600 hover:text-gray-900"
+                    title="Полноэкранный режим"
+                  >
+                    <Maximize2 className="h-5 w-5" />
+                  </button>
+                </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-96">
                   <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 flex items-center justify-center">
@@ -1042,9 +1380,98 @@ export default function Documents() {
         )}
       </div>
 
+      {/* Fullscreen Timeline Modal */}
+      {isFullscreen && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm"
+          onClick={(e) => {
+            // Exit fullscreen when clicking outside the timeline container
+            if (e.target === e.currentTarget) {
+              exitFullscreen()
+            }
+          }}
+        >
+          <div className="h-full flex flex-col bg-white">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-200 bg-white shadow-sm">
+              <div className="flex items-center gap-3">
+                <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
+                  Таймлайн - Полноэкранный режим
+                </h3>
+                {timelineData?.date_range && (
+                  <p className="text-xs sm:text-sm text-gray-500 hidden sm:inline">
+                    Период: {new Date(timelineData.date_range.start).toLocaleDateString('ru-RU')}{' '}
+                    - {new Date(timelineData.date_range.end).toLocaleDateString('ru-RU')}
+                  </p>
+                )}
+              </div>
+              
+              <div className="flex items-center gap-2">
+                {interpretationMode && (
+                  <div className="flex items-center gap-2 mr-2">
+                    <button
+                      onClick={() => {
+                        setInterpretationMode(false)
+                        setSelectedDocumentsForInterpretation(new Set())
+                        if (fullscreenTimelineInstance.current) {
+                          fullscreenTimelineInstance.current.setSelection([])
+                        }
+                      }}
+                      className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 font-medium text-xs sm:text-sm transition-colors"
+                    >
+                      <X className="h-4 w-4" />
+                      Отмена
+                    </button>
+                    <button
+                      onClick={() => setShowInterpretationConfirmModal(true)}
+                      disabled={selectedDocumentsForInterpretation.size === 0}
+                      className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium text-xs sm:text-sm transition-colors shadow-lg shadow-purple-200/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Brain className="h-4 w-4" />
+                      Отправить ({selectedDocumentsForInterpretation.size})
+                    </button>
+                  </div>
+                )}
+                <button
+                  onClick={exitFullscreen}
+                  className="p-2 rounded-lg text-gray-600 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                  title="Выйти из полноэкранного режима (Esc)"
+                >
+                  <Minimize2 className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Timeline Container */}
+            <div className="flex-1 overflow-hidden p-4 sm:p-6">
+              {isTimelineLoading ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4A90E2]"></div>
+                </div>
+              ) : timelineData && timelineData.events.length > 0 ? (
+                <div 
+                  ref={fullscreenTimelineRef} 
+                  className="timeline-container rounded-xl overflow-hidden"
+                  style={{ height: 'calc(100vh - 80px)' }}
+                  onClick={(e) => e.stopPropagation()}
+                ></div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full">
+                  <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 flex items-center justify-center">
+                    <Clock className="h-8 w-8 text-gray-400" />
+                  </div>
+                  <p className="text-lg font-semibold text-gray-900">Нет событий для отображения</p>
+                  <p className="text-sm text-gray-500 mt-2">Загрузите документы, чтобы увидеть их на временной шкале</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Labs Modal */}
       {openLabsFor && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden max-h-[90vh] flex flex-col">
             <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-purple-50 to-white">
               <div className="flex items-center gap-2 sm:gap-3">

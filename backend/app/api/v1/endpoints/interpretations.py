@@ -2,8 +2,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import List
 from uuid import UUID
+import uuid
 
-from app.api.deps import get_current_user
+from app.api.deps import get_current_user, get_profile_user_id
 from app.db.postgres import get_db
 from app.models.user import User
 from app.schemas.interpretation import (
@@ -21,12 +22,15 @@ router = APIRouter()
 async def create_interpretation(
     data: InterpretationCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id)
 ):
     """
     Создать новую AI-интерпретацию для выбранных документов
     
     - **document_ids**: список ID документов для анализа (минимум 1)
+    
+    Use X-Profile-Id header to create interpretation for a family member's documents.
     
     Возвращает созданную интерпретацию со статусом 'pending' или 'processing'.
     Обработка происходит асинхронно, результат будет доступен позже.
@@ -34,7 +38,7 @@ async def create_interpretation(
     try:
         interpretation = await interpretation_service.create_interpretation(
             db=db,
-            user_id=current_user.id,
+            user_id=profile_user_id,
             document_ids=data.document_ids
         )
         
@@ -77,7 +81,8 @@ async def get_interpretations(
     skip: int = 0,
     limit: int = 100,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id)
 ):
     """
     Получить список всех интерпретаций пользователя
@@ -87,7 +92,7 @@ async def get_interpretations(
     """
     interpretations = await interpretation_service.get_user_interpretations(
         db=db,
-        user_id=current_user.id,
+        user_id=profile_user_id,
         skip=skip,
         limit=limit
     )
@@ -121,7 +126,7 @@ async def get_interpretations(
     from app.models.interpretation import Interpretation
     from sqlalchemy import select, func
     count_query = select(func.count()).select_from(Interpretation).where(
-        Interpretation.user_id == current_user.id
+        Interpretation.user_id == profile_user_id
     )
     count_result = await db.execute(count_query)
     total = count_result.scalar()
@@ -133,7 +138,8 @@ async def get_interpretations(
 async def get_interpretation(
     interpretation_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id)
 ):
     """
     Получить конкретную интерпретацию по ID
@@ -141,7 +147,7 @@ async def get_interpretation(
     interpretation = await interpretation_service.get_interpretation_by_id(
         db=db,
         interpretation_id=interpretation_id,
-        user_id=current_user.id
+        user_id=profile_user_id
     )
     
     if not interpretation:
@@ -177,7 +183,8 @@ async def get_interpretation(
 async def delete_interpretation(
     interpretation_id: UUID,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id)
 ):
     """
     Удалить интерпретацию
@@ -185,7 +192,7 @@ async def delete_interpretation(
     success = await interpretation_service.delete_interpretation(
         db=db,
         interpretation_id=interpretation_id,
-        user_id=current_user.id
+        user_id=profile_user_id
     )
     
     if not success:

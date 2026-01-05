@@ -135,12 +135,34 @@ export const documentsService = {
     return { has_labs: !!response.data.has_labs, count: response.data.count ?? 0 }
   },
 
-  async listAnalytes(): Promise<{ name: string; count: number }[]> {
+  // New categorized analytes response
+  async listAnalytes(): Promise<{
+    categories: Array<{
+      name: string
+      analytes: Array<{
+        canonical_name: string
+        standard_unit: string | null
+        count: number
+      }>
+    }>
+  }> {
     const response = await api.get(`/documents/labs/analytes`)
-    return response.data.analytes ?? []
+    return response.data
   },
 
-  async getLabTimeSeries(analyte: string): Promise<{ analyte: string; points: Array<{ date?: string; value_num: number; unit?: string | null; document_id?: string; reference_range?: string | null; flag?: string | null }> }> {
+  async getLabTimeSeries(analyte: string): Promise<{
+    analyte: string
+    standard_unit: string | null
+    category: string
+    points: Array<{
+      date?: string
+      value_num: number
+      unit?: string | null
+      document_id?: string
+      reference_range?: string | null
+      flag?: string | null
+    }>
+  }> {
     const response = await api.get(`/documents/labs/timeseries`, { params: { analyte } })
     return response.data
   },
