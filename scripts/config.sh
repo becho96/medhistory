@@ -9,7 +9,7 @@
 # Локальные пути
 export PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 export SCRIPTS_DIR="${PROJECT_ROOT}/scripts"
-export ENV_FILE="${PROJECT_ROOT}/.env.local"
+    export ENV_FILE="${PROJECT_ROOT}/.env.local"
 
 # Цвета для вывода
 export COLOR_GREEN='\033[0;32m'

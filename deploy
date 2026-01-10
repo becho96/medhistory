@@ -59,7 +59,7 @@ done
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$SCRIPT_DIR"
 ENV_FILE="${PROJECT_ROOT}/.env.local"
-PROJECT_NAME="medhistory"
+        PROJECT_NAME="medhistory"
 
 # Цвета
 GREEN='\033[0;32m'
@@ -94,73 +94,73 @@ set -a
 source "$ENV_FILE"
 set +a
 print_success "Загружена конфигурация"
-
-cd "$PROJECT_ROOT"
-
-# Остановка старых контейнеров
-if [ "$CLEAN_DATA" = true ]; then
-    print_warning "⚠️  ВНИМАНИЕ: Будут удалены ВСЕ ДАННЫЕ БД!"
-    read -p "Вы уверены? Введите 'YES' для подтверждения: " confirmation
-    if [ "$confirmation" != "YES" ]; then
-        print_error "Отменено пользователем"
-        exit 1
-    fi
-    print_info "🗑️  Остановка контейнеров и удаление данных..."
+    
+    cd "$PROJECT_ROOT"
+    
+    # Остановка старых контейнеров
+    if [ "$CLEAN_DATA" = true ]; then
+        print_warning "⚠️  ВНИМАНИЕ: Будут удалены ВСЕ ДАННЫЕ БД!"
+        read -p "Вы уверены? Введите 'YES' для подтверждения: " confirmation
+        if [ "$confirmation" != "YES" ]; then
+            print_error "Отменено пользователем"
+            exit 1
+        fi
+        print_info "🗑️  Остановка контейнеров и удаление данных..."
     docker compose -p $PROJECT_NAME --env-file "$ENV_FILE" down -v
-else
-    print_info "🛑 Остановка старых контейнеров (данные БД сохраняются)..."
-    docker compose -p $PROJECT_NAME --env-file "$ENV_FILE" down || true
-fi
-
-# Пересборка если нужно
-if [ "$UPDATE_ONLY" = false ]; then
-    if [ "$REBUILD" = true ]; then
-        print_info "🔨 Пересборка образов..."
-        docker compose -p $PROJECT_NAME --env-file "$ENV_FILE" build --no-cache
     else
-        print_info "🔨 Сборка образов..."
-        docker compose -p $PROJECT_NAME --env-file "$ENV_FILE" build
+        print_info "🛑 Остановка старых контейнеров (данные БД сохраняются)..."
+    docker compose -p $PROJECT_NAME --env-file "$ENV_FILE" down || true
     fi
-else
-    print_info "⚡ Быстрое обновление (без пересборки образов)..."
-fi
-
-# Запуск контейнеров
-print_info "🚀 Запуск контейнеров..."
+    
+    # Пересборка если нужно
+    if [ "$UPDATE_ONLY" = false ]; then
+        if [ "$REBUILD" = true ]; then
+            print_info "🔨 Пересборка образов..."
+        docker compose -p $PROJECT_NAME --env-file "$ENV_FILE" build --no-cache
+        else
+            print_info "🔨 Сборка образов..."
+        docker compose -p $PROJECT_NAME --env-file "$ENV_FILE" build
+        fi
+    else
+        print_info "⚡ Быстрое обновление (без пересборки образов)..."
+    fi
+    
+    # Запуск контейнеров
+    print_info "🚀 Запуск контейнеров..."
 docker compose -p $PROJECT_NAME --env-file "$ENV_FILE" up -d
-
-# Запуск мониторинга если нужно
-if [ "$WITH_MONITORING" = true ]; then
-    print_info "📊 Запуск мониторинга..."
+    
+    # Запуск мониторинга если нужно
+    if [ "$WITH_MONITORING" = true ]; then
+        print_info "📊 Запуск мониторинга..."
     docker compose -p $PROJECT_NAME -f docker-compose.monitoring.yml --env-file "$ENV_FILE" up -d
-fi
-
-# Ожидание готовности
-print_info "⏳ Ожидание готовности сервисов..."
-sleep 10
-
-# Проверка статуса
-print_info "📊 Статус сервисов:"
+    fi
+    
+    # Ожидание готовности
+    print_info "⏳ Ожидание готовности сервисов..."
+    sleep 10
+    
+    # Проверка статуса
+    print_info "📊 Статус сервисов:"
 docker compose -p $PROJECT_NAME --env-file "$ENV_FILE" ps
-
-# Вывод информации
-print_header "✅ Развертывание завершено!"
-echo ""
-print_success "🌐 Доступные сервисы:"
-echo "   • Frontend:         http://localhost:5173"
-echo "   • Backend API:      http://localhost:8000"
-echo "   • API Docs:         http://localhost:8000/docs"
-echo "   • MinIO Console:    http://localhost:9001"
-if [ "$WITH_MONITORING" = true ]; then
-    echo "   • Grafana:          http://localhost:3000"
-    echo "   • Prometheus:       http://localhost:9090"
-fi
-
-echo ""
-print_info "📝 Полезные команды:"
+    
+    # Вывод информации
+    print_header "✅ Развертывание завершено!"
+    echo ""
+    print_success "🌐 Доступные сервисы:"
+            echo "   • Frontend:         http://localhost:5173"
+            echo "   • Backend API:      http://localhost:8000"
+            echo "   • API Docs:         http://localhost:8000/docs"
+            echo "   • MinIO Console:    http://localhost:9001"
+            if [ "$WITH_MONITORING" = true ]; then
+                echo "   • Grafana:          http://localhost:3000"
+                echo "   • Prometheus:       http://localhost:9090"
+            fi
+    
+    echo ""
+    print_info "📝 Полезные команды:"
 echo "   • Просмотр логов:    docker compose -p $PROJECT_NAME logs -f"
 echo "   • Остановка:         docker compose -p $PROJECT_NAME stop"
 echo "   • Перезапуск:        ./deploy"
-echo ""
+    echo ""
 
 print_success "🎉 Готово!"

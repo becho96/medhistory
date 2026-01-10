@@ -47,7 +47,7 @@ scripts/
 nano scripts/config.sh
 
 # Или через переменные окружения
-export PROD_SERVER_IP="46.21.244.23"
+export PROD_SERVER_IP="158.160.99.232"
 export PROD_SERVER_USER="yc-user"
 ```
 
@@ -123,10 +123,10 @@ nano .env.production  # Заполните все переменные
 ./scripts/prod/diagnose.sh
 
 # Просмотр логов
-ssh yc-user@46.21.244.23 'cd ~/medhistory && ./scripts/utils/logs.sh backend -f'
+ssh yc-user@158.160.99.232 'cd ~/medhistory && ./scripts/utils/logs.sh backend -f'
 
 # Проверка статуса
-ssh yc-user@46.21.244.23 'cd ~/medhistory && ./scripts/utils/status.sh'
+ssh yc-user@158.160.99.232 'cd ~/medhistory && ./scripts/utils/status.sh'
 ```
 
 ---
@@ -142,7 +142,7 @@ ssh yc-user@46.21.244.23 'cd ~/medhistory && ./scripts/utils/status.sh'
 ./scripts/utils/backup.sh ./backups
 
 # Создать бэкап на продакшне
-ssh yc-user@46.21.244.23 'cd ~/medhistory && ./scripts/utils/backup.sh ~/backups'
+ssh yc-user@158.160.99.232 'cd ~/medhistory && ./scripts/utils/backup.sh ~/backups'
 
 # Восстановить из бэкапа
 ./scripts/utils/restore.sh ./backups/medhistory_backup_20251028_120000.tar.gz
@@ -189,7 +189,7 @@ open http://localhost:5173
 ./scripts/prod/deploy.sh
 
 # 4. Проверяем продакшн
-curl http://46.21.244.23/health
+curl http://158.160.99.232/health
 ```
 
 ### Сценарий 2: Быстрый фикс только в backend
@@ -200,7 +200,7 @@ curl http://46.21.244.23/health
 ./scripts/prod/update-backend.sh
 
 # 3. Проверяем логи
-ssh yc-user@46.21.244.23 'cd ~/medhistory && ./scripts/utils/logs.sh backend --tail=50'
+ssh yc-user@158.160.99.232 'cd ~/medhistory && ./scripts/utils/logs.sh backend --tail=50'
 ```
 
 ### Сценарий 3: Что-то сломалось на продакшне
@@ -210,10 +210,10 @@ ssh yc-user@46.21.244.23 'cd ~/medhistory && ./scripts/utils/logs.sh backend --t
 ./scripts/prod/diagnose.sh
 
 # 2. Смотрим логи в реальном времени
-ssh yc-user@46.21.244.23 'cd ~/medhistory && ./scripts/utils/logs.sh -f'
+ssh yc-user@158.160.99.232 'cd ~/medhistory && ./scripts/utils/logs.sh -f'
 
 # 3. Откат из бэкапа (если нужно)
-ssh yc-user@46.21.244.23
+ssh yc-user@158.160.99.232
 cd ~/medhistory
 ./scripts/utils/restore.sh ~/backups/medhistory_backup_YYYYMMDD_HHMMSS.tar.gz
 ```
@@ -272,10 +272,10 @@ ls -la scripts/config.sh
 ### SSH подключение не работает
 ```bash
 # Проверить доступ
-ssh yc-user@46.21.244.23 'echo OK'
+ssh yc-user@158.160.99.232 'echo OK'
 
 # Добавить ключ
-ssh-copy-id yc-user@46.21.244.23
+ssh-copy-id yc-user@158.160.99.232
 ```
 
 ### Переменные окружения не подтягиваются
@@ -301,7 +301,7 @@ cat .env.production | grep -v PASSWORD | grep -v SECRET
 
 1. **Всегда делайте бэкап перед обновлением**
    ```bash
-   ssh yc-user@46.21.244.23 'cd ~/medhistory && ./scripts/utils/backup.sh ~/backups'
+   ssh yc-user@158.160.99.232 'cd ~/medhistory && ./scripts/utils/backup.sh ~/backups'
    ```
 
 2. **Тестируйте локально перед деплоем**
@@ -316,12 +316,12 @@ cat .env.production | grep -v PASSWORD | grep -v SECRET
 
 4. **Мониторьте логи после деплоя**
    ```bash
-   ssh yc-user@46.21.244.23 'cd ~/medhistory && ./scripts/utils/logs.sh -f'
+   ssh yc-user@158.160.99.232 'cd ~/medhistory && ./scripts/utils/logs.sh -f'
    ```
 
 5. **Проверяйте health после изменений**
    ```bash
-   curl http://46.21.244.23/health
+   curl http://158.160.99.232/health
    ```
 
 ---

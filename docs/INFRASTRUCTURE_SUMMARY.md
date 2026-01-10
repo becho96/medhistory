@@ -33,7 +33,7 @@
 │  (Разработка)│     │(Тестирование)│     │  (Боевой)   │
 └─────────────┘     └─────────────┘     └─────────────┘
    localhost           localhost          Yandex Cloud
-   5173/8000           8080/8001          46.21.244.23
+   5173/8000           8080/8001          158.160.99.232
 ```
 
 ### Файловая структура
@@ -132,7 +132,7 @@ git checkout main
 git merge develop
 
 ./deploy production
-# Деплой на http://46.21.244.23
+# Деплой на http://158.160.99.232
 
 # Мониторинг
 # Проверка работы
@@ -415,7 +415,7 @@ openssl rand -base64 32
 
 ```bash
 # На production сервере
-ssh yc-user@46.21.244.23
+ssh yc-user@158.160.99.232
 cd ~
 mv medhistory medhistory_broken
 mv medhistory_old_YYYYMMDD_HHMMSS medhistory

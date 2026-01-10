@@ -1,0 +1,98 @@
+name: Deploy to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Branch, tag or commit SHA to deploy'
+        required: true
+        default: 'main'
+        type: string
+      service:
+        description: 'Service to deploy'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - backend
+          - frontend
+
+env:
+  SERVER_IP: ${{ secrets.SERVER_IP }}
+  SERVER_USER: ${{ secrets.SERVER_USER }}
+  DEPLOY_PATH: ~/medhistory
+
+jobs:
+  deploy:
+    name: Deploy ${{ inputs.service }} from ${{ inputs.ref }}
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Add server to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+
+      - name: Deploy to server
+        run: |
+          echo "🚀 Deploying ${{ inputs.service }} from ref: ${{ inputs.ref }}"
+          
+          # Sync files to server (excluding sensitive and generated files)
+          rsync -avz --delete \
+            --exclude '.git' \
+            --exclude '.github' \
+            --exclude 'node_modules' \
+            --exclude '__pycache__' \
+            --exclude '.env' \
+            --exclude '.env.production' \
+            --exclude 'venv' \
+            --exclude '*.pyc' \
+            --exclude '.DS_Store' \
+            --exclude 'frontend/.env' \
+            ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:${{ env.DEPLOY_PATH }}/
+          
+          # Build and restart containers
+          if [ "${{ inputs.service }}" = "all" ]; then
+            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd ${{ env.DEPLOY_PATH }} && docker compose build --no-cache && docker compose up -d"
+          elif [ "${{ inputs.service }}" = "backend" ]; then
+            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd ${{ env.DEPLOY_PATH }} && docker compose build --no-cache backend && docker compose up -d backend"
+          elif [ "${{ inputs.service }}" = "frontend" ]; then
+            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd ${{ env.DEPLOY_PATH }} && docker compose build --no-cache frontend && docker compose up -d frontend"
+          fi
+
+      - name: Health check
+        run: |
+          echo "⏳ Waiting for services to start..."
+          sleep 10
+          
+          echo "🔍 Checking backend health..."
+          curl -sf --max-time 10 http://${{ secrets.SERVER_IP }}:8000/docs > /dev/null && echo "✅ Backend is healthy" || echo "⚠️ Backend check failed"
+          
+          echo "🔍 Checking frontend health..."
+          curl -sf --max-time 10 http://${{ secrets.SERVER_IP }}/ > /dev/null && echo "✅ Frontend is healthy" || echo "⚠️ Frontend check failed"
+
+      - name: Deployment summary
+        run: |
+          echo "## 🎉 Deployment Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Parameter | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Ref** | \`${{ inputs.ref }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Service** | ${{ inputs.service }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Server** | ${{ secrets.SERVER_IP }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
+          echo "- [Frontend](http://${{ secrets.SERVER_IP }}/)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Backend API](http://${{ secrets.SERVER_IP }}:8000/docs)" >> $GITHUB_STEP_SUMMARY
+

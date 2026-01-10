@@ -614,14 +614,40 @@ async def get_lab_timeseries(
     analyte_data = analyte_normalization_service_db.get_analyte(analyte)
     
     # Определяем, это процентный или абсолютный вариант анализа
-    is_percentage_analyte = analyte.endswith("(%)")
-    is_absolute_analyte = analyte.endswith("(абс)")
+    # Названия в БД с пробелом: "Лимфоциты (%)", "Лимфоциты (абс)"
+    is_percentage_analyte = analyte.endswith(" (%)")
+    is_absolute_analyte = analyte.endswith(" (абс)")
     
     # Собираем все синонимы для поиска
     if analyte_data:
-        synonyms = analyte_data.synonyms if analyte_data.synonyms else [analyte]
+        synonyms = list(analyte_data.synonyms) if analyte_data.synonyms else [analyte]
         standard_unit = analyte_data.standard_unit
         category = analyte_data.category_name
+        
+        # Для анализов с двойными версиями (% и абс) добавляем синонимы парного анализа
+        # Это нужно потому что в MongoDB может быть "Нейтрофилы" с unit="%" 
+        # а не "Нейтрофилы %" как синоним
+        dual_pairs = {
+            "Лимфоциты (%)": "Лимфоциты (абс)",
+            "Лимфоциты (абс)": "Лимфоциты (%)",
+            "Нейтрофилы (%)": "Нейтрофилы (абс)",
+            "Нейтрофилы (абс)": "Нейтрофилы (%)",
+            "Моноциты (%)": "Моноциты (абс)",
+            "Моноциты (абс)": "Моноциты (%)",
+            "Эозинофилы (%)": "Эозинофилы (абс)",
+            "Эозинофилы (абс)": "Эозинофилы (%)",
+            "Базофилы (%)": "Базофилы (абс)",
+            "Базофилы (абс)": "Базофилы (%)",
+        }
+        
+        if analyte in dual_pairs:
+            paired_analyte = dual_pairs[analyte]
+            paired_data = analyte_normalization_service_db.get_analyte(paired_analyte)
+            if paired_data and paired_data.synonyms:
+                # Добавляем синонимы парного анализа для расширенного поиска
+                synonyms.extend(paired_data.synonyms)
+                # Убираем дубликаты
+                synonyms = list(set(synonyms))
     else:
         # Если анализ не в справочнике, ищем по точному совпадению
         synonyms = [analyte]

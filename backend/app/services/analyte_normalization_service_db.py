@@ -284,7 +284,8 @@ class AnalyteNormalizationServiceDB:
         self, 
         value: Any, 
         from_unit: Optional[str], 
-        canonical_name: str
+        canonical_name: str,
+        strict: bool = True
     ) -> Tuple[Optional[float], Optional[str]]:
         """
         Конвертирует значение в стандартную единицу измерения.
@@ -293,9 +294,12 @@ class AnalyteNormalizationServiceDB:
             value: Значение анализа (строка или число)
             from_unit: Исходная единица измерения
             canonical_name: Каноническое название анализа
+            strict: Если True, возвращает None для несовместимых единиц.
+                    Если False, возвращает исходное значение без конвертации.
             
         Returns:
             Кортеж (конвертированное_значение, стандартная_единица)
+            Возвращает (None, None) если единица несовместима (в strict режиме)
         """
         analyte = self.get_analyte(canonical_name)
         if not analyte:
@@ -323,8 +327,12 @@ class AnalyteNormalizationServiceDB:
             if normalized_unit.lower() in analyte.conversions:
                 coefficient = analyte.conversions[normalized_unit.lower()]
                 return numeric_value * coefficient, analyte.standard_unit
+            
+            # Конверсия не найдена - единица несовместима
+            if strict:
+                return None, None
         
-        # Если конвертация не найдена, возвращаем исходное значение
+        # Если единица не указана или strict=False, возвращаем исходное значение
         return numeric_value, analyte.standard_unit
     
     def normalize_and_convert(

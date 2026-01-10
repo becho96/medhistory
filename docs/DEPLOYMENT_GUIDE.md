@@ -82,7 +82,7 @@
 ### 🚀 Production (Боевой сервер)
 
 **Назначение:** Реальные пользователи  
-**Расположение:** Яндекс.Облако (46.21.244.23)  
+**Расположение:** Яндекс.Облако (158.160.99.232)  
 **Конфигурация:** `.env.production`  
 **Команда запуска:** `./deploy production`
 
@@ -93,9 +93,9 @@
 - SSL/TLS шифрование (опционально)
 
 **Доступные сервисы:**
-- Frontend: http://46.21.244.23
-- API Docs: http://46.21.244.23/docs
-- Grafana: http://46.21.244.23:3000
+- Frontend: http://158.160.99.232
+- API Docs: http://158.160.99.232/docs
+- Grafana: http://158.160.99.232:3000
 
 ---
 
@@ -404,23 +404,23 @@ git push origin v1.2.0
 
 ```bash
 # Откройте приложение
-open http://46.21.244.23
+open http://158.160.99.232
 
 # Проверьте API
-curl http://46.21.244.23/health
+curl http://158.160.99.232/health
 
 # Проверьте документацию
-open http://46.21.244.23/docs
+open http://158.160.99.232/docs
 ```
 
 #### 6. Мониторинг после деплоя
 
 ```bash
 # Просмотр логов (первые 5 минут)
-ssh yc-user@46.21.244.23 'cd ~/medhistory && docker compose -f docker-compose.base.yml -f docker-compose.prod.yml logs -f'
+ssh yc-user@158.160.99.232 'cd ~/medhistory && docker compose -f docker-compose.base.yml -f docker-compose.prod.yml logs -f'
 
 # Мониторинг в Grafana
-open http://46.21.244.23:3000
+open http://158.160.99.232:3000
 ```
 
 ---
@@ -433,7 +433,7 @@ open http://46.21.244.23:3000
 
 ```bash
 # На сервере автоматически создается архив старой версии
-ssh yc-user@46.21.244.23
+ssh yc-user@158.160.99.232
 
 # Найдите бэкап
 ls -la ~/ | grep medhistory_old
@@ -474,13 +474,13 @@ git checkout v1.1.0
 
 ```bash
 # Проверка SSH ключа
-ssh -v yc-user@46.21.244.23
+ssh -v yc-user@158.160.99.232
 
 # Проверка IP адреса
 cat .env.production | grep PROD_SERVER_IP
 
 # Проверка фаервола
-ping 46.21.244.23
+ping 158.160.99.232
 ```
 
 ### Проблема: Docker контейнеры не запускаются
@@ -530,7 +530,7 @@ VITE_API_URL=http://localhost:8000
 VITE_API_URL=http://localhost:8001
 
 # Для production:
-VITE_API_URL=http://46.21.244.23
+VITE_API_URL=http://158.160.99.232
 
 # Пересоберите frontend
 ./deploy <env> --rebuild
@@ -572,7 +572,7 @@ docker compose logs --tail=100
 docker compose logs -f backend
 
 # Логи на production
-ssh yc-user@46.21.244.23 'cd ~/medhistory && docker compose -f docker-compose.base.yml -f docker-compose.prod.yml logs -f backend'
+ssh yc-user@158.160.99.232 'cd ~/medhistory && docker compose -f docker-compose.base.yml -f docker-compose.prod.yml logs -f backend'
 ```
 
 ### Бэкапы
