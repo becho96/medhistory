@@ -1,45 +1,18 @@
 Виртуальная машина MedHistory
 ================================
-ID: fhmsq7s4569qgl1oga4p
+ID: fhmibfqsd70cr6e8950t
 Имя: medhistory-server
-IP: 158.160.96.107
+IP: 158.160.99.232
+Внутренний IP: 10.128.0.6
 Зона: ru-central1-a
 Конфигурация: 4 vCPU, 8 GB RAM, 50 GB SSD
-Дата создания: Tue Oct 28 18:46:11 MSK 2025
+Дата создания: 2026-01-10
 
 SSH подключение:
-================
-Пользователь: yc-user (НЕ ubuntu!)
+ssh yc-user@158.160.99.232
 
-Простое подключение:
-ssh -l yc-user 158.160.96.107
+Удаление ВМ:
+yc compute instance delete fhmibfqsd70cr6e8950t
 
-Или с явным указанием ключа:
-ssh -i ~/.ssh/id_rsa -l yc-user 158.160.96.107
-
-Через YC CLI:
-/Users/boris/yandex-cloud/bin/yc compute ssh \
-  --id fhmsq7s4569qgl1oga4p \
-  --identity-file ~/.ssh/id_rsa \
-  --login yc-user
-
-Управление ВМ:
-==============
-Остановка:
-yc compute instance stop fhmsq7s4569qgl1oga4p
-
-Запуск:
-yc compute instance start fhmsq7s4569qgl1oga4p
-
-Перезагрузка:
-yc compute instance restart fhmsq7s4569qgl1oga4p
-
-Удаление:
-yc compute instance delete fhmsq7s4569qgl1oga4p
-
-Информация:
-yc compute instance get fhmsq7s4569qgl1oga4p
-
-Статус:
-yc compute instance list
+Примерная стоимость: ~3,500₽/месяц
 

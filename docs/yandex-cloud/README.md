@@ -10,8 +10,9 @@
 2. [SSH_ACCESS.md](./SSH_ACCESS.md) - Подключение по SSH
 3. [YC_CLI_COMMANDS.md](./YC_CLI_COMMANDS.md) - Команды Yandex Cloud CLI
 4. [SERVER_MANAGEMENT.md](./SERVER_MANAGEMENT.md) - Управление сервером
-5. [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - Решение проблем
-6. [SECURITY.md](./SECURITY.md) - Безопасность и best practices
+5. [DOMAIN_SETUP.md](./DOMAIN_SETUP.md) - **Настройка доменного имени и SSL**
+6. [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) - Решение проблем
+7. [SECURITY.md](./SECURITY.md) - Безопасность и best practices
 
 ---
 
@@ -43,6 +44,7 @@ docs/yandex-cloud/
 ├── SSH_ACCESS.md                # Все способы подключения по SSH
 ├── YC_CLI_COMMANDS.md           # Команды для управления через YC CLI
 ├── SERVER_MANAGEMENT.md         # Повседневное управление сервером
+├── DOMAIN_SETUP.md              # Настройка домена и SSL
 ├── TROUBLESHOOTING.md           # Решение типичных проблем
 └── SECURITY.md                  # Настройки безопасности
 ```

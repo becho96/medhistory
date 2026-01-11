@@ -2,4 +2,6 @@ flask==3.0.0
 psycopg2-binary==2.9.9
 pymongo==4.6.1
 python-dotenv==1.0.0
+sshtunnel==0.4.0
+paramiko>=3.0,<4.0
 
