@@ -6,6 +6,7 @@
 - `analyte_categories` - категории анализов
 - `analyte_standards` - канонические названия анализов
 - `analyte_synonyms` - синонимы названий анализов
+- `unit_conversions` - коэффициенты конверсии единиц измерения
 
 ## Требования
 
@@ -54,6 +55,7 @@ python3 ./scripts/migrate-analyte-tables-ssh.py
 ssh yc-user@158.160.99.232 'docker exec -it medhistory-postgres-1 psql -U medhistory_user -d medhistory'
 
 # Очистить таблицы (CASCADE удалит связанные записи)
+TRUNCATE TABLE unit_conversions CASCADE;
 TRUNCATE TABLE analyte_synonyms CASCADE;
 TRUNCATE TABLE analyte_standards CASCADE;
 TRUNCATE TABLE analyte_categories CASCADE;

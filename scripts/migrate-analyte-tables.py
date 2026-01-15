@@ -6,6 +6,7 @@
 - analyte_categories
 - analyte_standards  
 - analyte_synonyms
+- unit_conversions
 
 Скрипт:
 1. Проверяет наличие данных в локальной БД
@@ -85,7 +86,7 @@ async def check_local_data(conn: asyncpg.Connection) -> Dict[str, int]:
     print_info("Проверка данных в локальной БД...")
     
     counts = {}
-    tables = ['analyte_categories', 'analyte_standards', 'analyte_synonyms']
+    tables = ['analyte_categories', 'analyte_standards', 'analyte_synonyms', 'unit_conversions']
     
     for table in tables:
         count = await get_table_count(conn, table)
@@ -102,7 +103,7 @@ async def check_production_empty(conn: asyncpg.Connection) -> bool:
     """Проверяет, что продакшн таблицы пустые"""
     print_info("Проверка продакшн БД...")
     
-    tables = ['analyte_categories', 'analyte_standards', 'analyte_synonyms']
+    tables = ['analyte_categories', 'analyte_standards', 'analyte_synonyms', 'unit_conversions']
     all_empty = True
     
     for table in tables:
@@ -249,6 +250,7 @@ async def main():
         if not await check_production_empty(prod_conn):
             print_error("\n❌ Продакшн таблицы не пустые! Миграция отменена.")
             print_warning("\nЕсли вы хотите перезаписать данные, сначала очистите таблицы:")
+            print_warning("  TRUNCATE TABLE unit_conversions CASCADE;")
             print_warning("  TRUNCATE TABLE analyte_synonyms CASCADE;")
             print_warning("  TRUNCATE TABLE analyte_standards CASCADE;")
             print_warning("  TRUNCATE TABLE analyte_categories CASCADE;")
@@ -294,6 +296,13 @@ async def main():
         count = await migrate_table(local_conn, prod_conn, 'analyte_synonyms', synonyms_cols)
         total_migrated += count
         
+        # 4. Мигрируем unit_conversions
+        conversions_cols = [
+            'id', 'analyte_id', 'from_unit', 'from_unit_lower', 'coefficient', 'created_at'
+        ]
+        count = await migrate_table(local_conn, prod_conn, 'unit_conversions', conversions_cols)
+        total_migrated += count
+        
         # Финальная проверка
         print()
         print_header("✅ Миграция завершена успешно!")
@@ -302,7 +311,7 @@ async def main():
         # Показываем финальное состояние продакшн БД
         print()
         print_info("Финальное состояние продакшн БД:")
-        for table in ['analyte_categories', 'analyte_standards', 'analyte_synonyms']:
+        for table in ['analyte_categories', 'analyte_standards', 'analyte_synonyms', 'unit_conversions']:
             count = await get_table_count(prod_conn, table)
             print_success(f"  {table}: {count} записей")
         
