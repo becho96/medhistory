@@ -68,7 +68,15 @@ async def login(
     result = await db.execute(query)
     user = result.scalar_one_or_none()
     
-    if not user or not verify_password(credentials.password, user.password_hash):
+    # Check if user exists and has password_hash
+    if not user or not user.password_hash:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password"
+        )
+    
+    # Verify password
+    if not verify_password(credentials.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password"
