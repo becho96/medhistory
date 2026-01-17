@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional
+from typing import Optional, Literal
 from datetime import datetime, date
 import uuid
 
@@ -11,15 +11,23 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     full_name: Optional[str] = None
+    gender: Optional[Literal["male", "female", "other"]] = None
 
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+class UserUpdate(BaseModel):
+    """Схема для обновления данных пользователя"""
+    full_name: Optional[str] = None
+    birth_date: Optional[date] = None
+    gender: Optional[Literal["male", "female", "other"]] = None
+
 class User(UserBase):
     id: uuid.UUID
     is_active: bool
     birth_date: Optional[date] = None
+    gender: Optional[Literal["male", "female", "other"]] = None
     has_credentials: bool = True
     created_at: datetime
     

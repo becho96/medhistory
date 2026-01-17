@@ -598,6 +598,8 @@ async def get_lab_timeseries(
         "analyte": "Гемоглобин",
         "standard_unit": "г/л",
         "category": "Общий анализ крови",
+        "reference_min": 120.0,
+        "reference_max": 160.0,
         "points": [
             {
                 "date": "2024-01-15",
@@ -610,6 +612,12 @@ async def get_lab_timeseries(
         ]
     }
     """
+    # Получаем информацию о пользователе (для определения пола)
+    from sqlalchemy import select as sql_select
+    user_query = sql_select(User).where(User.id == profile_user_id)
+    user_result = await db.execute(user_query)
+    profile_user = user_result.scalar_one_or_none()
+    
     # Получаем данные анализа из справочника
     analyte_data = analyte_normalization_service_db.get_analyte(analyte)
     
@@ -737,10 +745,41 @@ async def get_lab_timeseries(
     # Sort by date
     points.sort(key=lambda x: (x.get("date") is None, x.get("date") or ""))
 
+    # Получаем референсные значения из analyte_standards
+    reference_min = None
+    reference_max = None
+    
+    if analyte_data:
+        from sqlalchemy import select as sql_select
+        from app.models.analyte import AnalyteStandard
+        
+        # Получаем запись из analyte_standards
+        analyte_standard_query = sql_select(AnalyteStandard).where(
+            AnalyteStandard.canonical_name == analyte
+        )
+        analyte_standard_result = await db.execute(analyte_standard_query)
+        analyte_standard = analyte_standard_result.scalar_one_or_none()
+        
+        if analyte_standard:
+            # Выбираем референсные значения в зависимости от пола
+            if profile_user and profile_user.gender:
+                if profile_user.gender.value == "male":
+                    reference_min = float(analyte_standard.reference_male_min) if analyte_standard.reference_male_min else None
+                    reference_max = float(analyte_standard.reference_male_max) if analyte_standard.reference_male_max else None
+                elif profile_user.gender.value == "female":
+                    reference_min = float(analyte_standard.reference_female_min) if analyte_standard.reference_female_min else None
+                    reference_max = float(analyte_standard.reference_female_max) if analyte_standard.reference_female_max else None
+            else:
+                # Если пол не указан, используем усредненные значения или мужские по умолчанию
+                reference_min = float(analyte_standard.reference_male_min) if analyte_standard.reference_male_min else None
+                reference_max = float(analyte_standard.reference_male_max) if analyte_standard.reference_male_max else None
+
     return {
         "analyte": analyte,
         "standard_unit": standard_unit,
         "category": category,
+        "reference_min": reference_min,
+        "reference_max": reference_max,
         "points": points
     }
 

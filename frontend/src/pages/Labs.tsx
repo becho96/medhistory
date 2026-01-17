@@ -19,9 +19,11 @@ interface LineChartProps {
   excludedPoints: Set<string>
   onTogglePoint: (pointId: string) => void
   standardUnit: string | null
+  referenceMin: number | null
+  referenceMax: number | null
 }
 
-function LineChart({ points, excludedPoints, onTogglePoint, standardUnit }: LineChartProps) {
+function LineChart({ points, excludedPoints, onTogglePoint, standardUnit, referenceMin, referenceMax }: LineChartProps) {
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null)
   const width = 1000
   const height = 400
@@ -40,6 +42,32 @@ function LineChart({ points, excludedPoints, onTogglePoint, standardUnit }: Line
   const maxValue = Math.max(...values)
   const avgValue = values.reduce((a, b) => a + b, 0) / values.length
   
+  // Функция для определения статуса значения относительно нормы
+  const getValueStatus = (value: number): 'normal' | 'warning' | 'danger' => {
+    if (!referenceMin || !referenceMax) return 'normal'
+    
+    const range = referenceMax - referenceMin
+    const warningThreshold = range * 0.1 // 10% от диапазона
+    
+    if (value >= referenceMin && value <= referenceMax) {
+      return 'normal'
+    } else if (
+      (value < referenceMin && value >= referenceMin - warningThreshold) ||
+      (value > referenceMax && value <= referenceMax + warningThreshold)
+    ) {
+      return 'warning'
+    } else {
+      return 'danger'
+    }
+  }
+  
+  // Цвета для статусов
+  const statusColors = {
+    normal: '#10b981',   // зелёный
+    warning: '#f59e0b',  // жёлтый
+    danger: '#ef4444'    // красный
+  }
+  
   const firstValue = values[0]
   const lastValue = values[values.length - 1]
   const trend = lastValue > firstValue ? 'up' : lastValue < firstValue ? 'down' : 'stable'
@@ -49,9 +77,17 @@ function LineChart({ points, excludedPoints, onTogglePoint, standardUnit }: Line
   const minX = Math.min(...dates)
   const maxX = Math.max(...dates)
 
-  const yPadding = (maxValue - minValue) * 0.15 || 1
-  const minY = minValue - yPadding
-  const maxY = maxValue + yPadding
+  // Расширяем диапазон Y с учетом референсных значений
+  const allYValues = [...values]
+  if (referenceMin !== null) allYValues.push(referenceMin)
+  if (referenceMax !== null) allYValues.push(referenceMax)
+  
+  const dataMinY = Math.min(...allYValues)
+  const dataMaxY = Math.max(...allYValues)
+  
+  const yPadding = (dataMaxY - dataMinY) * 0.15 || 1
+  const minY = dataMinY - yPadding
+  const maxY = dataMaxY + yPadding
 
   const chartWidth = width - padding.left - padding.right
   const chartHeight = height - padding.top - padding.bottom
@@ -201,6 +237,57 @@ function LineChart({ points, excludedPoints, onTogglePoint, standardUnit }: Line
             ))}
           </g>
 
+          {/* Reference lines - минимум и максимум */}
+          {referenceMin !== null && (
+            <>
+              <line
+                x1={padding.left}
+                y1={yScale(referenceMin)}
+                x2={width - padding.right}
+                y2={yScale(referenceMin)}
+                stroke="#ef4444"
+                strokeWidth="2"
+                strokeDasharray="6,3"
+                opacity="0.6"
+              />
+              <text
+                x={width - padding.right - 5}
+                y={yScale(referenceMin) - 8}
+                textAnchor="end"
+                fontSize="11"
+                fill="#ef4444"
+                fontWeight="600"
+              >
+                Мин: {formatValue(referenceMin)} {displayUnit}
+              </text>
+            </>
+          )}
+          
+          {referenceMax !== null && (
+            <>
+              <line
+                x1={padding.left}
+                y1={yScale(referenceMax)}
+                x2={width - padding.right}
+                y2={yScale(referenceMax)}
+                stroke="#ef4444"
+                strokeWidth="2"
+                strokeDasharray="6,3"
+                opacity="0.6"
+              />
+              <text
+                x={width - padding.right - 5}
+                y={yScale(referenceMax) - 8}
+                textAnchor="end"
+                fontSize="11"
+                fill="#ef4444"
+                fontWeight="600"
+              >
+                Макс: {formatValue(referenceMax)} {displayUnit}
+              </text>
+            </>
+          )}
+
           {/* Average line */}
           <line
             x1={padding.left}
@@ -253,6 +340,8 @@ function LineChart({ points, excludedPoints, onTogglePoint, standardUnit }: Line
             const x = xScale(new Date(p.date!).getTime())
             const y = yScale(p.value_num)
             const isHovered = hoveredPoint === i
+            const status = getValueStatus(p.value_num)
+            const pointColor = statusColors[status]
             
             return (
               <g key={i}>
@@ -261,7 +350,7 @@ function LineChart({ points, excludedPoints, onTogglePoint, standardUnit }: Line
                     cx={x}
                     cy={y}
                     r="12"
-                    fill="#6366f1"
+                    fill={pointColor}
                     opacity="0.2"
                   >
                     <animate
@@ -277,8 +366,8 @@ function LineChart({ points, excludedPoints, onTogglePoint, standardUnit }: Line
                   cx={x}
                   cy={y}
                   r={isHovered ? "6" : "4"}
-                  fill={isHovered ? "#6366f1" : "#ffffff"}
-                  stroke={isHovered ? "#4f46e5" : "#6366f1"}
+                  fill={isHovered ? pointColor : "#ffffff"}
+                  stroke={pointColor}
                   strokeWidth={isHovered ? "3" : "2"}
                   style={{ 
                     cursor: 'pointer',
@@ -316,7 +405,7 @@ function LineChart({ points, excludedPoints, onTogglePoint, standardUnit }: Line
                       y={y - 25}
                       textAnchor="middle"
                       fontSize="16"
-                      fill="#6366f1"
+                      fill={pointColor}
                       fontWeight="bold"
                     >
                       {formatValue(p.value_num)} {displayUnit}
@@ -412,6 +501,34 @@ function LineChart({ points, excludedPoints, onTogglePoint, standardUnit }: Line
             Дата анализа
           </text>
         </svg>
+      </div>
+
+      {/* Legend */}
+      <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm">
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+          <span className="text-gray-700">В норме</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+          <span className="text-gray-700">Близко к границе</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-3 h-3 rounded-full bg-red-500"></div>
+          <span className="text-gray-700">Вне нормы</span>
+        </div>
+        {(referenceMin !== null || referenceMax !== null) && (
+          <>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-0.5 bg-red-500" style={{ backgroundImage: 'repeating-linear-gradient(to right, #ef4444 0, #ef4444 6px, transparent 6px, transparent 9px)' }}></div>
+              <span className="text-gray-700">Границы нормы</span>
+            </div>
+          </>
+        )}
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-0.5 bg-emerald-500" style={{ backgroundImage: 'repeating-linear-gradient(to right, #10b981 0, #10b981 8px, transparent 8px, transparent 12px)' }}></div>
+          <span className="text-gray-700">Среднее значение</span>
+        </div>
       </div>
 
       {/* Data Table */}
@@ -844,6 +961,8 @@ export default function Labs() {
               excludedPoints={excludedPoints}
               onTogglePoint={togglePoint}
               standardUnit={seriesData?.standard_unit || null}
+              referenceMin={seriesData?.reference_min || null}
+              referenceMax={seriesData?.reference_max || null}
             />
           </div>
         ) : (

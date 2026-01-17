@@ -1,5 +1,5 @@
 import api from '../lib/api'
-import type { LoginCredentials, RegisterData, AuthToken, User } from '../types'
+import type { LoginCredentials, RegisterData, AuthToken, User, UserUpdate } from '../types'
 
 export const authService = {
   async register(data: RegisterData): Promise<User> {
@@ -14,6 +14,11 @@ export const authService = {
 
   async getCurrentUser(): Promise<User> {
     const response = await api.get<User>('/auth/me')
+    return response.data
+  },
+
+  async updateUser(data: UserUpdate): Promise<User> {
+    const response = await api.patch<User>('/auth/me', data)
     return response.data
   },
 

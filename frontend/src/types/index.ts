@@ -1,11 +1,20 @@
+export type Gender = 'male' | 'female' | 'other'
+
 export interface User {
   id: string
   email?: string
   full_name?: string
   birth_date?: string
+  gender?: Gender
   is_active: boolean
   has_credentials?: boolean
   created_at: string
+}
+
+export interface UserUpdate {
+  full_name?: string
+  birth_date?: string
+  gender?: Gender
 }
 
 // Типы семейных отношений

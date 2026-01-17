@@ -1,10 +1,17 @@
-from sqlalchemy import Column, String, Boolean, DateTime, Date
+from sqlalchemy import Column, String, Boolean, DateTime, Date, Enum
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 import uuid
+import enum
 
 from app.db.postgres import Base
+
+class GenderEnum(str, enum.Enum):
+    """Пол пользователя"""
+    male = "male"
+    female = "female"
+    other = "other"
 
 class User(Base):
     __tablename__ = "users"
@@ -15,6 +22,7 @@ class User(Base):
     google_id = Column(String(255), unique=True, nullable=True, index=True)  # Google OAuth ID
     full_name = Column(String(255))
     birth_date = Column(Date, nullable=True)  # Дата рождения
+    gender = Column(Enum(GenderEnum), nullable=True)  # Пол пользователя
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

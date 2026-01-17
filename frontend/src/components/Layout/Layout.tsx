@@ -1,9 +1,10 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Home, FileText, BarChart3, LogOut, FlaskConical, Brain, User, Heart, Menu, X, AlertCircle } from 'lucide-react'
+import { Home, FileText, BarChart3, LogOut, FlaskConical, Brain, User, Heart, Menu, X, AlertCircle, Settings } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useState, useEffect } from 'react'
 import ProfileSwitcher from '../ProfileSwitcher'
 import FamilyManagementModal from '../FamilyManagementModal'
+import ProfileSettings from '../ProfileSettings'
 import { familyService } from '../../services/family'
 
 export default function Layout() {
@@ -11,6 +12,7 @@ export default function Layout() {
   const { user, logout, activeProfileId, activeProfile, setFamilyProfiles } = useAuthStore()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [isFamilyModalOpen, setIsFamilyModalOpen] = useState(false)
+  const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false)
 
   const isViewingOwnProfile = !activeProfileId || activeProfileId === user?.id
 
@@ -69,6 +71,16 @@ export default function Layout() {
               <div className="hidden md:block">
                 <ProfileSwitcher onManageFamily={() => setIsFamilyModalOpen(true)} />
               </div>
+              {isViewingOwnProfile && (
+                <button
+                  onClick={() => setIsProfileSettingsOpen(true)}
+                  className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg sm:rounded-xl hover:bg-gray-50 transition-all"
+                  title="Настройки профиля"
+                >
+                  <Settings className="w-4 h-4" />
+                  <span className="hidden sm:inline">Профиль</span>
+                </button>
+              )}
               <button
                 onClick={logout}
                 className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg sm:rounded-xl hover:bg-gray-50 transition-all"
@@ -194,6 +206,14 @@ export default function Layout() {
         onClose={() => setIsFamilyModalOpen(false)}
         onProfilesUpdated={loadProfiles}
       />
+
+      {/* Profile Settings Modal */}
+      {isProfileSettingsOpen && user && (
+        <ProfileSettings
+          user={user}
+          onClose={() => setIsProfileSettingsOpen(false)}
+        />
+      )}
     </div>
   )
 }
