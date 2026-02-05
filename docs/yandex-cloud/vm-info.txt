@@ -2,14 +2,14 @@
 ================================
 ID: fhmibfqsd70cr6e8950t
 Имя: medhistory-server
-IP: 158.160.99.232
+IP: 93.77.182.26
 Внутренний IP: 10.128.0.6
 Зона: ru-central1-a
 Конфигурация: 4 vCPU, 8 GB RAM, 50 GB SSD
 Дата создания: 2026-01-10
 
 SSH подключение:
-ssh yc-user@158.160.99.232
+ssh yc-user@93.77.182.26
 
 Удаление ВМ:
 yc compute instance delete fhmibfqsd70cr6e8950t

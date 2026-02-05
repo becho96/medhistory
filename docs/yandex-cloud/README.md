@@ -20,17 +20,17 @@
 
 ### Подключение к серверу
 ```bash
-ssh -l yc-user 158.160.99.232
+ssh -l yc-user 93.77.182.26
 ```
 
 ### Проверка статуса
 ```bash
-ssh -l yc-user 158.160.99.232 'docker ps'
+ssh -l yc-user 93.77.182.26 'docker ps'
 ```
 
 ### Просмотр логов
 ```bash
-ssh -l yc-user 158.160.99.232 'cd ~/medhistory && docker compose -f docker-compose.prod.yml logs -f'
+ssh -l yc-user 93.77.182.26 'cd ~/medhistory && docker compose -f docker-compose.prod.yml logs -f'
 ```
 
 ---
@@ -55,7 +55,7 @@ docs/yandex-cloud/
 
 | Параметр | Значение |
 |----------|----------|
-| **IP адрес** | `158.160.99.232` |
+| **IP адрес** | `93.77.182.26` |
 | **Пользователь SSH** | `yc-user` |
 | **VM ID** | `fhmsq7s4569qgl1oga4p` |
 | **Имя** | `medhistory-server` |

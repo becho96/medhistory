@@ -68,7 +68,7 @@ MONGO_DB=medhistory
 
 ```bash
 # SSH доступ
-PROD_SSH_HOST=158.160.99.232
+PROD_SSH_HOST=93.77.182.26
 PROD_SSH_PORT=22
 PROD_SSH_USER=yc-user
 PROD_SSH_KEY=~/.ssh/id_rsa
@@ -103,7 +103,7 @@ python app.py
 │              │ ═══════════════════►│   Yandex Cloud Server       │
 │  DB Viewer   │     Port 15432 ────►│   PostgreSQL (5432)         │
 │  (localhost) │     Port 17017 ────►│   MongoDB (27017)           │
-│              │                     │   158.160.99.232            │
+│              │                     │   93.77.182.26            │
 └──────────────┘                     └─────────────────────────────┘
 ```
 
@@ -131,7 +131,7 @@ export PROD_SSH_KEY=~/.ssh/your_key
 ### Ошибка подключения к Production
 
 1. Проверьте, что SSH ключ добавлен к серверу
-2. Проверьте, что сервер доступен: `ssh yc-user@158.160.99.232`
+2. Проверьте, что сервер доступен: `ssh yc-user@93.77.182.26`
 3. Проверьте пароли от баз данных
 
 ### Библиотека sshtunnel не установлена

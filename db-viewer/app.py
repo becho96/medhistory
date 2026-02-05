@@ -47,7 +47,7 @@ ENVIRONMENTS = {
     },
     'production': {
         'name': 'Production (Yandex Cloud)',
-        'description': 'Подключение к серверу 158.160.99.232 через SSH туннель',
+        'description': 'Подключение к серверу 93.77.182.26 через SSH туннель',
         'postgres': {
             'host': 'localhost',  # Через SSH туннель
             'port': 15432,  # Локальный порт туннеля
@@ -63,7 +63,7 @@ ENVIRONMENTS = {
             'database': os.getenv('PROD_MONGO_DB', 'medhistory'),
         },
         'ssh': {
-            'host': os.getenv('PROD_SSH_HOST', '158.160.99.232'),
+            'host': os.getenv('PROD_SSH_HOST', '93.77.182.26'),
             'port': int(os.getenv('PROD_SSH_PORT', '22')),
             'username': os.getenv('PROD_SSH_USER', 'yc-user'),
             'key_path': os.path.expanduser(os.getenv('PROD_SSH_KEY', '~/.ssh/id_rsa')),
@@ -987,7 +987,7 @@ HTML_TEMPLATE = """
             <!-- SSH Info (показывается только для production) -->
             <div class="ssh-info hidden" id="sshInfo">
                 <div class="ssh-info-title">SSH Туннель</div>
-                <div>Сервер: <code id="sshHost">158.160.99.232</code></div>
+                <div>Сервер: <code id="sshHost">93.77.182.26</code></div>
                 <div>PG порт: <code id="sshPgPort">15432</code> → <code>5432</code></div>
                 <div>Mongo порт: <code id="sshMongoPort">17017</code> → <code>27017</code></div>
             </div>

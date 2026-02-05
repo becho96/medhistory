@@ -56,12 +56,12 @@
 ```
 Тип:     A
 Имя:     @              (или пустое — корневой домен)
-Значение: 158.160.99.232
+Значение: 93.77.182.26
 TTL:     3600
 
 Тип:     A
 Имя:     www
-Значение: 158.160.99.232
+Значение: 93.77.182.26
 TTL:     3600
 ```
 
@@ -119,7 +119,7 @@ cd "/Users/boris/Desktop/Начало/История болезни"
 #### 3.1. Установка certbot на сервере
 
 ```bash
-ssh yc-user@158.160.99.232
+ssh yc-user@93.77.182.26
 
 # Установка certbot
 sudo apt update
@@ -200,7 +200,7 @@ nginx:
 ### 4.3. Перезапуск сервисов
 
 ```bash
-ssh yc-user@158.160.99.232 'cd ~/medhistory && docker compose up -d'
+ssh yc-user@93.77.182.26 'cd ~/medhistory && docker compose up -d'
 ```
 
 ---
@@ -210,7 +210,7 @@ ssh yc-user@158.160.99.232 'cd ~/medhistory && docker compose up -d'
 ### 5.1. Обновить .env.production на сервере
 
 ```bash
-ssh yc-user@158.160.99.232 'nano ~/medhistory/.env.production'
+ssh yc-user@93.77.182.26 'nano ~/medhistory/.env.production'
 ```
 
 Изменить:
@@ -234,7 +234,7 @@ ALLOWED_ORIGINS=https://ваш-домен.ru,https://www.ваш-домен.ru
 ### 5.3. Пересобрать frontend
 
 ```bash
-ssh yc-user@158.160.99.232 'cd ~/medhistory && docker compose build frontend && docker compose up -d frontend'
+ssh yc-user@93.77.182.26 'cd ~/medhistory && docker compose build frontend && docker compose up -d frontend'
 ```
 
 ---
@@ -281,7 +281,7 @@ openssl s_client -connect ваш-домен.ru:443 -servername ваш-домен
 Let's Encrypt сертификаты действительны 90 дней. Для автоматического обновления настройте cron:
 
 ```bash
-ssh yc-user@158.160.99.232
+ssh yc-user@93.77.182.26
 
 # Добавить в crontab
 crontab -e

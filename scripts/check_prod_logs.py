@@ -15,7 +15,7 @@ if env_path.exists():
 
 # SSH конфигурация (из db-viewer/app.py)
 SSH_CONFIG = {
-    'host': os.getenv('PROD_SSH_HOST', '158.160.99.232'),
+    'host': os.getenv('PROD_SSH_HOST', '93.77.182.26'),
     'port': int(os.getenv('PROD_SSH_PORT', '22')),
     'username': os.getenv('PROD_SSH_USER', 'yc-user'),
     'key_path': os.path.expanduser(os.getenv('PROD_SSH_KEY', '~/.ssh/id_rsa')),

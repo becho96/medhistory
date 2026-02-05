@@ -70,6 +70,10 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+      - 1.1.1.1
     environment:
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-medhistory_user}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-medhistory}
       MONGODB_URL: mongodb://${MONGO_INITDB_ROOT_USERNAME:-admin}:${MONGO_PASSWORD}@mongodb:27017/${MONGO_INITDB_DATABASE:-medhistory}?authSource=admin

@@ -14,7 +14,7 @@ from urllib.parse import quote_plus
 
 
 # Конфигурация
-PROD_SERVER = "yc-user@158.160.99.232"
+PROD_SERVER = "yc-user@93.77.182.26"
 MONGO_PORT = 27017
 LOCAL_MONGO_PORT = 27018
 
