@@ -62,13 +62,13 @@ jobs:
             --exclude 'frontend/.env' \
             ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:${{ env.DEPLOY_PATH }}/
           
-          # Build and restart containers
+          # Build and restart containers using production compose file
           if [ "${{ inputs.service }}" = "all" ]; then
-            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd ${{ env.DEPLOY_PATH }} && docker compose build --no-cache && docker compose up -d"
+            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd ${{ env.DEPLOY_PATH }} && docker compose -f docker-compose.prod.yml build --no-cache && docker compose -f docker-compose.prod.yml up -d"
           elif [ "${{ inputs.service }}" = "backend" ]; then
-            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd ${{ env.DEPLOY_PATH }} && docker compose build --no-cache backend && docker compose up -d backend"
+            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd ${{ env.DEPLOY_PATH }} && docker compose -f docker-compose.prod.yml build --no-cache backend && docker compose -f docker-compose.prod.yml up -d backend"
           elif [ "${{ inputs.service }}" = "frontend" ]; then
-            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd ${{ env.DEPLOY_PATH }} && docker compose build --no-cache frontend && docker compose up -d frontend"
+            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd ${{ env.DEPLOY_PATH }} && docker compose -f docker-compose.prod.yml build --no-cache frontend && docker compose -f docker-compose.prod.yml up -d frontend"
           fi
 
       - name: Health check
@@ -76,11 +76,14 @@ jobs:
           echo "⏳ Waiting for services to start..."
           sleep 10
           
-          echo "🔍 Checking backend health..."
-          curl -sf --max-time 10 http://${{ secrets.SERVER_IP }}:8000/docs > /dev/null && echo "✅ Backend is healthy" || echo "⚠️ Backend check failed"
-          
           echo "🔍 Checking frontend health..."
           curl -sf --max-time 10 http://${{ secrets.SERVER_IP }}/ > /dev/null && echo "✅ Frontend is healthy" || echo "⚠️ Frontend check failed"
+          
+          echo "🔍 Checking API through nginx proxy..."
+          curl -sf --max-time 10 http://${{ secrets.SERVER_IP }}/docs > /dev/null && echo "✅ API is healthy" || echo "⚠️ API check failed"
+          
+          echo "🔍 Checking health endpoint..."
+          curl -sf --max-time 10 http://${{ secrets.SERVER_IP }}/health > /dev/null && echo "✅ Health check passed" || echo "⚠️ Health check failed"
 
       - name: Deployment summary
         run: |
@@ -94,5 +97,6 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### 🔗 Links" >> $GITHUB_STEP_SUMMARY
           echo "- [Frontend](http://${{ secrets.SERVER_IP }}/)" >> $GITHUB_STEP_SUMMARY
-          echo "- [Backend API](http://${{ secrets.SERVER_IP }}:8000/docs)" >> $GITHUB_STEP_SUMMARY
+          echo "- [API Documentation](http://${{ secrets.SERVER_IP }}/docs)" >> $GITHUB_STEP_SUMMARY
+          echo "- [API Endpoint](http://${{ secrets.SERVER_IP }}/api/v1/)" >> $GITHUB_STEP_SUMMARY
 

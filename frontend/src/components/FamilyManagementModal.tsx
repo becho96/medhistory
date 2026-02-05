@@ -14,7 +14,7 @@ interface FamilyManagementModalProps {
 type TabType = 'members' | 'add' | 'invite' | 'credentials'
 
 export default function FamilyManagementModal({ isOpen, onClose, onProfilesUpdated }: FamilyManagementModalProps) {
-  const { user } = useAuthStore()
+  const { user: _user } = useAuthStore()
   const [activeTab, setActiveTab] = useState<TabType>('members')
   const [members, setMembers] = useState<FamilyMember[]>([])
   const [managedBy, setManagedBy] = useState<FamilyOwnerInfo[]>([])

@@ -154,6 +154,8 @@ export const documentsService = {
     analyte: string
     standard_unit: string | null
     category: string
+    reference_min?: number | null
+    reference_max?: number | null
     points: Array<{
       date?: string
       value_num: number

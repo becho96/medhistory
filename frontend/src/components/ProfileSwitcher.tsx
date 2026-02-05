@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
-import { ChevronDown, User, Users, UserPlus, Check, Settings } from 'lucide-react'
+import { ChevronDown, User, Users, UserPlus, Check } from 'lucide-react'
 import { useAuthStore } from '../stores/authStore'
 import { familyService } from '../services/family'
-import type { FamilyMember } from '../types'
+// import type { FamilyMember } from '../types'
 
 interface ProfileSwitcherProps {
   onManageFamily?: () => void

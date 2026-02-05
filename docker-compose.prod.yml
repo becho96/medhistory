@@ -1,8 +1,8 @@
 # ==================================================
-# MedHistory - Docker Compose Configuration
+# MedHistory - Production Docker Compose Configuration
 # ==================================================
-# Локальная разработка
-# Использование: ./deploy или docker compose up -d
+# Production deployment с nginx reverse proxy
+# Использование: docker compose -f docker-compose.prod.yml up -d
 # ==================================================
 
 services:
@@ -25,6 +25,7 @@ services:
       retries: 5
     networks:
       - medhistory_network
+    restart: unless-stopped
 
   # MongoDB Database
   mongodb:
@@ -44,6 +45,7 @@ services:
       retries: 5
     networks:
       - medhistory_network
+    restart: unless-stopped
 
   # MinIO Object Storage
   minio:
@@ -64,12 +66,13 @@ services:
       retries: 5
     networks:
       - medhistory_network
+    restart: unless-stopped
 
   # Backend API
   backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.prod
     dns:
       - 8.8.8.8
       - 8.8.4.4
@@ -85,13 +88,12 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:5173/auth/google/callback}
-      ENVIRONMENT: ${ENVIRONMENT:-development}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:80}
     volumes:
-      - ./backend:/app
       - backend_uploads:/app/uploads
-    ports:
-      - "${BACKEND_PORT:-8000}:8000"
+    expose:
+      - "8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -101,23 +103,27 @@ services:
         condition: service_healthy
     networks:
       - medhistory_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
 
-  # Frontend
+  # Frontend (Production build with nginx)
   frontend:
     build:
       context: ./frontend
-      dockerfile: Dockerfile
-    environment:
-      VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    ports:
-      - "${FRONTEND_PORT:-5173}:5173"
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_URL: ""
+    expose:
+      - "80"
     depends_on:
       - backend
     networks:
       - medhistory_network
+    restart: unless-stopped
 
   # Nginx Reverse Proxy
   nginx:
@@ -131,6 +137,7 @@ services:
       - backend
     networks:
       - medhistory_network
+    restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
       interval: 30s

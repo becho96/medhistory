@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Home, FileText, BarChart3, LogOut, FlaskConical, Brain, User, Heart, Menu, X, AlertCircle, Settings } from 'lucide-react'
+import { Home, FileText, BarChart3, LogOut, FlaskConical, Brain, Heart, Menu, X, AlertCircle, Settings } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useState, useEffect } from 'react'
 import ProfileSwitcher from '../ProfileSwitcher'
