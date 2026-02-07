@@ -27,12 +27,3 @@
 - Рекомендуется зарезервировать статический IP
 - SERVER_IP в GitHub Secrets: 93.77.182.26 ✅
 
-✅ ИСПРАВЛЕНО (05.02.2026):
-- Добавлен docker-compose.prod.yml для production развертывания
-- Настроен nginx как reverse proxy (порт 80)
-- Frontend теперь использует production build (Vite + nginx)
-- Backend использует production build (без --reload, 4 workers)
-- API доступен через /api/* (проксирование через nginx)
-- Исправлены TypeScript ошибки в frontend коде
-- GitHub Actions обновлен для использования production конфигурации
-

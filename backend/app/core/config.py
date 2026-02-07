@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = "http://localhost:5173/auth/google/callback"
     
+    # Telegram Bot
+    BOT_SECRET: str = ""  # Shared secret between n8n and backend for bot API auth
+    
     # CORS
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"  # Comma-separated list
     

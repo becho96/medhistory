@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, DateTime, Date, Enum
+from sqlalchemy import Column, String, Boolean, DateTime, Date, Enum, BigInteger
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -20,6 +20,7 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=True, index=True)  # Nullable for family members
     password_hash = Column(String(255), nullable=True)  # Nullable for family members without credentials
     google_id = Column(String(255), unique=True, nullable=True, index=True)  # Google OAuth ID
+    telegram_id = Column(BigInteger, unique=True, nullable=True, index=True)  # Telegram user ID
     full_name = Column(String(255))
     birth_date = Column(Date, nullable=True)  # Дата рождения
     gender = Column(Enum(GenderEnum), nullable=True)  # Пол пользователя

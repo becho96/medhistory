@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, documents, timeline, reports, interpretations, metrics, family
+from app.api.v1.endpoints import auth, documents, timeline, reports, interpretations, metrics, family, bot
 
 api_router = APIRouter()
 
@@ -11,4 +11,5 @@ api_router.include_router(timeline.router, prefix="/timeline", tags=["Timeline"]
 api_router.include_router(reports.router, prefix="/reports", tags=["Reports"])
 api_router.include_router(interpretations.router, prefix="/interpretations", tags=["Interpretations"])
 api_router.include_router(metrics.router, prefix="/metrics", tags=["Metrics"])
+api_router.include_router(bot.router, prefix="/bot", tags=["Telegram Bot"])
 

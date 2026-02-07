@@ -125,6 +125,9 @@ error.log
 # Docker
 .dockerignore
 
+# n8n workflows (contain secrets after import)
+n8n/workflows/medhistory_telegram_bot.json
+
 # Misc
 .cache/
 temp/

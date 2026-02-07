@@ -90,6 +90,7 @@ services:
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:5173/auth/google/callback}
       ENVIRONMENT: ${ENVIRONMENT:-production}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost,http://localhost:80}
+      BOT_SECRET: ${BOT_SECRET:-}
     volumes:
       - backend_uploads:/app/uploads
     expose:
@@ -144,6 +145,39 @@ services:
       timeout: 3s
       retries: 3
 
+  # n8n Workflow Automation (Telegram Bot)
+  n8n:
+    image: n8nio/n8n:latest
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+      - WEBHOOK_URL=${N8N_WEBHOOK_URL}
+      - N8N_PORT=5678
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - BOT_SECRET=${BOT_SECRET}
+      - N8N_AVAILABLE_ENVIRONMENT_VARIABLES=TELEGRAM_BOT_TOKEN,BOT_SECRET
+    volumes:
+      - n8n_data:/home/node/.n8n
+    ports:
+      - "${N8N_PORT:-5678}:5678"
+    depends_on:
+      - backend
+    networks:
+      - medhistory_network
+    restart: unless-stopped
+
+  # Cloudflare Tunnel — HTTPS-туннель для n8n webhook (нужен Telegram)
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate --url http://n8n:5678
+    depends_on:
+      - n8n
+    networks:
+      - medhistory_network
+    restart: unless-stopped
+
 volumes:
   postgres_data:
     driver: local
@@ -152,6 +186,8 @@ volumes:
   minio_data:
     driver: local
   backend_uploads:
+    driver: local
+  n8n_data:
     driver: local
 
 networks:
