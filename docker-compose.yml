@@ -146,7 +146,7 @@ services:
       - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER:-admin}
       - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
       - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
-      - WEBHOOK_URL=${N8N_WEBHOOK_URL:-http://localhost:5678}
+      - WEBHOOK_URL=https://uncataloged-underanged-shelby.ngrok-free.dev
       - N8N_PORT=5678
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - BOT_SECRET=${BOT_SECRET}
