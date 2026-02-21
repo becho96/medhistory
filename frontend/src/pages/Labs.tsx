@@ -1,7 +1,8 @@
 import { useEffect, useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { documentsService } from '../services/documents'
-import { Search, ChevronDown, ChevronRight, FlaskConical } from 'lucide-react'
+import { Search, ChevronDown, ChevronRight, FlaskConical, FileText } from 'lucide-react'
+import DocumentModal from '../components/Documents/DocumentModal'
 
 interface ChartPoint {
   date?: string
@@ -18,12 +19,13 @@ interface LineChartProps {
   points: Array<ChartPoint>
   excludedPoints: Set<string>
   onTogglePoint: (pointId: string) => void
+  onOpenDocument: (documentId: string) => void
   standardUnit: string | null
   referenceMin: number | null
   referenceMax: number | null
 }
 
-function LineChart({ points, excludedPoints, onTogglePoint, standardUnit, referenceMin, referenceMax }: LineChartProps) {
+function LineChart({ points, excludedPoints, onTogglePoint, onOpenDocument, standardUnit, referenceMin, referenceMax }: LineChartProps) {
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null)
   const width = 1000
   const height = 400
@@ -369,22 +371,23 @@ function LineChart({ points, excludedPoints, onTogglePoint, standardUnit, refere
                   fill={isHovered ? pointColor : "#ffffff"}
                   stroke={pointColor}
                   strokeWidth={isHovered ? "3" : "2"}
-                  style={{ 
-                    cursor: 'pointer',
+                  style={{
+                    cursor: p.document_id ? 'pointer' : 'default',
                     transition: 'all 0.2s ease'
                   }}
                   onMouseEnter={() => setHoveredPoint(i)}
                   onMouseLeave={() => setHoveredPoint(null)}
+                  onClick={() => p.document_id && onOpenDocument(p.document_id)}
                   filter={isHovered ? "url(#shadow)" : undefined}
                 />
 
                 {isHovered && (
                   <g>
                     <rect
-                      x={x - 75}
-                      y={y - 65}
-                      width="150"
-                      height="55"
+                      x={x - 85}
+                      y={y - 80}
+                      width="170"
+                      height={p.document_id ? 70 : 55}
                       fill="#1f2937"
                       rx="8"
                       opacity="0.95"
@@ -392,7 +395,7 @@ function LineChart({ points, excludedPoints, onTogglePoint, standardUnit, refere
                     />
                     <text
                       x={x}
-                      y={y - 42}
+                      y={y - 57}
                       textAnchor="middle"
                       fontSize="12"
                       fill="#ffffff"
@@ -402,7 +405,7 @@ function LineChart({ points, excludedPoints, onTogglePoint, standardUnit, refere
                     </text>
                     <text
                       x={x}
-                      y={y - 25}
+                      y={y - 40}
                       textAnchor="middle"
                       fontSize="16"
                       fill={pointColor}
@@ -410,6 +413,17 @@ function LineChart({ points, excludedPoints, onTogglePoint, standardUnit, refere
                     >
                       {formatValue(p.value_num)} {displayUnit}
                     </text>
+                    {p.document_id && (
+                      <text
+                        x={x}
+                        y={y - 20}
+                        textAnchor="middle"
+                        fontSize="10"
+                        fill="#93c5fd"
+                      >
+                        ↗ Открыть документ
+                      </text>
+                    )}
                   </g>
                 )}
               </g>
@@ -560,6 +574,9 @@ function LineChart({ points, excludedPoints, onTogglePoint, standardUnit, refere
                 <th className="px-2 sm:px-6 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider hidden sm:table-cell">
                   Отклонение от среднего
                 </th>
+                <th className="px-2 sm:px-4 py-2 sm:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  Документ
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -574,13 +591,14 @@ function LineChart({ points, excludedPoints, onTogglePoint, standardUnit, refere
                   const pointIndex = data.findIndex(d => d._id === p._id)
                   
                   return (
-                    <tr 
+                    <tr
                       key={p._id || originalIndex}
                       className={`hover:bg-gray-50 transition-colors ${
                         isExcluded ? 'opacity-50 bg-gray-50' : ''
-                      }`}
+                      } ${p.document_id ? 'cursor-pointer' : ''}`}
                       onMouseEnter={() => !isExcluded && pointIndex !== -1 && setHoveredPoint(pointIndex)}
                       onMouseLeave={() => setHoveredPoint(null)}
+                      onClick={() => p.document_id && onOpenDocument(p.document_id)}
                     >
                       <td className="px-2 sm:px-6 py-2 sm:py-4 whitespace-nowrap">
                         <label className="flex items-center cursor-pointer">
@@ -625,6 +643,22 @@ function LineChart({ points, excludedPoints, onTogglePoint, standardUnit, refere
                           </span>
                         ) : (
                           <span className="text-xs text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-2 sm:px-4 py-2 sm:py-4 whitespace-nowrap">
+                        {p.document_id ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              onOpenDocument(p.document_id!)
+                            }}
+                            className="flex items-center gap-1 text-[#4A90E2] hover:text-blue-700 transition-colors"
+                            title="Открыть документ"
+                          >
+                            <FileText className="w-4 h-4" />
+                          </button>
+                        ) : (
+                          <span className="text-xs text-gray-300">—</span>
                         )}
                       </td>
                     </tr>
@@ -820,6 +854,7 @@ function AnalyteSelector({ categories, selectedAnalyte, onSelect }: AnalyteSelec
 export default function Labs() {
   const [selected, setSelected] = useState<string>('')
   const [excludedPoints, setExcludedPoints] = useState<Set<string>>(new Set())
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null)
 
   // Fetch categories with analytes
   const { data: analytesData, isLoading: loadingAnalytes } = useQuery({
@@ -956,10 +991,11 @@ export default function Labs() {
           </div>
         ) : points.length > 0 ? (
           <div className="bg-gradient-to-br from-gray-50 to-white p-3 sm:p-6 rounded-lg sm:rounded-xl border border-gray-100">
-            <LineChart 
-              points={points} 
+            <LineChart
+              points={points}
               excludedPoints={excludedPoints}
               onTogglePoint={togglePoint}
+              onOpenDocument={setSelectedDocumentId}
               standardUnit={seriesData?.standard_unit || null}
               referenceMin={seriesData?.reference_min || null}
               referenceMax={seriesData?.reference_max || null}
@@ -976,6 +1012,11 @@ export default function Labs() {
           </div>
         )}
       </div>
+
+      <DocumentModal
+        documentId={selectedDocumentId}
+        onClose={() => setSelectedDocumentId(null)}
+      />
     </div>
   )
 }
