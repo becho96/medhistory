@@ -29,6 +29,7 @@ class LabAnalysisService:
             file_ext,
             document.original_filename,
         )
+        usage = results.get("usage")
 
         # Upsert into MongoDB under extracted_data.lab_results
         now = datetime.utcnow()
@@ -41,6 +42,7 @@ class LabAnalysisService:
                 "ai_response_labs.model": settings.OPENROUTER_MODEL,
                 "ai_response_labs.count": len(results.get("lab_results", []) or []),
                 "ai_response_labs.updated_at": now,
+                **({"ai_response_labs.usage": usage} if usage else {}),
             },
             "$setOnInsert": {
                 "created_at": now,

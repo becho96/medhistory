@@ -125,7 +125,7 @@ class DocumentService:
         await db.commit()
         
         # Analyze document with AI
-        metadata = await ai_service.analyze_document(
+        metadata, usage = await ai_service.analyze_document(
             file_content,
             file_ext,
             document.original_filename
@@ -155,6 +155,7 @@ class DocumentService:
             "ai_response": {
                 "model": settings.OPENROUTER_MODEL,
                 "confidence": metadata.confidence,
+                **({"usage": usage} if usage else {}),
             },
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow()

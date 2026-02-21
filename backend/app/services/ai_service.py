@@ -1,7 +1,7 @@
 import base64
 import httpx
 import json
-from typing import Optional
+from typing import Optional, Tuple
 from datetime import datetime
 from io import BytesIO
 import PyPDF2
@@ -15,8 +15,8 @@ class AIService:
         self.model = settings.OPENROUTER_MODEL
         self.base_url = settings.OPENROUTER_BASE_URL
     
-    async def analyze_document(self, file_bytes: bytes, file_type: str, filename: str) -> DocumentMetadata:
-        """Analyze document and extract metadata using AI"""
+    async def analyze_document(self, file_bytes: bytes, file_type: str, filename: str) -> Tuple[DocumentMetadata, Optional[dict]]:
+        """Analyze document and extract metadata using AI. Returns (metadata, usage)."""
         
         try:
             # Build prompt
@@ -81,16 +81,19 @@ class AIService:
             
             # Parse response
             metadata = self._parse_ai_response(response_data)
-            
-            return metadata
+            usage = self._extract_usage(response_data)
+            return (metadata, usage)
             
         except Exception as e:
             print(f"❌ AI analysis failed: {str(e)}")
             # Return default metadata on error
-            return DocumentMetadata(
-                document_type="неизвестно",
-                confidence=0.0,
-                summary=f"Не удалось автоматически проанализировать документ: {str(e)}"
+            return (
+                DocumentMetadata(
+                    document_type="неизвестно",
+                    confidence=0.0,
+                    summary=f"Не удалось автоматически проанализировать документ: {str(e)}"
+                ),
+                None,
             )
     
     def _extract_text_from_pdf(self, file_bytes: bytes) -> str:
@@ -240,6 +243,17 @@ class AIService:
             except Exception as e:
                 print(f"❌ Request Error: {str(e)}")
                 raise
+    
+    def _extract_usage(self, response_data: dict) -> Optional[dict]:
+        """Extract token usage from OpenRouter response."""
+        usage = response_data.get("usage")
+        if not usage:
+            return None
+        return {
+            "prompt_tokens": usage.get("prompt_tokens"),
+            "completion_tokens": usage.get("completion_tokens"),
+            "total_tokens": usage.get("total_tokens"),
+        }
     
     def _parse_ai_response(self, response_data: dict) -> DocumentMetadata:
         """Parse AI response and create DocumentMetadata"""
@@ -425,11 +439,14 @@ class AIService:
                     "reference_range": item.get("reference_range"),
                     "flag": item.get("flag"),
                 })
-            return {"lab_results": normalized}
+            return {
+                "lab_results": normalized,
+                "usage": self._extract_usage(response_data),
+            }
         except Exception as e:
             print(f"❌ Error parsing labs response: {e}")
             print(f"Response content: {response_data}")
-            return {"lab_results": []}
+            return {"lab_results": [], "usage": None}
 
 # Create global instance
 ai_service = AIService()

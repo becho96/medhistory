@@ -17,9 +17,9 @@ class Settings(BaseSettings):
     MINIO_BUCKET: str = "medhistory-files"
     MINIO_SECURE: bool = False
     
-    # OpenRouter AI
+    # OpenRouter AI (модель задаётся через OPENROUTER_MODEL в .env)
     OPENROUTER_API_KEY: str
-    OPENROUTER_MODEL: str = "anthropic/claude-3.5-sonnet"  # Можно также использовать claude-sonnet-4 или claude-sonnet-4.5
+    OPENROUTER_MODEL: str = "anthropic/claude-3.5-haiku"  # Haiku дешевле; для изображений — claude-3.5-sonnet (Haiku не поддерживает vision)
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1/chat/completions"
     
     # Authentication
