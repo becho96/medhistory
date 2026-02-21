@@ -192,3 +192,49 @@ export interface InterpretationList {
   items: Interpretation[]
 }
 
+// Health Events Types
+export type ParameterType = 'number' | 'scale' | 'text' | 'boolean'
+
+export interface ParameterConfig {
+  unit?: string
+  min?: number
+  max?: number
+  step?: number
+  placeholder?: string
+  pattern?: string
+  options?: Array<{ value: string; label: string }>
+  labels?: Record<number, string>
+}
+
+export interface ParameterDefinition {
+  key: string
+  label_ru: string
+  type: ParameterType
+  config: ParameterConfig
+  is_primary: boolean
+  sort_order: number
+}
+
+export interface HealthEvent {
+  id: string
+  user_id: string
+  event_datetime: string
+  parameters: Record<string, any>
+  tags: string[]
+  notes?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface HealthEventCreate {
+  event_datetime: string
+  parameters: Record<string, any>
+  tags: string[]
+  notes?: string
+}
+
+export interface HealthEventsListResponse {
+  total: number
+  events: HealthEvent[]
+}
+

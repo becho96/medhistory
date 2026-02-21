@@ -120,13 +120,28 @@ python app.py
 
 ## Troubleshooting
 
+### Ошибка "no password supplied" / "Connection refused" (Production)
+
+Для режима Production нужны пароли из `.env.production`:
+- `PROD_PG_PASSWORD` — пароль PostgreSQL на production
+- `PROD_MONGO_PASSWORD` — пароль MongoDB на production
+
+Docker Compose загружает их из `.env.production` (файл должен существовать).
+
 ### Ошибка "SSH ключ не найден"
 
-Убедитесь, что путь к SSH ключу корректный:
+При запуске в Docker монтируется директория `~/.ssh` с хоста. Варианты:
 
-```bash
-export PROD_SSH_KEY=~/.ssh/your_key
-```
+1. **Стандартный ключ** — проверьте, что `~/.ssh/id_rsa` существует
+2. **Ключ id_ed25519** — добавьте в `.env.local`:
+   ```bash
+   PROD_SSH_KEY=/root/.ssh/id_ed25519
+   ```
+3. **Папка ~/.ssh не существует** — при первом `ssh` обычно создаётся автоматически
+4. **Локальный запуск** (без Docker):
+   ```bash
+   cd db-viewer && python app.py
+   ```
 
 ### Ошибка подключения к Production
 

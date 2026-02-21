@@ -11,6 +11,7 @@ from app.models.analyte import (
     UserAnalyteMapping,
 )
 from app.models.bot_state import TelegramBotState
+from app.models.health_event import HealthEvent
 
 __all__ = [
     "User",
@@ -34,5 +35,7 @@ __all__ = [
     "UserAnalyteMapping",
     # Telegram bot
     "TelegramBotState",
+    # Health events
+    "HealthEvent",
 ]
 

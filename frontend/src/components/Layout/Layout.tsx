@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Home, FileText, BarChart3, LogOut, FlaskConical, Brain, Heart, Menu, X, AlertCircle, Settings } from 'lucide-react'
+import { Home, FileText, BarChart3, LogOut, FlaskConical, Brain, Heart, Menu, X, AlertCircle, Settings, Activity } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useState, useEffect } from 'react'
 import ProfileSwitcher from '../ProfileSwitcher'
@@ -33,6 +33,7 @@ export default function Layout() {
   const navigation = [
     { name: 'Главная', href: '/', icon: Home },
     { name: 'Медкарта', href: '/documents', icon: FileText },
+    { name: 'Самочувствие', href: '/health-events', icon: Activity },
     { name: 'Интерпретации', href: '/interpretations', icon: Brain },
     { name: 'Отчёты', href: '/reports', icon: BarChart3 },
     { name: 'Анализы', href: '/labs', icon: FlaskConical },

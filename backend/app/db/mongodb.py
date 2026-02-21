@@ -8,6 +8,8 @@ mongodb = mongodb_client.medhistory
 
 # Collections
 document_metadata_collection = mongodb.document_metadata
+health_parameter_definitions_collection = mongodb.health_parameter_definitions
+health_events_collection = mongodb.health_events
 
 # Sync client for initialization
 def get_sync_mongodb():

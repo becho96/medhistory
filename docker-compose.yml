@@ -161,6 +161,40 @@ services:
     networks:
       - medhistory_network
 
+  # DB Viewer — просмотр PostgreSQL и MongoDB
+  db-viewer:
+    build:
+      context: ./db-viewer
+      dockerfile: Dockerfile
+    env_file:
+      - .env.production
+    environment:
+      PG_HOST: postgres
+      PG_PORT: "5432"
+      PG_DB: ${POSTGRES_DB:-medhistory}
+      PG_USER: ${POSTGRES_USER:-medhistory_user}
+      PG_PASSWORD: ${POSTGRES_PASSWORD}
+      MONGO_HOST: mongodb
+      MONGO_PORT: "27017"
+      MONGO_USER: ${MONGO_INITDB_ROOT_USERNAME:-admin}
+      MONGO_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_DB: ${MONGO_INITDB_DATABASE:-medhistory}
+      # Production SSH: /root/.ssh/id_rsa или /root/.ssh/id_ed25519 (override через PROD_SSH_KEY)
+      PROD_SSH_KEY: ${PROD_SSH_KEY:-/root/.ssh/id_rsa}
+      # PROD_PG_PASSWORD, PROD_MONGO_PASSWORD — из .env.production
+    volumes:
+      # SSH ключи для Production (id_rsa или id_ed25519)
+      - ${HOME}/.ssh:/root/.ssh:ro
+    ports:
+      - "5050:5050"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+    networks:
+      - medhistory_network
+
   # Cloudflare Tunnel — HTTPS-туннель для n8n webhook (нужен Telegram)
   cloudflared:
     image: cloudflare/cloudflared:latest
