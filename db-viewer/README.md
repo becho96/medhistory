@@ -82,6 +82,10 @@ PROD_PG_PASSWORD=<production_password>
 PROD_MONGO_DB=medhistory
 PROD_MONGO_USER=admin
 PROD_MONGO_PASSWORD=<production_password>
+
+# Backend API (для сброса кэша маппинга анализов после добавления синонима)
+# Если не задано — используется http://PROD_SSH_HOST
+PROD_BACKEND_URL=http://93.77.182.26
 ```
 
 ### Запуск с переменными окружения

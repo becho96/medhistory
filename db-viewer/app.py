@@ -29,6 +29,7 @@ ENVIRONMENTS = {
     'local': {
         'name': 'Локальная разработка',
         'description': 'Подключение к локальным Docker контейнерам',
+        'backend_url': os.getenv('BACKEND_URL', 'http://backend:8000'),
         'postgres': {
             'host': os.getenv('PG_HOST', 'localhost'),
             'port': int(os.getenv('PG_PORT', '5432')),
@@ -48,6 +49,7 @@ ENVIRONMENTS = {
     'production': {
         'name': 'Production (Yandex Cloud)',
         'description': 'Подключение к серверу 93.77.182.26 через SSH туннель',
+        'backend_url': os.getenv('PROD_BACKEND_URL', ''),  # например http://93.77.182.26 или https://your-domain
         'postgres': {
             'host': 'localhost',  # Через SSH туннель
             'port': 15432,  # Локальный порт туннеля
@@ -366,12 +368,19 @@ def create_analyte_synonym(synonym: str, analyte_id: str):
         return False, str(e)
 
 def call_backend_reload():
-    """Вызвать backend для инвалидации кэша нормализации"""
-    backend_url = os.getenv('BACKEND_URL', 'http://backend:8000')
+    """Вызвать backend текущего окружения для инвалидации кэша нормализации"""
+    env_config = ENVIRONMENTS[current_env]
+    backend_url = env_config.get('backend_url', '')
+    if not backend_url and current_env == 'production':
+        # Fallback: http://PROD_SSH_HOST (без порта — nginx на 80)
+        host = env_config.get('ssh', {}).get('host', '')
+        backend_url = f"http://{host}" if host else ''
+    if not backend_url:
+        backend_url = os.getenv('BACKEND_URL', 'http://backend:8000')
     url = f"{backend_url.rstrip('/')}/api/v1/internal/analytes/reload"
     try:
         import requests
-        r = requests.post(url, timeout=5)
+        r = requests.post(url, timeout=10)
         return r.status_code == 200, r.text
     except Exception as e:
         return False, str(e)
