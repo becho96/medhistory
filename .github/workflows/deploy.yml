@@ -63,12 +63,13 @@ jobs:
             ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:${{ env.DEPLOY_PATH }}/
           
           # Build and restart containers using production compose file
+          # --env-file .env.production — переменные (OPENROUTER_MODEL и др.) из .env.production на сервере
           if [ "${{ inputs.service }}" = "all" ]; then
-            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd ${{ env.DEPLOY_PATH }} && docker compose -f docker-compose.prod.yml build --no-cache && docker compose -f docker-compose.prod.yml up -d"
+            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd ${{ env.DEPLOY_PATH }} && docker compose -f docker-compose.prod.yml --env-file .env.production build --no-cache && docker compose -f docker-compose.prod.yml --env-file .env.production up -d"
           elif [ "${{ inputs.service }}" = "backend" ]; then
-            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd ${{ env.DEPLOY_PATH }} && docker compose -f docker-compose.prod.yml build --no-cache backend && docker compose -f docker-compose.prod.yml up -d backend"
+            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd ${{ env.DEPLOY_PATH }} && docker compose -f docker-compose.prod.yml --env-file .env.production build --no-cache backend && docker compose -f docker-compose.prod.yml --env-file .env.production up -d backend"
           elif [ "${{ inputs.service }}" = "frontend" ]; then
-            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd ${{ env.DEPLOY_PATH }} && docker compose -f docker-compose.prod.yml build --no-cache frontend && docker compose -f docker-compose.prod.yml up -d frontend"
+            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd ${{ env.DEPLOY_PATH }} && docker compose -f docker-compose.prod.yml --env-file .env.production build --no-cache frontend && docker compose -f docker-compose.prod.yml --env-file .env.production up -d frontend"
           fi
 
       - name: Health check

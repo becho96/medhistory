@@ -1136,6 +1136,42 @@ HTML_TEMPLATE = """
             font-size: 11px;
             color: var(--text-secondary);
         }
+        
+        /* Кнопка обновления кэша — заметная в сайдбаре */
+        .mapping-cache-section {
+            padding: 12px 16px;
+            background: rgba(249, 115, 22, 0.15);
+            border: 1px solid var(--production);
+            border-left: 4px solid var(--production);
+            margin: 0 12px 12px;
+            border-radius: 8px;
+        }
+        .mapping-cache-section.hidden {
+            display: none !important;
+        }
+        .mapping-cache-section .cache-reload-btn {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--production);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: opacity 0.2s;
+        }
+        .mapping-cache-section .cache-reload-btn:hover:not(:disabled) {
+            opacity: 0.9;
+        }
+        .mapping-cache-section .cache-reload-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -1184,6 +1220,11 @@ HTML_TEMPLATE = """
                 <div class="connection-status" id="mappingStatus" style="display: none;">
                     <span class="status-dot connected"></span>
                     <span>Сопоставление синонимов с эталонными анализами</span>
+                </div>
+                <div class="mapping-cache-section hidden" id="mappingCacheSection">
+                    <button class="cache-reload-btn" id="reloadCacheBtn" onclick="reloadBackendCache()" title="После добавления маппинга нажмите, чтобы backend подхватил изменения">
+                        🔄 Обновить кэш backend
+                    </button>
                 </div>
             </div>
             
@@ -1443,7 +1484,8 @@ HTML_TEMPLATE = """
             document.getElementById('dataContainer').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
             document.getElementById('header').querySelector('h2').innerHTML = '<span class="badge" style="background: var(--accent); color: white;">Маппинг</span> Анализы без сопоставления';
             document.getElementById('headerInfo').textContent = '';
-            document.getElementById('headerActions').innerHTML = '<button class="btn" id="reloadCacheBtn" onclick="reloadBackendCache()">Обновить кэш backend</button>';
+            document.getElementById('headerActions').innerHTML = '';
+            document.getElementById('mappingCacheSection').classList.remove('hidden');
             await loadMappingView();
         }
         
@@ -1583,6 +1625,7 @@ HTML_TEMPLATE = """
         async function selectTable(name, dbType) {
             document.querySelector('.mapping-header')?.classList.remove('active');
             document.getElementById('mappingStatus').style.display = 'none';
+            document.getElementById('mappingCacheSection').classList.add('hidden');
             document.getElementById('headerActions').innerHTML = '';
             currentTable = name;
             currentDbType = dbType;

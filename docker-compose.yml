@@ -35,8 +35,10 @@ services:
       MONGO_INITDB_DATABASE: ${MONGO_INITDB_DATABASE:-medhistory}
     volumes:
       - mongodb_data:/data/db
-    ports:
-      - "${MONGODB_PORT:-27017}:27017"
+    # ports: не нужен — backend и db-viewer подключаются по mongodb:27017 внутри сети
+    # Если нужен доступ с хоста (Mongo Compass и т.п.), раскомментируйте:
+    # ports:
+    #   - "${MONGODB_PORT:-27017}:27017"
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
