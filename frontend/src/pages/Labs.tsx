@@ -70,11 +70,6 @@ function LineChart({ points, excludedPoints, onTogglePoint, onOpenDocument, stan
     danger: '#ef4444'    // красный
   }
   
-  const firstValue = values[0]
-  const lastValue = values[values.length - 1]
-  const trend = lastValue > firstValue ? 'up' : lastValue < firstValue ? 'down' : 'stable'
-  const trendPercent = firstValue !== 0 ? (((lastValue - firstValue) / Math.abs(firstValue)) * 100).toFixed(1) : '0'
-
   const dates = data.map((p) => new Date(p.date!).getTime())
   const minX = Math.min(...dates)
   const maxX = Math.max(...dates)
@@ -112,10 +107,6 @@ function LineChart({ points, excludedPoints, onTogglePoint, onOpenDocument, stan
     })
     .join(' ')
 
-  const areaPath = data.length > 0
-    ? `${linePath} L ${xScale(new Date(data[data.length - 1].date!).getTime())} ${padding.top + chartHeight} L ${xScale(new Date(data[0].date!).getTime())} ${padding.top + chartHeight} Z`
-    : ''
-
   const yGridLines = 6
   const xGridLines = Math.min(data.length, 8)
   
@@ -136,7 +127,7 @@ function LineChart({ points, excludedPoints, onTogglePoint, onOpenDocument, stan
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Statistics Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-4">
         <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-lg sm:rounded-xl p-2 sm:p-4 border border-blue-200">
           <div className="text-xs font-medium text-blue-600 mb-0.5 sm:mb-1">Минимум</div>
           <div className="text-base sm:text-2xl font-bold text-blue-900">{formatValue(minValue)}</div>
@@ -148,50 +139,17 @@ function LineChart({ points, excludedPoints, onTogglePoint, onOpenDocument, stan
           <div className="text-base sm:text-2xl font-bold text-purple-900">{formatValue(maxValue)}</div>
           <div className="text-xs text-purple-600 mt-0.5 sm:mt-1">{displayUnit}</div>
         </div>
-
-        <div className="bg-gradient-to-br from-emerald-50 to-emerald-100/50 rounded-lg sm:rounded-xl p-2 sm:p-4 border border-emerald-200">
-          <div className="text-xs font-medium text-emerald-600 mb-0.5 sm:mb-1">Среднее</div>
-          <div className="text-base sm:text-2xl font-bold text-emerald-900">{formatValue(avgValue)}</div>
-          <div className="text-xs text-emerald-600 mt-0.5 sm:mt-1">{displayUnit}</div>
-        </div>
-
-        <div className={`bg-gradient-to-br rounded-lg sm:rounded-xl p-2 sm:p-4 border ${
-          trend === 'up' 
-            ? 'from-orange-50 to-orange-100/50 border-orange-200' 
-            : trend === 'down'
-            ? 'from-green-50 to-green-100/50 border-green-200'
-            : 'from-gray-50 to-gray-100/50 border-gray-200'
-        }`}>
-          <div className={`text-xs font-medium mb-0.5 sm:mb-1 ${
-            trend === 'up' ? 'text-orange-600' : trend === 'down' ? 'text-green-600' : 'text-gray-600'
-          }`}>
-            Тренд
-          </div>
-          <div className={`text-base sm:text-2xl font-bold flex items-center gap-1 sm:gap-2 ${
-            trend === 'up' ? 'text-orange-900' : trend === 'down' ? 'text-green-900' : 'text-gray-900'
-          }`}>
-            {trend === 'up' && '↗'}
-            {trend === 'down' && '↘'}
-            {trend === 'stable' && '→'}
-            <span>{Math.abs(parseFloat(trendPercent))}%</span>
-          </div>
-          <div className={`text-xs mt-0.5 sm:mt-1 ${
-            trend === 'up' ? 'text-orange-600' : trend === 'down' ? 'text-green-600' : 'text-gray-600'
-          }`}>
-            {trend === 'up' ? 'Рост' : trend === 'down' ? 'Снижение' : 'Стабильно'}
-          </div>
-        </div>
       </div>
 
-      {/* Chart */}
-      <div className="relative">
+      {/* Chart and Legend */}
+      <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
+        <div className="relative flex-1 min-w-0 w-full">
         <svg width={width} height={height} className="w-full h-auto" style={{ maxWidth: '100%' }}>
           <defs>
-            <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#6366f1" stopOpacity="0.05" />
+            <linearGradient id="normalZoneGradient" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#10b981" stopOpacity="0.12" />
+              <stop offset="100%" stopColor="#10b981" stopOpacity="0.12" />
             </linearGradient>
-            
             <linearGradient id="lineGradient" x1="0" y1="0" x2="1" y2="0">
               <stop offset="0%" stopColor="#8b5cf6" />
               <stop offset="50%" stopColor="#6366f1" />
@@ -238,6 +196,17 @@ function LineChart({ points, excludedPoints, onTogglePoint, onOpenDocument, stan
               />
             ))}
           </g>
+
+          {/* Зона нормальных значений (подложка между мин и макс) */}
+          {referenceMin !== null && referenceMax !== null && (
+            <rect
+              x={padding.left}
+              y={yScale(referenceMax)}
+              width={chartWidth}
+              height={yScale(referenceMin) - yScale(referenceMax)}
+              fill="url(#normalZoneGradient)"
+            />
+          )}
 
           {/* Reference lines - минимум и максимум */}
           {referenceMin !== null && (
@@ -289,34 +258,6 @@ function LineChart({ points, excludedPoints, onTogglePoint, onOpenDocument, stan
               </text>
             </>
           )}
-
-          {/* Average line */}
-          <line
-            x1={padding.left}
-            y1={yScale(avgValue)}
-            x2={width - padding.right}
-            y2={yScale(avgValue)}
-            stroke="#10b981"
-            strokeWidth="2"
-            strokeDasharray="8,4"
-            opacity="0.5"
-          />
-          <text
-            x={width - padding.right - 5}
-            y={yScale(avgValue) - 8}
-            textAnchor="end"
-            fontSize="11"
-            fill="#10b981"
-            fontWeight="600"
-          >
-            Среднее: {formatValue(avgValue)} {displayUnit}
-          </text>
-
-          {/* Area fill */}
-          <path
-            d={areaPath}
-            fill="url(#areaGradient)"
-          />
 
           {/* Main line */}
           <path
@@ -515,34 +456,35 @@ function LineChart({ points, excludedPoints, onTogglePoint, onOpenDocument, stan
             Дата анализа
           </text>
         </svg>
-      </div>
+        </div>
 
-      {/* Legend */}
-      <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 text-xs sm:text-sm">
+      {/* Legend - справа от графика */}
+      <div className="flex flex-col gap-3 text-xs sm:text-sm shrink-0 md:pt-10">
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+          <div className="w-3 h-3 rounded-full bg-emerald-500 shrink-0"></div>
           <span className="text-gray-700">В норме</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
+          <div className="w-3 h-3 rounded-full bg-yellow-500 shrink-0"></div>
           <span className="text-gray-700">Близко к границе</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-red-500"></div>
+          <div className="w-3 h-3 rounded-full bg-red-500 shrink-0"></div>
           <span className="text-gray-700">Вне нормы</span>
         </div>
-        {(referenceMin !== null || referenceMax !== null) && (
+        {(referenceMin !== null && referenceMax !== null) && (
           <>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-0.5 bg-red-500" style={{ backgroundImage: 'repeating-linear-gradient(to right, #ef4444 0, #ef4444 6px, transparent 6px, transparent 9px)' }}></div>
+              <div className="w-4 h-3 rounded-sm shrink-0" style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)' }}></div>
+              <span className="text-gray-700">Зона нормы</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-0.5 shrink-0 bg-red-500" style={{ backgroundImage: 'repeating-linear-gradient(to right, #ef4444 0, #ef4444 6px, transparent 6px, transparent 9px)' }}></div>
               <span className="text-gray-700">Границы нормы</span>
             </div>
           </>
         )}
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-0.5 bg-emerald-500" style={{ backgroundImage: 'repeating-linear-gradient(to right, #10b981 0, #10b981 8px, transparent 8px, transparent 12px)' }}></div>
-          <span className="text-gray-700">Среднее значение</span>
-        </div>
+      </div>
       </div>
 
       {/* Data Table */}

@@ -367,6 +367,35 @@ def create_analyte_synonym(synonym: str, analyte_id: str):
     except Exception as e:
         return False, str(e)
 
+
+def create_unit_conversion(analyte_id: str, from_unit: str):
+    """
+    Добавить единицу измерения в unit_conversions для анализа.
+    Возвращает (success, error_message).
+    Если единица уже есть — игнорирует (успех).
+    """
+    import uuid
+    from_unit = (from_unit or "").strip()
+    if not from_unit or not analyte_id:
+        return True, None  # Пустая единица — не ошибка, просто пропускаем
+    from_unit_lower = from_unit.lower()
+    try:
+        with get_pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO unit_conversions (id, analyte_id, from_unit, from_unit_lower, coefficient)
+                    VALUES (%s, %s, %s, %s, 1.0)
+                    ON CONFLICT (analyte_id, from_unit_lower) DO NOTHING
+                """, (str(uuid.uuid4()), analyte_id, from_unit, from_unit_lower))
+            conn.commit()
+        return True, None
+    except psycopg2.IntegrityError as e:
+        if "ix_unit_conversions_analyte_unit" in str(e) or "duplicate key" in str(e).lower():
+            return True, None  # Уже есть — считаем успехом
+        raise
+    except Exception as e:
+        return False, str(e)
+
 def call_backend_reload():
     """Вызвать backend текущего окружения для инвалидации кэша нормализации"""
     env_config = ENVIRONMENTS[current_env]
@@ -1504,6 +1533,7 @@ HTML_TEMPLATE = """
         async function saveMapping() {
             const analyteId = document.getElementById('mappingStandardSelect').value;
             const synonym = mappingCurrentUnmapped?.original_name || '';
+            const unit = mappingCurrentUnmapped?.unit || '';
             const errEl = document.getElementById('mappingError');
             if (!analyteId || !synonym) {
                 errEl.textContent = 'Выберите эталонный анализ';
@@ -1515,7 +1545,7 @@ HTML_TEMPLATE = """
                 const res = await fetch('/api/analytes/mappings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ synonym, analyte_id: analyteId })
+                    body: JSON.stringify({ synonym, analyte_id: analyteId, unit: unit })
                 });
                 const data = await res.json();
                 if (data.success) {
@@ -1963,11 +1993,17 @@ def api_analytes_create_mapping():
     data = request.get_json() or {}
     synonym = data.get('synonym', '').strip()
     analyte_id = data.get('analyte_id', '').strip()
+    unit = (data.get('unit') or '').strip()
     if not synonym or not analyte_id:
         return jsonify({'success': False, 'error': 'synonym и analyte_id обязательны'}), 400
     success, err = create_analyte_synonym(synonym, analyte_id)
     if not success:
         return jsonify({'success': False, 'error': err or 'Ошибка создания маппинга'}), 400
+    # Добавить единицу в unit_conversions, если указана
+    if unit:
+        ok_unit, err_unit = create_unit_conversion(analyte_id, unit)
+        if not ok_unit:
+            return jsonify({'success': False, 'error': f'Маппинг добавлен, но единица не записана: {err_unit}'}), 400
     # Инвалидировать кэш в backend
     ok, msg = call_backend_reload()
     if not ok:
