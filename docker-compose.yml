@@ -162,7 +162,7 @@ services:
     networks:
       - medhistory_network
 
-  # DB Viewer — просмотр PostgreSQL и MongoDB
+  # DB Viewer — просмотр PostgreSQL и MongoDB, маппинг анализов
   db-viewer:
     build:
       context: ./db-viewer
@@ -180,6 +180,7 @@ services:
       MONGO_USER: ${MONGO_INITDB_ROOT_USERNAME:-admin}
       MONGO_PASSWORD: ${MONGO_PASSWORD}
       MONGO_DB: ${MONGO_INITDB_DATABASE:-medhistory}
+      BACKEND_URL: http://backend:8000
       # Production SSH: /root/.ssh/id_rsa или /root/.ssh/id_ed25519 (override через PROD_SSH_KEY)
       PROD_SSH_KEY: ${PROD_SSH_KEY:-/root/.ssh/id_rsa}
       # PROD_PG_PASSWORD, PROD_MONGO_PASSWORD — из .env.production
@@ -193,6 +194,8 @@ services:
         condition: service_healthy
       mongodb:
         condition: service_healthy
+      backend:
+        condition: service_started
     networks:
       - medhistory_network
 

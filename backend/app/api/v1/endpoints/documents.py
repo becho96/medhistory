@@ -444,11 +444,11 @@ async def list_available_analytes(
         ]
     }
     """
-    # Проверяем, загружен ли справочник. Если нет - пробуем загрузить
+    # Проверяем, загружен ли справочник. Если нет — загружаем (в т.ч. после invalidate_cache)
     if not analyte_normalization_service_db.is_loaded:
         logger.warning("⚠️ Справочник анализов не загружен, пробуем загрузить...")
         try:
-            await analyte_normalization_service_db.load_from_db(db)
+            await analyte_normalization_service_db.load_from_db(db, force=True)
             logger.info(f"✅ Справочник загружен: {analyte_normalization_service_db.get_stats()}")
         except Exception as e:
             logger.error(f"❌ Не удалось загрузить справочник: {e}")

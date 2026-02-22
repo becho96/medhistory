@@ -1,9 +1,10 @@
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import auth, documents, timeline, reports, interpretations, metrics, family, bot, health_events
+from app.api.v1.endpoints import auth, documents, timeline, reports, interpretations, metrics, family, bot, health_events, internal
 
 api_router = APIRouter()
 
+api_router.include_router(internal.router, prefix="/internal", tags=["Internal"])
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 api_router.include_router(family.router, prefix="/family", tags=["Family"])
 api_router.include_router(documents.router, prefix="/documents", tags=["Documents"])

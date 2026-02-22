@@ -270,6 +270,112 @@ def mongo_to_json(obj):
         return [mongo_to_json(i) for i in obj]
     return obj
 
+# ============== Analyte Mapping (Admin) ==============
+
+def get_existing_synonym_lower_set():
+    """Получить множество synonym_lower из analyte_synonyms для фильтрации"""
+    with get_pg_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute("SELECT synonym_lower FROM analyte_synonyms")
+            return {row[0] for row in cur.fetchall()}
+
+def get_unmapped_analytes():
+    """Получить список немапленных анализов: distinct (test_name, unit) из MongoDB, не в analyte_synonyms"""
+    try:
+        client = get_mongo_client()
+        db = client[get_mongo_config()['database']]
+        coll = db['document_metadata']
+        
+        pipeline = [
+            {"$match": {"extracted_data.lab_results": {"$exists": True, "$ne": []}}},
+            {"$project": {"extracted_data.lab_results": 1}},
+            {"$unwind": "$extracted_data.lab_results"},
+            {
+                "$group": {
+                    "_id": {
+                        "name_lower": {"$toLower": {"$ifNull": ["$extracted_data.lab_results.test_name", ""]}},
+                        "unit": {"$ifNull": ["$extracted_data.lab_results.unit", ""]}
+                    },
+                    "name": {"$first": "$extracted_data.lab_results.test_name"},
+                    "unit": {"$first": "$extracted_data.lab_results.unit"},
+                    "count": {"$sum": 1}
+                }
+            },
+            {"$sort": {"name": 1}},
+        ]
+        
+        cursor = coll.aggregate(pipeline)
+        rows = list(cursor)
+        client.close()
+        
+        # Фильтруем: оставляем только те, у которых name_lower нет в analyte_synonyms
+        existing = get_existing_synonym_lower_set()
+        result = []
+        for r in rows:
+            name = (r.get("name") or "").strip()
+            unit = r.get("unit") or ""
+            name_lower = (name or "").lower().strip()
+            if not name_lower:
+                continue
+            if name_lower not in existing:
+                result.append({
+                    "original_name": name,
+                    "unit": unit,
+                    "count": r.get("count", 0)
+                })
+        
+        return result
+    except Exception as e:
+        print(f"get_unmapped_analytes error: {e}")
+        return []
+
+def get_analyte_standards():
+    """Получить список стандартных анализов с категориями"""
+    with get_pg_connection() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute("""
+                SELECT a.id, a.canonical_name, a.standard_unit, c.name as category_name
+                FROM analyte_standards a
+                JOIN analyte_categories c ON c.id = a.category_id
+                WHERE a.is_active = TRUE AND c.is_active = TRUE
+                ORDER BY c.sort_order, a.sort_order, a.canonical_name
+            """)
+            return [dict(row) for row in cur.fetchall()]
+
+def create_analyte_synonym(synonym: str, analyte_id: str):
+    """Добавить синоним в analyte_synonyms. Возвращает (success, error_message)"""
+    import uuid
+    synonym = (synonym or "").strip()
+    synonym_lower = synonym.lower()
+    if not synonym or not analyte_id:
+        return False, "synonym и analyte_id обязательны"
+    try:
+        with get_pg_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO analyte_synonyms (id, analyte_id, synonym, synonym_lower)
+                    VALUES (%s, %s, %s, %s)
+                """, (str(uuid.uuid4()), analyte_id, synonym, synonym_lower))
+            conn.commit()
+        return True, None
+    except psycopg2.IntegrityError as e:
+        if "ix_analyte_synonyms_synonym_lower_unique" in str(e) or "duplicate key" in str(e).lower():
+            return False, "Этот синоним уже существует в маппинге"
+        raise
+    except Exception as e:
+        return False, str(e)
+
+def call_backend_reload():
+    """Вызвать backend для инвалидации кэша нормализации"""
+    backend_url = os.getenv('BACKEND_URL', 'http://backend:8000')
+    url = f"{backend_url.rstrip('/')}/api/v1/internal/analytes/reload"
+    try:
+        import requests
+        r = requests.post(url, timeout=5)
+        return r.status_code == 200, r.text
+    except Exception as e:
+        return False, str(e)
+
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="ru">
@@ -953,6 +1059,45 @@ HTML_TEMPLATE = """
             border-radius: 4px;
             font-size: 10px;
         }
+        
+        /* Маппинг анализов */
+        .mapping-header {
+            cursor: pointer;
+        }
+        .mapping-header:hover {
+            background: var(--bg-tertiary);
+        }
+        .mapping-header.active {
+            background: rgba(88, 166, 255, 0.15);
+        }
+        .mapping-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .mapping-row:hover {
+            background: var(--bg-secondary);
+        }
+        .mapping-form select {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 6px;
+            width: 100%;
+            font-size: 13px;
+        }
+        .mapping-form .form-row {
+            margin-bottom: 12px;
+        }
+        .mapping-form label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
     </style>
 </head>
 <body>
@@ -992,6 +1137,18 @@ HTML_TEMPLATE = """
                 <div>Mongo порт: <code id="sshMongoPort">17017</code> → <code>27017</code></div>
             </div>
             
+            <!-- Маппинг анализов -->
+            <div class="db-section">
+                <div class="db-section-header mapping-header" onclick="selectMapping()">
+                    <span class="db-icon" style="background: var(--accent); color: white;">A</span>
+                    Маппинг анализов
+                </div>
+                <div class="connection-status" id="mappingStatus" style="display: none;">
+                    <span class="status-dot connected"></span>
+                    <span>Сопоставление синонимов с эталонными анализами</span>
+                </div>
+            </div>
+            
             <!-- PostgreSQL -->
             <div class="db-section">
                 <div class="db-section-header">
@@ -1025,6 +1182,7 @@ HTML_TEMPLATE = """
             <div class="header" id="header">
                 <h2>Выберите таблицу или коллекцию</h2>
                 <span class="header-info" id="headerInfo"></span>
+                <div id="headerActions"></div>
             </div>
             
             <div class="table-info" id="tableInfo" style="display: none;">
@@ -1061,13 +1219,39 @@ HTML_TEMPLATE = """
         </div>
     </div>
     
+    <!-- Модальное окно для добавления маппинга -->
+    <div class="modal-overlay" id="mappingModalOverlay" style="display: none;" onclick="closeMappingModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3>Добавить маппинг</h3>
+                <button class="modal-close" onclick="closeMappingModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="mapping-form">
+                    <div class="form-row">
+                        <label>Синоним (название из документа)</label>
+                        <input type="text" id="mappingSynonymInput" readonly style="background: var(--bg-tertiary); border: 1px solid var(--border-color); color: var(--text-primary); padding: 8px 12px; border-radius: 6px; width: 100%; font-size: 13px;">
+                    </div>
+                    <div class="form-row">
+                        <label>Сопоставить с эталонным анализом</label>
+                        <select id="mappingStandardSelect"></select>
+                    </div>
+                    <div id="mappingError" style="color: var(--danger); font-size: 12px; margin-bottom: 8px; display: none;"></div>
+                    <button class="btn" onclick="saveMapping()">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <script>
         let currentTable = null;
-        let currentDbType = null; // 'postgres' or 'mongo'
+        let currentDbType = null; // 'postgres', 'mongo', or 'mapping'
         let currentOffset = 0;
         let totalRows = 0;
         let currentEnv = 'local';
         const limit = 100;
+        let mappingStandards = [];
+        let mappingCurrentUnmapped = null;
         
         // Переключить окружение
         async function switchEnvironment(env) {
@@ -1109,6 +1293,7 @@ HTML_TEMPLATE = """
                     // Сбросить текущую выборку
                     currentTable = null;
                     currentDbType = null;
+                    document.querySelector('.mapping-header')?.classList.remove('active');
                     document.getElementById('tableInfo').style.display = 'none';
                     document.getElementById('pagination').style.display = 'none';
                     document.getElementById('dataContainer').innerHTML = `
@@ -1119,6 +1304,7 @@ HTML_TEMPLATE = """
                     `;
                     document.getElementById('header').querySelector('h2').innerHTML = 'Выберите таблицу или коллекцию';
                     document.getElementById('headerInfo').textContent = '';
+                    document.getElementById('headerActions').innerHTML = '';
                     
                     // Обновить списки таблиц
                     await Promise.all([loadPostgres(), loadMongo()]);
@@ -1206,8 +1392,159 @@ HTML_TEMPLATE = """
             }
         }
         
+        // Маппинг анализов
+        async function selectMapping() {
+            document.querySelectorAll('.table-item').forEach(el => el.classList.remove('active'));
+            document.querySelector('.mapping-header')?.classList.add('active');
+            document.getElementById('mappingStatus').style.display = 'flex';
+            currentTable = '__mapping__';
+            currentDbType = 'mapping';
+            currentOffset = 0;
+            document.getElementById('tableInfo').style.display = 'none';
+            document.getElementById('pagination').style.display = 'none';
+            document.getElementById('dataContainer').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+            document.getElementById('header').querySelector('h2').innerHTML = '<span class="badge" style="background: var(--accent); color: white;">Маппинг</span> Анализы без сопоставления';
+            document.getElementById('headerInfo').textContent = '';
+            document.getElementById('headerActions').innerHTML = '<button class="btn" id="reloadCacheBtn" onclick="reloadBackendCache()">Обновить кэш backend</button>';
+            await loadMappingView();
+        }
+        
+        async function loadMappingView() {
+            try {
+                const [unmappedRes, standardsRes] = await Promise.all([
+                    fetch('/api/analytes/unmapped'),
+                    fetch('/api/analytes/standards')
+                ]);
+                const unmappedData = await unmappedRes.json();
+                const standardsData = await standardsRes.json();
+                const unmapped = unmappedData.unmapped || [];
+                mappingStandards = standardsData.standards || [];
+                
+                document.getElementById('headerInfo').textContent = unmapped.length + ' немапленных';
+                
+                if (unmapped.length === 0) {
+                    document.getElementById('dataContainer').innerHTML = `
+                        <div class="empty-state">
+                            <div class="empty-state-icon">✓</div>
+                            <p>Все анализы из документов имеют маппинг</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                document.getElementById('dataContainer').innerHTML = `
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Название (из документа)</th>
+                                <th>Единица</th>
+                                <th>Кол-во</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${unmapped.map((u, i) => `
+                                <tr class="mapping-row">
+                                    <td>${escapeHtml(u.original_name)}</td>
+                                    <td>${escapeHtml(u.unit || '—')}</td>
+                                    <td>${u.count}</td>
+                                    <td><button class="btn" data-name="${escapeHtml(u.original_name)}" data-unit="${escapeHtml(u.unit || '')}" onclick="openMappingModalFromBtn(this)">Добавить маппинг</button></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+            } catch (e) {
+                document.getElementById('dataContainer').innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-state-icon">✗</div>
+                        <p>Ошибка загрузки: ${escapeHtml(String(e))}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function escapeHtml(s) {
+            if (!s) return '';
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+        
+        function openMappingModalFromBtn(btn) {
+            openMappingModal(btn.dataset.name || '', btn.dataset.unit || '');
+        }
+        
+        function openMappingModal(originalName, unit) {
+            mappingCurrentUnmapped = { original_name: originalName, unit: unit };
+            document.getElementById('mappingSynonymInput').value = originalName + (unit ? ' (' + unit + ')' : '');
+            const select = document.getElementById('mappingStandardSelect');
+            select.innerHTML = '<option value="">— Выберите эталонный анализ —</option>' +
+                mappingStandards.map(s => `<option value="${s.id}">${escapeHtml(s.canonical_name)} (${escapeHtml(s.standard_unit)}) — ${escapeHtml(s.category_name)}</option>`).join('');
+            document.getElementById('mappingError').style.display = 'none';
+            document.getElementById('mappingModalOverlay').style.display = 'flex';
+        }
+        
+        function closeMappingModal(event) {
+            if (!event || event.target === document.getElementById('mappingModalOverlay')) {
+                document.getElementById('mappingModalOverlay').style.display = 'none';
+                mappingCurrentUnmapped = null;
+            }
+        }
+        
+        async function saveMapping() {
+            const analyteId = document.getElementById('mappingStandardSelect').value;
+            const synonym = mappingCurrentUnmapped?.original_name || '';
+            const errEl = document.getElementById('mappingError');
+            if (!analyteId || !synonym) {
+                errEl.textContent = 'Выберите эталонный анализ';
+                errEl.style.display = 'block';
+                return;
+            }
+            errEl.style.display = 'none';
+            try {
+                const res = await fetch('/api/analytes/mappings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ synonym, analyte_id: analyteId })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    closeMappingModal();
+                    await loadMappingView();
+                    if (data.warning) alert(data.warning);
+                } else {
+                    errEl.textContent = data.error || 'Ошибка';
+                    errEl.style.display = 'block';
+                }
+            } catch (e) {
+                errEl.textContent = 'Ошибка: ' + e.message;
+                errEl.style.display = 'block';
+            }
+        }
+        
+        async function reloadBackendCache() {
+            const btn = document.getElementById('reloadCacheBtn');
+            if (btn) btn.disabled = true;
+            try {
+                const res = await fetch('/api/analytes/reload-cache', { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    alert('Кэш обновлён. Обновите страницу Анализов (F5) в основном приложении.');
+                } else {
+                    alert('Ошибка: ' + (data.error || res.statusText) + '\\n\\nПроверьте, что backend запущен и BACKEND_URL в db-viewer указывает на него (http://backend:8000 в Docker).');
+                }
+            } catch (e) {
+                alert('Ошибка: ' + e.message);
+            }
+            if (btn) btn.disabled = false;
+        }
+        
         // Выбрать таблицу/коллекцию
         async function selectTable(name, dbType) {
+            document.querySelector('.mapping-header')?.classList.remove('active');
+            document.getElementById('mappingStatus').style.display = 'none';
+            document.getElementById('headerActions').innerHTML = '';
             currentTable = name;
             currentDbType = dbType;
             currentOffset = 0;
@@ -1409,7 +1746,13 @@ HTML_TEMPLATE = """
         
         // Клавиша Escape для закрытия модального окна
         document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') closeModal();
+            if (e.key === 'Escape') {
+                if (document.getElementById('mappingModalOverlay').style.display === 'flex') {
+                    closeMappingModal();
+                } else {
+                    closeModal();
+                }
+            }
         });
         
         // Инициализация
@@ -1587,6 +1930,49 @@ def api_mongo_collection_data(collection_name):
     
     serializable_docs = [mongo_to_json(doc) for doc in docs]
     return jsonify({'rows': serializable_docs, 'total': total})
+
+# ============== Analyte Mapping API ==============
+
+@app.route('/api/analytes/unmapped')
+def api_analytes_unmapped():
+    try:
+        unmapped = get_unmapped_analytes()
+        return jsonify({'unmapped': unmapped})
+    except Exception as e:
+        return jsonify({'error': str(e), 'unmapped': []}), 500
+
+@app.route('/api/analytes/standards')
+def api_analytes_standards():
+    try:
+        standards = get_analyte_standards()
+        return jsonify({'standards': standards})
+    except Exception as e:
+        return jsonify({'error': str(e), 'standards': []}), 500
+
+@app.route('/api/analytes/mappings', methods=['POST'])
+def api_analytes_create_mapping():
+    data = request.get_json() or {}
+    synonym = data.get('synonym', '').strip()
+    analyte_id = data.get('analyte_id', '').strip()
+    if not synonym or not analyte_id:
+        return jsonify({'success': False, 'error': 'synonym и analyte_id обязательны'}), 400
+    success, err = create_analyte_synonym(synonym, analyte_id)
+    if not success:
+        return jsonify({'success': False, 'error': err or 'Ошибка создания маппинга'}), 400
+    # Инвалидировать кэш в backend
+    ok, msg = call_backend_reload()
+    if not ok:
+        return jsonify({'success': True, 'warning': f'Маппинг добавлен, но кэш backend не обновлён. Нажмите «Обновить кэш»: {msg}'})
+    return jsonify({'success': True})
+
+
+@app.route('/api/analytes/reload-cache', methods=['POST'])
+def api_analytes_reload_cache():
+    """Ручная инвалидация кэша backend — после добавления маппингов обновите страницу Labs."""
+    ok, msg = call_backend_reload()
+    if ok:
+        return jsonify({'success': True, 'message': 'Кэш backend обновлён. Обновите страницу Анализов.'})
+    return jsonify({'success': False, 'error': msg}), 502
 
 if __name__ == '__main__':
     print("=" * 60)
