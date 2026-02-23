@@ -6,12 +6,13 @@ from sqlalchemy import select, and_, or_, delete
 from sqlalchemy.orm import selectinload
 
 from app.models.user import User
-from app.models.family import FamilyRelation, RelationType, INVERSE_RELATIONS
+from app.models.family import FamilyRelation, FamilyInvite, RelationType, INVERSE_RELATIONS
 from app.schemas.family import (
     FamilyMemberCreate,
     FamilyMemberUpdate,
     FamilyMemberWithAccess,
     FamilyOwnerInfo,
+    FamilyInviteResponse,
     SetCredentials,
     RELATION_TYPE_NAMES,
     RelationType as SchemaRelationType,
@@ -384,12 +385,11 @@ class FamilyService:
         relation_type: RelationType,
         custom_relation: Optional[str],
         db: AsyncSession
-    ) -> FamilyRelation:
+    ) -> FamilyInvite:
         """
-        Добавить существующего пользователя в семью.
-        Пользователь с таким email должен существовать.
+        Пригласить существующего пользователя в семью.
+        Создаётся ожидающее приглашение. Приглашённый должен подтвердить в личном кабинете.
         """
-        # Находим пользователя по email
         user_query = select(User).where(User.email == email)
         user_result = await db.execute(user_query)
         user = user_result.scalar_one_or_none()
@@ -400,29 +400,142 @@ class FamilyService:
         if user.id == owner_id:
             raise ValueError("Нельзя добавить себя в качестве члена семьи")
         
-        # Проверяем, нет ли уже такой связи
-        existing_query = select(FamilyRelation).where(
+        # Проверяем, нет ли уже связи
+        existing_relation = select(FamilyRelation).where(
             and_(
                 FamilyRelation.owner_id == owner_id,
                 FamilyRelation.member_id == user.id
             )
         )
-        existing_result = await db.execute(existing_query)
-        if existing_result.scalar_one_or_none():
-            raise ValueError("Этот пользователь уже добавлен в вашу семью")
+        if (await db.execute(existing_relation)).scalar_one_or_none():
+            raise ValueError("Этот пользователь уже в вашей семье")
         
-        # Создаем связь
-        relation = FamilyRelation(
+        # Проверяем, нет ли уже ожидающего приглашения
+        existing_invite = select(FamilyInvite).where(
+            and_(
+                FamilyInvite.owner_id == owner_id,
+                FamilyInvite.invitee_id == user.id,
+                FamilyInvite.status == "pending"
+            )
+        )
+        if (await db.execute(existing_invite)).scalar_one_or_none():
+            raise ValueError("Приглашение этому пользователю уже отправлено")
+        
+        invite = FamilyInvite(
             owner_id=owner_id,
-            member_id=user.id,
+            invitee_id=user.id,
             relation_type=relation_type,
-            custom_relation=custom_relation
+            custom_relation=custom_relation,
+            status="pending"
+        )
+        db.add(invite)
+        await db.commit()
+        await db.refresh(invite)
+        return invite
+
+    @staticmethod
+    async def get_pending_invites(
+        invitee_id: uuid.UUID,
+        db: AsyncSession
+    ) -> List[FamilyInviteResponse]:
+        """Получить список ожидающих приглашений для пользователя."""
+        query = (
+            select(FamilyInvite)
+            .options(selectinload(FamilyInvite.owner))
+            .where(
+                and_(
+                    FamilyInvite.invitee_id == invitee_id,
+                    FamilyInvite.status == "pending"
+                )
+            )
+            .order_by(FamilyInvite.created_at.desc())
+        )
+        result = await db.execute(query)
+        invites = result.scalars().all()
+        
+        return [
+            FamilyInviteResponse(
+                id=inv.id,
+                owner_id=inv.owner_id,
+                owner_full_name=inv.owner.full_name,
+                owner_email=inv.owner.email,
+                relation_type=SchemaRelationType(inv.relation_type.value),
+                relation_type_display=FamilyService._get_relation_display(
+                    inv.relation_type, inv.custom_relation
+                ),
+                custom_relation=inv.custom_relation,
+                created_at=inv.created_at
+            )
+            for inv in invites
+        ]
+
+    @staticmethod
+    async def accept_invite(
+        invitee_id: uuid.UUID,
+        invite_id: uuid.UUID,
+        db: AsyncSession
+    ) -> FamilyRelation:
+        """Принять приглашение в семью. Создаёт FamilyRelation и удаляет приглашение."""
+        invite_query = select(FamilyInvite).where(
+            and_(
+                FamilyInvite.id == invite_id,
+                FamilyInvite.invitee_id == invitee_id,
+                FamilyInvite.status == "pending"
+            )
+        )
+        invite_result = await db.execute(invite_query)
+        invite = invite_result.scalar_one_or_none()
+        
+        if not invite:
+            raise ValueError("Приглашение не найдено или уже обработано")
+        
+        # Проверяем, что связь не существует
+        existing = select(FamilyRelation).where(
+            and_(
+                FamilyRelation.owner_id == invite.owner_id,
+                FamilyRelation.member_id == invitee_id
+            )
+        )
+        if (await db.execute(existing)).scalar_one_or_none():
+            await db.delete(invite)
+            await db.commit()
+            raise ValueError("Вы уже в этой семье")
+        
+        relation = FamilyRelation(
+            owner_id=invite.owner_id,
+            member_id=invite.invitee_id,
+            relation_type=invite.relation_type,
+            custom_relation=invite.custom_relation
         )
         db.add(relation)
+        await db.delete(invite)
         await db.commit()
         await db.refresh(relation)
-        
         return relation
+
+    @staticmethod
+    async def decline_invite(
+        invitee_id: uuid.UUID,
+        invite_id: uuid.UUID,
+        db: AsyncSession
+    ) -> bool:
+        """Отклонить приглашение в семью."""
+        invite_query = select(FamilyInvite).where(
+            and_(
+                FamilyInvite.id == invite_id,
+                FamilyInvite.invitee_id == invitee_id,
+                FamilyInvite.status == "pending"
+            )
+        )
+        invite_result = await db.execute(invite_query)
+        invite = invite_result.scalar_one_or_none()
+        
+        if not invite:
+            raise ValueError("Приглашение не найдено или уже обработано")
+        
+        await db.delete(invite)
+        await db.commit()
+        return True
     
     @staticmethod
     async def check_profile_access(

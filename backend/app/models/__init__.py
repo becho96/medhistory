@@ -2,7 +2,7 @@ from app.models.user import User
 from app.models.document import Document, Tag, DocumentTag, Specialty, DocumentType
 from app.models.report import Report
 from app.models.interpretation import Interpretation, InterpretationStatus, interpretation_documents
-from app.models.family import FamilyRelation, RelationType, INVERSE_RELATIONS
+from app.models.family import FamilyRelation, FamilyInvite, RelationType, INVERSE_RELATIONS
 from app.models.analyte import (
     AnalyteCategory,
     AnalyteStandard,
@@ -25,6 +25,7 @@ __all__ = [
     "InterpretationStatus",
     "interpretation_documents",
     "FamilyRelation",
+    "FamilyInvite",
     "RelationType",
     "INVERSE_RELATIONS",
     # Analyte mappings

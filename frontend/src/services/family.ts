@@ -3,6 +3,7 @@ import type {
   FamilyMember, 
   FamilyMemberCreate, 
   FamilyMemberUpdate, 
+  FamilyInvite,
   SetCredentials,
   MyFamilyInfo,
   InviteExistingUser,
@@ -79,11 +80,34 @@ export const familyService = {
   },
 
   /**
-   * Добавить существующего пользователя в семью
+   * Пригласить существующего пользователя в семью (требует подтверждения у приглашённого)
    */
-  async inviteExistingUser(data: InviteExistingUser): Promise<FamilyMember> {
-    const response = await api.post<FamilyMember>('/family/invite', data)
+  async inviteExistingUser(data: InviteExistingUser): Promise<{ message: string }> {
+    const response = await api.post<{ message: string }>('/family/invite', data)
     return response.data
+  },
+
+  /**
+   * Получить список ожидающих приглашений в семью
+   */
+  async getPendingInvites(): Promise<FamilyInvite[]> {
+    const response = await api.get<FamilyInvite[]>('/family/pending-invites')
+    return response.data
+  },
+
+  /**
+   * Принять приглашение в семью
+   */
+  async acceptInvite(inviteId: string): Promise<FamilyMember> {
+    const response = await api.post<FamilyMember>(`/family/invites/${inviteId}/accept`)
+    return response.data
+  },
+
+  /**
+   * Отклонить приглашение в семью
+   */
+  async declineInvite(inviteId: string): Promise<void> {
+    await api.post(`/family/invites/${inviteId}/decline`)
   },
 
   /**

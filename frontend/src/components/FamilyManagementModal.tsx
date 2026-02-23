@@ -103,13 +103,19 @@ export default function FamilyManagementModal({ isOpen, onClose, onProfilesUpdat
         email: inviteEmail,
         relation_type: inviteRelationType,
       })
-      setSuccess('Пользователь успешно добавлен в семью')
+      setSuccess('Приглашение отправлено. Пользователь подтвердит его в своём личном кабинете.')
       setInviteEmail('')
       loadFamilyInfo()
       onProfilesUpdated?.()
       setTimeout(() => setActiveTab('members'), 1500)
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Не удалось добавить пользователя')
+      const detail = err.response?.data?.detail
+      const msg = typeof detail === 'string' 
+        ? detail 
+        : Array.isArray(detail) && detail[0]?.msg 
+          ? detail[0].msg 
+          : 'Не удалось добавить пользователя'
+      setError(msg)
     } finally {
       setIsLoading(false)
     }
@@ -466,8 +472,9 @@ export default function FamilyManagementModal({ isOpen, onClose, onProfilesUpdat
             <form onSubmit={handleInviteUser} className="space-y-4">
               <div className="p-4 rounded-lg bg-blue-50 border border-blue-100">
                 <p className="text-sm text-blue-700">
-                  Здесь вы можете добавить в семью пользователя, который уже зарегистрирован в системе.
-                  Он сможет видеть вашу связь, но вы получите доступ к его медицинским данным.
+                  Пригласите пользователя, который уже зарегистрирован в системе. Он получит уведомление
+                  и сможет подтвердить присоединение в своём личном кабинете. После подтверждения вы
+                  получите доступ к его медицинским данным.
                 </p>
               </div>
 

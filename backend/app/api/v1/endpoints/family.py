@@ -15,6 +15,8 @@ from app.schemas.family import (
     FamilyMemberWithAccess,
     FamilyListResponse,
     FamilyOwnerInfo,
+    FamilyInviteResponse,
+    InviteSentResponse,
     MyFamilyInfo,
     SetCredentials,
     InviteExistingUser,
@@ -228,31 +230,55 @@ async def remove_family_member(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 
-@router.post("/invite", response_model=FamilyMemberResponse)
+@router.post("/invite", response_model=InviteSentResponse)
 async def invite_existing_user(
     data: InviteExistingUser,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Добавить существующего пользователя в семью по email.
+    Пригласить существующего пользователя в семью по email.
+    Приглашение требует подтверждения от приглашённого в личном кабинете.
     """
     try:
-        relation = await family_service.invite_existing_user(
+        await family_service.invite_existing_user(
             owner_id=current_user.id,
             email=data.email,
             relation_type=RelationType(data.relation_type.value),
             custom_relation=data.custom_relation,
             db=db
         )
-        
-        # Получаем обновленный список членов семьи
-        members = await family_service.get_family_members(current_user.id, db)
-        member_info = next((m for m in members if m.id == relation.member_id), None)
-        
+        return InviteSentResponse()
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.get("/pending-invites", response_model=List[FamilyInviteResponse])
+async def get_pending_invites(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Получить список ожидающих приглашений в семью."""
+    return await family_service.get_pending_invites(current_user.id, db)
+
+
+@router.post("/invites/{invite_id}/accept", response_model=FamilyMemberResponse)
+async def accept_invite(
+    invite_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Принять приглашение в семейный кабинет."""
+    try:
+        relation = await family_service.accept_invite(
+            invitee_id=current_user.id,
+            invite_id=invite_id,
+            db=db
+        )
+        members = await family_service.get_family_members(relation.owner_id, db)
+        member_info = next((m for m in members if m.id == current_user.id), None)
         if not member_info:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка при добавлении")
-        
+            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Ошибка при принятии")
         return FamilyMemberResponse(
             id=member_info.id,
             full_name=member_info.full_name,
@@ -264,6 +290,23 @@ async def invite_existing_user(
             custom_relation=member_info.custom_relation,
             is_active=member_info.is_active,
             created_at=member_info.created_at
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/invites/{invite_id}/decline", status_code=status.HTTP_204_NO_CONTENT)
+async def decline_invite(
+    invite_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    """Отклонить приглашение в семейный кабинет."""
+    try:
+        await family_service.decline_invite(
+            invitee_id=current_user.id,
+            invite_id=invite_id,
+            db=db
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))

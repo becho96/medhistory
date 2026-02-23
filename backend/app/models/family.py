@@ -77,3 +77,42 @@ class FamilyRelation(Base):
     owner = relationship("User", foreign_keys=[owner_id], back_populates="family_members")
     member = relationship("User", foreign_keys=[member_id], back_populates="family_owners")
 
+
+class FamilyInvite(Base):
+    """
+    Ожидающее приглашение в семью. Требует подтверждения от приглашённого.
+    """
+    __tablename__ = "family_invites"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+
+    # Кто приглашает (владелец семейного кабинета)
+    owner_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    # Кого приглашают (приглашённый пользователь)
+    invitee_id = Column(
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    relation_type = Column(
+        SQLAlchemyEnum(RelationType, name="family_invite_relation_type_enum"),
+        nullable=False,
+    )
+    custom_relation = Column(String(100))
+
+    status = Column(String(20), default="pending", nullable=False)  # pending | accepted | declined
+
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    # Relationships
+    owner = relationship("User", foreign_keys=[owner_id])
+    invitee = relationship("User", foreign_keys=[invitee_id])
+

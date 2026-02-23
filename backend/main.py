@@ -11,6 +11,7 @@ from app.db.minio_client import minio_client, ensure_bucket_exists
 
 # Import models to register them with SQLAlchemy
 from app.models.user import User
+from app.models.family import FamilyRelation, FamilyInvite
 from app.models.document import Document, Tag, DocumentTag, Specialty, DocumentType
 from app.models.report import Report
 from app.models.analyte import (

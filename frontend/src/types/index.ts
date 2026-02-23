@@ -84,6 +84,17 @@ export interface InviteExistingUser {
   custom_relation?: string
 }
 
+export interface FamilyInvite {
+  id: string
+  owner_id: string
+  owner_full_name?: string
+  owner_email?: string
+  relation_type: RelationType
+  relation_type_display: string
+  custom_relation?: string
+  created_at: string
+}
+
 export interface Document {
   id: string
   user_id: string

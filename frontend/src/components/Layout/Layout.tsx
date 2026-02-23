@@ -15,11 +15,28 @@ export default function Layout() {
   const [isProfileSettingsOpen, setIsProfileSettingsOpen] = useState(false)
 
   const isViewingOwnProfile = !activeProfileId || activeProfileId === user?.id
+  const [pendingInvitesCount, setPendingInvitesCount] = useState(0)
 
   // Загружаем профили при монтировании
   useEffect(() => {
     loadProfiles()
   }, [])
+
+  const loadPendingInvitesCount = () => {
+    if (!user) return
+    familyService.getPendingInvites()
+      .then((invites) => setPendingInvitesCount(invites.length))
+      .catch(() => setPendingInvitesCount(0))
+  }
+
+  const handlePendingInvitesUpdated = () => {
+    loadPendingInvitesCount()
+    loadProfiles()
+  }
+
+  useEffect(() => {
+    loadPendingInvitesCount()
+  }, [user, isProfileSettingsOpen])
 
   const loadProfiles = async () => {
     try {
@@ -75,10 +92,18 @@ export default function Layout() {
               {isViewingOwnProfile && (
                 <button
                   onClick={() => setIsProfileSettingsOpen(true)}
-                  className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg sm:rounded-xl hover:bg-gray-50 transition-all"
+                  className="relative flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg sm:rounded-xl hover:bg-gray-50 transition-all"
                   title="Настройки профиля"
                 >
-                  <Settings className="w-4 h-4" />
+                  <span className="relative inline-block">
+                    <Settings className="w-4 h-4" />
+                    {pendingInvitesCount > 0 && (
+                      <span
+                        className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white"
+                        aria-label={`${pendingInvitesCount} приглашений`}
+                      />
+                    )}
+                  </span>
                   <span className="hidden sm:inline">Профиль</span>
                 </button>
               )}
@@ -213,6 +238,7 @@ export default function Layout() {
         <ProfileSettings
           user={user}
           onClose={() => setIsProfileSettingsOpen(false)}
+          onPendingInvitesUpdated={handlePendingInvitesUpdated}
         />
       )}
     </div>

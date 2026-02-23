@@ -1,19 +1,29 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { User as UserIcon, Save, X } from 'lucide-react'
+import { User as UserIcon, Save, X, Users, Check, XCircle } from 'lucide-react'
 import { authService } from '../services/auth'
-import type { User, Gender } from '../types'
+import { familyService } from '../services/family'
+import type { User, Gender, FamilyInvite } from '../types'
 
 interface ProfileSettingsProps {
   user: User
   onClose: () => void
+  onPendingInvitesUpdated?: () => void
 }
 
-export default function ProfileSettings({ user, onClose }: ProfileSettingsProps) {
+export default function ProfileSettings({ user, onClose, onPendingInvitesUpdated }: ProfileSettingsProps) {
   const queryClient = useQueryClient()
   const [gender, setGender] = useState<Gender | undefined>(user.gender)
   const [fullName, setFullName] = useState(user.full_name || '')
   const [birthDate, setBirthDate] = useState(user.birth_date || '')
+  const [pendingInvites, setPendingInvites] = useState<FamilyInvite[]>([])
+  const [invitesLoading, setInvitesLoading] = useState(false)
+
+  useEffect(() => {
+    familyService.getPendingInvites()
+      .then(setPendingInvites)
+      .catch(() => setPendingInvites([]))
+  }, [])
 
   const updateMutation = useMutation({
     mutationFn: (data: { full_name?: string; birth_date?: string; gender?: Gender }) =>
@@ -30,6 +40,37 @@ export default function ProfileSettings({ user, onClose }: ProfileSettingsProps)
       alert('❌ Не удалось обновить профиль')
     },
   })
+
+  const handleAcceptInvite = async (inviteId: string) => {
+    try {
+      setInvitesLoading(true)
+      await familyService.acceptInvite(inviteId)
+      setPendingInvites((prev) => prev.filter((i) => i.id !== inviteId))
+      onPendingInvitesUpdated?.()
+      alert('✅ Вы присоединились к семейному кабинету. Профили обновлены.')
+      queryClient.invalidateQueries({ queryKey: ['family-profiles'] })
+    } catch (err: unknown) {
+      const msg = err && typeof err === 'object' && 'response' in err
+        ? (err as { response?: { data?: { detail?: string } } }).response?.data?.detail
+        : 'Не удалось принять приглашение'
+      alert(`❌ ${msg}`)
+    } finally {
+      setInvitesLoading(false)
+    }
+  }
+
+  const handleDeclineInvite = async (inviteId: string) => {
+    try {
+      setInvitesLoading(true)
+      await familyService.declineInvite(inviteId)
+      setPendingInvites((prev) => prev.filter((i) => i.id !== inviteId))
+      onPendingInvitesUpdated?.()
+    } catch {
+      alert('❌ Не удалось отклонить приглашение')
+    } finally {
+      setInvitesLoading(false)
+    }
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -62,6 +103,54 @@ export default function ProfileSettings({ user, onClose }: ProfileSettingsProps)
             <X className="h-5 w-5 text-gray-500" />
           </button>
         </div>
+
+        {/* Pending family invites */}
+        {pendingInvites.length > 0 && (
+          <div className="px-6 pt-2 pb-4 border-b border-gray-200">
+            <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Приглашения в семейный кабинет
+            </h3>
+            <p className="text-xs text-gray-500 mb-3">
+              Вас пригласили присоединиться к семейному кабинету. Подтвердите или отклоните приглашение.
+            </p>
+            <div className="space-y-2">
+              {pendingInvites.map((invite) => (
+                <div
+                  key={invite.id}
+                  className="flex items-center justify-between p-3 rounded-lg bg-blue-50 border border-blue-100"
+                >
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">
+                      {invite.owner_full_name || invite.owner_email || 'Пользователь'}
+                    </p>
+                    <p className="text-xs text-gray-500">{invite.relation_type_display}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleDeclineInvite(invite.id)}
+                      disabled={invitesLoading}
+                      className="p-2 rounded-lg text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition-colors disabled:opacity-50"
+                      title="Отклонить"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAcceptInvite(invite.id)}
+                      disabled={invitesLoading}
+                      className="p-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
+                      title="Принять"
+                    >
+                      <Check className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5">

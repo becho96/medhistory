@@ -110,3 +110,23 @@ class MyFamilyInfo(BaseModel):
     managing: List[FamilyMemberWithAccess] = Field(default_factory=list, description="Кем я управляю")
     can_detach: bool = Field(description="Может ли пользователь отвязаться")
 
+
+class FamilyInviteResponse(BaseModel):
+    """Ожидающее приглашение в семью (для приглашённого)"""
+    id: uuid.UUID
+    owner_id: uuid.UUID
+    owner_full_name: Optional[str] = None
+    owner_email: Optional[str] = None
+    relation_type: RelationType
+    relation_type_display: str
+    custom_relation: Optional[str] = None
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class InviteSentResponse(BaseModel):
+    """Ответ при отправке приглашения (для приглашающего)"""
+    message: str = "Приглашение отправлено. Пользователь получит уведомление и сможет подтвердить в личном кабинете."
+
