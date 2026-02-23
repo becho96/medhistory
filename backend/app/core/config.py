@@ -19,7 +19,7 @@ class Settings(BaseSettings):
     
     # OpenRouter AI (модель задаётся через OPENROUTER_MODEL в .env)
     OPENROUTER_API_KEY: str
-    OPENROUTER_MODEL: str = "anthropic/claude-3.5-haiku"  # Haiku дешевле; для изображений — claude-3.5-sonnet (Haiku не поддерживает vision)
+    OPENROUTER_MODEL: str = "google/gemini-2.5-flash"  # Рекомендуется: быстрее, без geo-ограничений
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1/chat/completions"
     
     # Authentication

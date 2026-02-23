@@ -1,0 +1,719 @@
+{
+  "timestamp": "2026-02-23T15:47:07.570128Z",
+  "documents": [
+    "medsi_40691498.pdf",
+    "medsi_40719139.pdf",
+    "Макаева А В - 3304846705 (Гормоны).pdf"
+  ],
+  "models": [
+    "anthropic/claude-3.5-sonnet",
+    "google/gemini-2.5-flash",
+    "google/gemini-2.5-flash-lite",
+    "google/gemini-2.5-pro",
+    "google/gemini-2.0-flash-001"
+  ],
+  "results": [
+    {
+      "document": "medsi_40691498.pdf",
+      "model": "anthropic/claude-3.5-sonnet",
+      "classification": {
+        "document_type": "Результаты анализа",
+        "document_subtype": "Общий анализ мочи",
+        "research_area": null,
+        "specialties": null,
+        "document_date": "2022-04-05",
+        "patient_name": "Макаев Б.А.",
+        "medical_facility": "АО «Группа компаний «МЕДСИ» Клиника в Хорошевском проезде",
+        "document_language": "ru",
+        "confidence": 0.98,
+        "summary": "Общий анализ мочи. Большинство показателей в пределах нормы, отмечено небольшое количество бактерий (не норма). Основные параметры: pH 5.5, белок <0.1 г/л, глюкоза <0.10 ммоль/л, эритроциты 0-1 п/зр, лейкоциты 0-1 п/зр."
+      },
+      "lab_results_count": 8,
+      "lab_results_sample": [
+        {
+          "test_name": "Относительная плотность",
+          "value": "1.03",
+          "unit": "г/мл",
+          "reference_range": "1.003-1.030",
+          "flag": "N"
+        },
+        {
+          "test_name": "pH",
+          "value": "5.5",
+          "unit": "pH",
+          "reference_range": "5.5-7.0",
+          "flag": "N"
+        },
+        {
+          "test_name": "Белок",
+          "value": "<0.1",
+          "unit": "г/л",
+          "reference_range": "0-0.1",
+          "flag": "N"
+        },
+        {
+          "test_name": "Глюкоза",
+          "value": "<0.10",
+          "unit": "ммоль/л",
+          "reference_range": null,
+          "flag": "N"
+        },
+        {
+          "test_name": "Кетоновые тела",
+          "value": "следы",
+          "unit": "ммоль/л",
+          "reference_range": null,
+          "flag": "A"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 2273,
+        "completion_tokens": 269,
+        "total_tokens": 2542
+      },
+      "usage_labs": {
+        "prompt_tokens": 1489,
+        "completion_tokens": 514,
+        "total_tokens": 2003
+      },
+      "duration_sec": 15.48,
+      "error": null
+    },
+    {
+      "document": "medsi_40691498.pdf",
+      "model": "google/gemini-2.5-flash",
+      "classification": {
+        "document_type": "Результаты анализа",
+        "document_subtype": "Общий анализ мочи",
+        "research_area": null,
+        "specialties": null,
+        "document_date": "2022-04-05",
+        "patient_name": "Макаев Б.А.",
+        "medical_facility": "АО «Группа компаний «МЕДСИ» Клиника в Хорошевском проезде",
+        "document_language": "ru",
+        "confidence": 0.98,
+        "summary": "Клинический анализ мочи пациента Макаева Бориса Александровича от 05.04.2022. Результаты в пределах нормы, за исключением наличия небольшого количества бактерий."
+      },
+      "lab_results_count": 9,
+      "lab_results_sample": [
+        {
+          "test_name": "Относительная плотность",
+          "value": "1.03",
+          "unit": "г/мл",
+          "reference_range": "1.003-1.030",
+          "flag": "N"
+        },
+        {
+          "test_name": "pH",
+          "value": "5.5",
+          "unit": "pH",
+          "reference_range": "5.5-7.0",
+          "flag": "N"
+        },
+        {
+          "test_name": "Белок",
+          "value": "<0.1",
+          "unit": "г/л",
+          "reference_range": "0-0.1",
+          "flag": "N"
+        },
+        {
+          "test_name": "Глюкоза",
+          "value": "<0.10",
+          "unit": "ммоль/л",
+          "reference_range": "не обнаружена",
+          "flag": "N"
+        },
+        {
+          "test_name": "Уробилиноген",
+          "value": "16",
+          "unit": "мкмоль/л",
+          "reference_range": "0-16",
+          "flag": "N"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 1770,
+        "completion_tokens": 184,
+        "total_tokens": 1954
+      },
+      "usage_labs": {
+        "prompt_tokens": 1201,
+        "completion_tokens": 569,
+        "total_tokens": 1770
+      },
+      "duration_sec": 5.18,
+      "error": null
+    },
+    {
+      "document": "medsi_40691498.pdf",
+      "model": "google/gemini-2.5-flash-lite",
+      "classification": {
+        "document_type": "Результаты анализа",
+        "document_subtype": "Общий анализ мочи",
+        "research_area": null,
+        "specialties": null,
+        "document_date": "2022-04-05",
+        "patient_name": "МАКАЕВ Б.А.",
+        "medical_facility": "АО «Группа компаний «МЕДСИ» Клиника в Хорошевском проезде",
+        "document_language": "ru",
+        "confidence": 0.98,
+        "summary": "Результаты общего анализа мочи пациента МАКАЕВ Б.А. от 05.04.2022. Отмечено небольшое количество бактерий, что является отклонением от нормы."
+      },
+      "lab_results_count": 14,
+      "lab_results_sample": [
+        {
+          "test_name": "Относительная плотность",
+          "value": "1.03",
+          "unit": "г/мл",
+          "reference_range": "1.003-1.030",
+          "flag": "N"
+        },
+        {
+          "test_name": "pH",
+          "value": "5.5",
+          "unit": "pH",
+          "reference_range": "5.5-7.0",
+          "flag": "N"
+        },
+        {
+          "test_name": "Белок",
+          "value": "<0.1",
+          "unit": "г/л",
+          "reference_range": "0-0.1",
+          "flag": "N"
+        },
+        {
+          "test_name": "Глюкоза",
+          "value": "<0.10",
+          "unit": "ммоль/л",
+          "reference_range": "не обнаружена",
+          "flag": "N"
+        },
+        {
+          "test_name": "Кетоновые тела",
+          "value": "следы",
+          "unit": "ммоль/л",
+          "reference_range": "отрицательно",
+          "flag": "A"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 1770,
+        "completion_tokens": 183,
+        "total_tokens": 1953
+      },
+      "usage_labs": {
+        "prompt_tokens": 1201,
+        "completion_tokens": 884,
+        "total_tokens": 2085
+      },
+      "duration_sec": 6.15,
+      "error": null
+    },
+    {
+      "document": "medsi_40691498.pdf",
+      "model": "google/gemini-2.5-pro",
+      "classification": {
+        "document_type": "Результаты анализа",
+        "document_subtype": "Общий анализ мочи",
+        "research_area": null,
+        "specialties": null,
+        "document_date": "2022-04-05",
+        "patient_name": "Макаев Б.А.",
+        "medical_facility": "АО «Группа компаний «МЕДСИ» Клиника в Хорошевском проезде",
+        "document_language": "ru",
+        "confidence": 1.0,
+        "summary": "Общий анализ мочи. Большинство показателей в пределах нормы. Выявлены следы кетоновых тел и небольшое количество бактерий, что отмечено как отклонение от нормы."
+      },
+      "lab_results_count": 0,
+      "lab_results_sample": [],
+      "usage": {
+        "prompt_tokens": 1770,
+        "completion_tokens": 1180,
+        "total_tokens": 2950
+      },
+      "usage_labs": null,
+      "duration_sec": 92.71,
+      "error": null
+    },
+    {
+      "document": "medsi_40691498.pdf",
+      "model": "google/gemini-2.0-flash-001",
+      "classification": {
+        "document_type": "Результаты анализа",
+        "document_subtype": "Общий анализ мочи",
+        "research_area": null,
+        "specialties": null,
+        "document_date": "2022-04-05",
+        "patient_name": "Макаев Б.А.",
+        "medical_facility": "АО «Группа компаний «МЕДСИ», Клиника в Хорошевском проезде",
+        "document_language": "ru",
+        "confidence": 0.98,
+        "summary": "Клинический анализ мочи пациента Макаева Б.А. от 05.04.2022. Обнаружены следы кетоновых тел и небольшое количество бактерий."
+      },
+      "lab_results_count": 16,
+      "lab_results_sample": [
+        {
+          "test_name": "Относительная плотность",
+          "value": "1.03",
+          "unit": "г/мл",
+          "reference_range": "1.003-1.030",
+          "flag": "N"
+        },
+        {
+          "test_name": "pH",
+          "value": "5.5",
+          "unit": "pH",
+          "reference_range": "5.5-7.0",
+          "flag": "N"
+        },
+        {
+          "test_name": "Белок",
+          "value": "<0.1",
+          "unit": "г/л",
+          "reference_range": "0-0.1",
+          "flag": "N"
+        },
+        {
+          "test_name": "Глюкоза",
+          "value": "<0.10",
+          "unit": "ммоль/л",
+          "reference_range": "не обнаружена",
+          "flag": null
+        },
+        {
+          "test_name": "Кетоновые тела",
+          "value": "следы",
+          "unit": "ммоль/л",
+          "reference_range": "отрицательно",
+          "flag": null
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 1770,
+        "completion_tokens": 183,
+        "total_tokens": 1953
+      },
+      "usage_labs": {
+        "prompt_tokens": 1201,
+        "completion_tokens": 983,
+        "total_tokens": 2184
+      },
+      "duration_sec": 8.42,
+      "error": null
+    },
+    {
+      "document": "medsi_40719139.pdf",
+      "model": "anthropic/claude-3.5-sonnet",
+      "classification": {
+        "document_type": "Прием врача",
+        "document_subtype": null,
+        "research_area": null,
+        "specialties": [
+          "Терапия"
+        ],
+        "document_date": "2022-04-07",
+        "patient_name": "Макаев Б.А.",
+        "medical_facility": "Клиника в Хорошевском проезде",
+        "document_language": "ru",
+        "confidence": 0.95,
+        "summary": "Первичный прием терапевта. Жалобы на дискомфорт в верхних отделах живота, изжогу. По результатам обследований выявлен хронический гастрит, НР-ассоциированный. Назначена медикаментозная терапия (Париет, кларитромицин, амоксициллин). Повторная явка 28.04.2022."
+      },
+      "lab_results_count": 0,
+      "lab_results_sample": [],
+      "usage": {
+        "prompt_tokens": 2675,
+        "completion_tokens": 245,
+        "total_tokens": 2920
+      },
+      "usage_labs": null,
+      "duration_sec": 7.16,
+      "error": null
+    },
+    {
+      "document": "medsi_40719139.pdf",
+      "model": "google/gemini-2.5-flash",
+      "classification": {
+        "document_type": "Прием врача",
+        "document_subtype": null,
+        "research_area": null,
+        "specialties": [
+          "Терапия"
+        ],
+        "document_date": "2022-04-07",
+        "patient_name": "Макаев Б.А.",
+        "medical_facility": "Клиника в Хорошевском проезде",
+        "document_language": "ru",
+        "confidence": 0.98,
+        "summary": "Первичный осмотр терапевта пациента Макаева Б.А. с жалобами на дискомфорт в верхних отделах живота, изжогу, горечь во рту. Выявлен хронический гастрит, НР ассоциированный, обострение. Назначено лечение и повторный осмотр."
+      },
+      "lab_results_count": 0,
+      "lab_results_sample": [],
+      "usage": {
+        "prompt_tokens": 2091,
+        "completion_tokens": 204,
+        "total_tokens": 2295
+      },
+      "usage_labs": null,
+      "duration_sec": 2.68,
+      "error": null
+    },
+    {
+      "document": "medsi_40719139.pdf",
+      "model": "google/gemini-2.5-flash-lite",
+      "classification": {
+        "document_type": "Прием врача",
+        "document_subtype": null,
+        "research_area": null,
+        "specialties": [
+          "Терапия",
+          "Оториноларингология",
+          "Кардиология",
+          "Гастроэнтерология"
+        ],
+        "document_date": "2022-04-07",
+        "patient_name": "МАКАЕВ Б.А.",
+        "medical_facility": "Клиника в Хорошевском проезде",
+        "document_language": "ru",
+        "confidence": 0.98,
+        "summary": "Первичный прием терапевта у пациента Макаева Б.А. с жалобами на дискомфорт в верхних отделах живота, изжогу и горечь во рту. В анамнезе осмотры отоларинголога, кардиолога и гастроэнтеролога. Проведено обследование, включающее рентген ОГК, УЗИ ОБП, ЭКГ, ЭХОКГ, ЭФГДС, анализы крови и мочи. По результатам обследования предварительный диагноз: хронический гастрит, НР ассоциированный, обострение. Назначен курс медикаментозной терапии и повторный осмотр."
+      },
+      "lab_results_count": 0,
+      "lab_results_sample": [],
+      "usage": {
+        "prompt_tokens": 2091,
+        "completion_tokens": 309,
+        "total_tokens": 2400
+      },
+      "usage_labs": null,
+      "duration_sec": 3.07,
+      "error": null
+    },
+    {
+      "document": "medsi_40719139.pdf",
+      "model": "google/gemini-2.5-pro",
+      "classification": {
+        "document_type": "Прием врача",
+        "document_subtype": null,
+        "research_area": null,
+        "specialties": [
+          "Терапия",
+          "Оториноларингология",
+          "Кардиология",
+          "Гастроэнтерология"
+        ],
+        "document_date": "2022-04-07",
+        "patient_name": "Макаев Б.А.",
+        "medical_facility": "Клиника в Хорошевском проезде",
+        "document_language": "ru",
+        "confidence": 0.98,
+        "summary": "Пациент обратился к терапевту с жалобами на дискомфорт в верхних отделах живота, изжогу и горечь во рту. На основании осмотра и результатов предыдущих обследований (УЗИ, ЭКГ, ЭФГДС, анализы) установлен предварительный диагноз: Хронический гастрит, НР ассоциированный, обострение. Назначена медикаментозная терапия для эрадикации H. pylori и рекомендован повторный прием."
+      },
+      "lab_results_count": 0,
+      "lab_results_sample": [],
+      "usage": {
+        "prompt_tokens": 2091,
+        "completion_tokens": 1787,
+        "total_tokens": 3878
+      },
+      "usage_labs": null,
+      "duration_sec": 32.93,
+      "error": null
+    },
+    {
+      "document": "medsi_40719139.pdf",
+      "model": "google/gemini-2.0-flash-001",
+      "classification": {
+        "document_type": "Прием врача",
+        "document_subtype": null,
+        "research_area": null,
+        "specialties": [
+          "Терапия",
+          "Оториноларингология",
+          "Кардиология",
+          "Гастроэнтерология"
+        ],
+        "document_date": "2022-04-07",
+        "patient_name": "Макаев Б.А.",
+        "medical_facility": "Клиника в Хорошевском проезде",
+        "document_language": "ru",
+        "confidence": 0.95,
+        "summary": "Первичный прием терапевта. Жалобы на дискомфорт в верхних отделах живота, изжогу, чувство горечи во рту. В анамнезе осмотры отоларингологом, кардиологом, гастроэнтерологом. Проведены рентген ОГК, УЗИ ОБП, ЭКГ, ЭХОКГ, ЭФГДС, ОАМ, БАК. Предварительный диагноз: Хронический гастрит, НР ассоциированный, обострение? Назначено лечение и повторный осмотр."
+      },
+      "lab_results_count": 0,
+      "lab_results_sample": [],
+      "usage": {
+        "prompt_tokens": 2091,
+        "completion_tokens": 278,
+        "total_tokens": 2369
+      },
+      "usage_labs": null,
+      "duration_sec": 2.68,
+      "error": null
+    },
+    {
+      "document": "Макаева А В - 3304846705 (Гормоны).pdf",
+      "model": "anthropic/claude-3.5-sonnet",
+      "classification": {
+        "document_type": "Результаты анализа",
+        "document_subtype": "Гормональный анализ",
+        "research_area": null,
+        "specialties": null,
+        "document_date": "2026-02-08",
+        "patient_name": "Макаева А.В.",
+        "medical_facility": "ООО \"ДНКОМ\"",
+        "document_language": "ru",
+        "confidence": 0.98,
+        "summary": "Гормональное исследование крови: ТТГ - 0.63 мкМЕ/мл, Т3 свободный - 4.18 пмоль/л, Т4 свободный - 13.64 пмоль/л. Все показатели в пределах референсных значений."
+      },
+      "lab_results_count": 3,
+      "lab_results_sample": [
+        {
+          "test_name": "Тиреотропный гормон (ТТГ)",
+          "value": "0.63",
+          "unit": "мкМЕ/мл",
+          "reference_range": "0.40 - 4.00",
+          "flag": "N"
+        },
+        {
+          "test_name": "Т3 свободный",
+          "value": "4.18",
+          "unit": "пмоль/л",
+          "reference_range": "2.42 - 6.01",
+          "flag": "N"
+        },
+        {
+          "test_name": "Т4 свободный",
+          "value": "13.64",
+          "unit": "пмоль/л",
+          "reference_range": "9.00 - 19.04",
+          "flag": "N"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 1980,
+        "completion_tokens": 218,
+        "total_tokens": 2198
+      },
+      "usage_labs": {
+        "prompt_tokens": 1196,
+        "completion_tokens": 242,
+        "total_tokens": 1438
+      },
+      "duration_sec": 16.86,
+      "error": null
+    },
+    {
+      "document": "Макаева А В - 3304846705 (Гормоны).pdf",
+      "model": "google/gemini-2.5-flash",
+      "classification": {
+        "document_type": "Результаты анализа",
+        "document_subtype": "Гормональный анализ",
+        "research_area": null,
+        "specialties": null,
+        "document_date": "2026-02-08",
+        "patient_name": "Макаева А.В.",
+        "medical_facility": "ООО \"ДНКОМ\"",
+        "document_language": "ru",
+        "confidence": 0.98,
+        "summary": "Результаты гормональных исследований (ТТГ, Т3 свободный, Т4 свободный) пациентки Макаевой Анны Валентиновны от 08.02.2026. Все показатели в пределах референсных значений."
+      },
+      "lab_results_count": 3,
+      "lab_results_sample": [
+        {
+          "test_name": "Тиреотропный гормон (ТТГ)",
+          "value": "0,63",
+          "unit": "мкМЕ/мл",
+          "reference_range": "0,40 - 4,00",
+          "flag": "N"
+        },
+        {
+          "test_name": "Т3 свободный",
+          "value": "4,18",
+          "unit": "пмоль/л",
+          "reference_range": "2,42 - 6,01",
+          "flag": "N"
+        },
+        {
+          "test_name": "Т4 свободный",
+          "value": "13,64",
+          "unit": "пмоль/л",
+          "reference_range": "9,00 - 19,04",
+          "flag": "N"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 1583,
+        "completion_tokens": 183,
+        "total_tokens": 1766
+      },
+      "usage_labs": {
+        "prompt_tokens": 1014,
+        "completion_tokens": 235,
+        "total_tokens": 1249
+      },
+      "duration_sec": 4.85,
+      "error": null
+    },
+    {
+      "document": "Макаева А В - 3304846705 (Гормоны).pdf",
+      "model": "google/gemini-2.5-flash-lite",
+      "classification": {
+        "document_type": "Результаты анализа",
+        "document_subtype": "Гормональный анализ",
+        "research_area": null,
+        "specialties": null,
+        "document_date": "2026-02-08",
+        "patient_name": "МАКАЕВА А.В.",
+        "medical_facility": "ООО \"ДНКОМ\"",
+        "document_language": "ru",
+        "confidence": 0.98,
+        "summary": "Результаты гормональных исследований (ТТГ, Т3 свободный, Т4 свободный) для пациента МАКАЕВА АННА ВАЛЕНТИНОВНА, выполненные 08.02.2026."
+      },
+      "lab_results_count": 3,
+      "lab_results_sample": [
+        {
+          "test_name": "Тиреотропный гормон (ТТГ)",
+          "value": "0,63",
+          "unit": "мкМЕ/мл",
+          "reference_range": "0,40 - 4,00",
+          "flag": "N"
+        },
+        {
+          "test_name": "Т3 свободный",
+          "value": "4,18",
+          "unit": "пмоль/л",
+          "reference_range": "2,42 - 6,01",
+          "flag": "N"
+        },
+        {
+          "test_name": "Т4 свободный",
+          "value": "13,64",
+          "unit": "пмоль/л",
+          "reference_range": "9,00 - 19,04",
+          "flag": "N"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 1583,
+        "completion_tokens": 181,
+        "total_tokens": 1764
+      },
+      "usage_labs": {
+        "prompt_tokens": 1014,
+        "completion_tokens": 235,
+        "total_tokens": 1249
+      },
+      "duration_sec": 3.36,
+      "error": null
+    },
+    {
+      "document": "Макаева А В - 3304846705 (Гормоны).pdf",
+      "model": "google/gemini-2.5-pro",
+      "classification": {
+        "document_type": "Результаты анализа",
+        "document_subtype": "Гормональный анализ",
+        "research_area": null,
+        "specialties": null,
+        "document_date": "2026-02-08",
+        "patient_name": "Макаева А.В.",
+        "medical_facility": "ООО \"ДНКОМ\"",
+        "document_language": "ru",
+        "confidence": 0.98,
+        "summary": "Результаты гормонального анализа крови для оценки функции щитовидной железы (ТТГ, Т3 свободный, Т4 свободный). Все показатели в пределах референсных значений."
+      },
+      "lab_results_count": 0,
+      "lab_results_sample": [],
+      "usage": {
+        "prompt_tokens": 1583,
+        "completion_tokens": 1167,
+        "total_tokens": 2750
+      },
+      "usage_labs": null,
+      "duration_sec": 28.32,
+      "error": null
+    },
+    {
+      "document": "Макаева А В - 3304846705 (Гормоны).pdf",
+      "model": "google/gemini-2.0-flash-001",
+      "classification": {
+        "document_type": "Результаты анализа",
+        "document_subtype": "Гормональный анализ",
+        "research_area": null,
+        "specialties": null,
+        "document_date": "2026-02-08",
+        "patient_name": "МАКАЕВА А.В.",
+        "medical_facility": "ООО \"ДНКОМ\"",
+        "document_language": "ru",
+        "confidence": 0.98,
+        "summary": "Результаты гормональных исследований: Тиреотропный гормон (ТТГ) - 0,63 мкМЕ/мл, Т3 свободный - 4,18 пмоль/л, Т4 свободный - 13,64 пмоль/л."
+      },
+      "lab_results_count": 3,
+      "lab_results_sample": [
+        {
+          "test_name": "Тиреотропный гормон (ТТГ)",
+          "value": "0,63",
+          "unit": "мкМЕ/мл",
+          "reference_range": "0,40 - 4,00",
+          "flag": "N"
+        },
+        {
+          "test_name": "Т3 свободный",
+          "value": "4,18",
+          "unit": "пмоль/л",
+          "reference_range": "2,42 - 6,01",
+          "flag": "N"
+        },
+        {
+          "test_name": "Т4 свободный",
+          "value": "13,64",
+          "unit": "пмоль/л",
+          "reference_range": "9,00 - 19,04",
+          "flag": "N"
+        }
+      ],
+      "usage": {
+        "prompt_tokens": 1583,
+        "completion_tokens": 192,
+        "total_tokens": 1775
+      },
+      "usage_labs": {
+        "prompt_tokens": 1014,
+        "completion_tokens": 235,
+        "total_tokens": 1249
+      },
+      "duration_sec": 4.34,
+      "error": null
+    }
+  ],
+  "summary": {
+    "by_model": {
+      "anthropic/claude-3.5-sonnet": {
+        "success_rate": 1.0,
+        "avg_tokens": 3700.3333333333335,
+        "avg_duration": 13.166666666666666
+      },
+      "google/gemini-2.5-flash": {
+        "success_rate": 1.0,
+        "avg_tokens": 3011.3333333333335,
+        "avg_duration": 4.236666666666666
+      },
+      "google/gemini-2.5-flash-lite": {
+        "success_rate": 1.0,
+        "avg_tokens": 3150.3333333333335,
+        "avg_duration": 4.193333333333333
+      },
+      "google/gemini-2.5-pro": {
+        "success_rate": 1.0,
+        "avg_tokens": 3192.6666666666665,
+        "avg_duration": 51.31999999999999
+      },
+      "google/gemini-2.0-flash-001": {
+        "success_rate": 1.0,
+        "avg_tokens": 3176.6666666666665,
+        "avg_duration": 5.1466666666666665
+      }
+    }
+  }
+}
