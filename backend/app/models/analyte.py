@@ -62,14 +62,13 @@ class AnalyteStandard(Base):
     # Relationships
     category = relationship("AnalyteCategory", back_populates="analytes")
     synonyms = relationship("AnalyteSynonym", back_populates="analyte", cascade="all, delete-orphan")
-    unit_conversions = relationship("UnitConversion", back_populates="analyte", cascade="all, delete-orphan")
     
     def __repr__(self):
         return f"<AnalyteStandard {self.canonical_name}>"
 
 
 class AnalyteSynonym(Base):
-    """Синонимы названий анализов (для маппинга разных лабораторий)"""
+    """Синонимы названий анализов с единицей измерения (маппинг по паре test_name + unit)"""
     __tablename__ = "analyte_synonyms"
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -77,7 +76,10 @@ class AnalyteSynonym(Base):
     
     synonym = Column(String(200), nullable=False)  # Вариант названия
     synonym_lower = Column(String(200), nullable=False, index=True)  # Нижний регистр для поиска
-    source = Column(String(100))  # Источник (название лаборатории, опционально)
+    unit = Column(String(50), default="")  # Единица измерения из документа
+    unit_lower = Column(String(50), default="")  # Нижний регистр для поиска
+    coefficient = Column(Numeric(15, 6), default=1.0)  # Коэф. конвертации в standard_unit
+    source = Column(String(100))  # Источник (опционально)
     is_primary = Column(Boolean, default=False)  # Основной синоним (= canonical_name)
     
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -85,38 +87,16 @@ class AnalyteSynonym(Base):
     # Relationships
     analyte = relationship("AnalyteStandard", back_populates="synonyms")
     
-    # Уникальный индекс по synonym_lower
+    # Уникальный индекс по (synonym_lower, unit_lower)
     __table_args__ = (
-        Index('ix_analyte_synonyms_synonym_lower_unique', 'synonym_lower', unique=True),
+        Index('ix_analyte_synonyms_synonym_unit_unique', 'synonym_lower', 'unit_lower', unique=True),
     )
     
     def __repr__(self):
-        return f"<AnalyteSynonym {self.synonym}>"
+        return f"<AnalyteSynonym {self.synonym} [{self.unit}]>"
 
 
-class UnitConversion(Base):
-    """Коэффициенты конвертации единиц измерения для анализов"""
-    __tablename__ = "unit_conversions"
-    
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    analyte_id = Column(UUID(as_uuid=True), ForeignKey("analyte_standards.id", ondelete="CASCADE"), nullable=False, index=True)
-    
-    from_unit = Column(String(30), nullable=False)  # Исходная единица
-    from_unit_lower = Column(String(30), nullable=False)  # Нижний регистр для поиска
-    coefficient = Column(Numeric(15, 6), nullable=False)  # Коэффициент: value * coefficient = standard_value
-    
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    
-    # Relationships
-    analyte = relationship("AnalyteStandard", back_populates="unit_conversions")
-    
-    # Уникальный индекс по analyte_id + from_unit_lower
-    __table_args__ = (
-        Index('ix_unit_conversions_analyte_unit', 'analyte_id', 'from_unit_lower', unique=True),
-    )
-    
-    def __repr__(self):
-        return f"<UnitConversion {self.from_unit} -> standard (×{self.coefficient})>"
+# UnitConversion: DEPRECATED — объединено с AnalyteSynonym (unit, coefficient в analyte_synonyms)
 
 
 # Опционально: пользовательские маппинги (для будущего)

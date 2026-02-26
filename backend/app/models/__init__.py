@@ -7,7 +7,6 @@ from app.models.analyte import (
     AnalyteCategory,
     AnalyteStandard,
     AnalyteSynonym,
-    UnitConversion,
     UserAnalyteMapping,
 )
 from app.models.bot_state import TelegramBotState
@@ -32,7 +31,6 @@ __all__ = [
     "AnalyteCategory",
     "AnalyteStandard",
     "AnalyteSynonym",
-    "UnitConversion",
     "UserAnalyteMapping",
     # Telegram bot
     "TelegramBotState",

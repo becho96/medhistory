@@ -274,12 +274,12 @@ def mongo_to_json(obj):
 
 # ============== Analyte Mapping (Admin) ==============
 
-def get_existing_synonym_lower_set():
-    """Получить множество synonym_lower из analyte_synonyms для фильтрации"""
+def get_existing_synonym_unit_set():
+    """Получить множество (synonym_lower, unit_lower) из analyte_synonyms"""
     with get_pg_connection() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT synonym_lower FROM analyte_synonyms")
-            return {row[0] for row in cur.fetchall()}
+            cur.execute("SELECT synonym_lower, COALESCE(unit_lower, '') FROM analyte_synonyms")
+            return {(row[0], row[1]) for row in cur.fetchall()}
 
 def get_unmapped_analytes():
     """Получить список немапленных анализов: distinct (test_name, unit) из MongoDB, не в analyte_synonyms"""
@@ -310,16 +310,17 @@ def get_unmapped_analytes():
         rows = list(cursor)
         client.close()
         
-        # Фильтруем: оставляем только те, у которых name_lower нет в analyte_synonyms
-        existing = get_existing_synonym_lower_set()
+        # Фильтруем: оставляем только те, у которых (name_lower, unit_lower) нет в analyte_synonyms
+        existing = get_existing_synonym_unit_set()
         result = []
         for r in rows:
             name = (r.get("name") or "").strip()
-            unit = r.get("unit") or ""
+            unit = (r.get("unit") or "").strip()
             name_lower = (name or "").lower().strip()
+            unit_lower = (unit or "").lower().strip()
             if not name_lower:
                 continue
-            if name_lower not in existing:
+            if (name_lower, unit_lower) not in existing:
                 result.append({
                     "original_name": name,
                     "unit": unit,
@@ -344,57 +345,35 @@ def get_analyte_standards():
             """)
             return [dict(row) for row in cur.fetchall()]
 
-def create_analyte_synonym(synonym: str, analyte_id: str):
-    """Добавить синоним в analyte_synonyms. Возвращает (success, error_message)"""
+def create_analyte_synonym(synonym: str, analyte_id: str, unit: str = "", coefficient: float = 1.0):
+    """Добавить синоним с единицей в analyte_synonyms. Возвращает (success, error_message)"""
     import uuid
     synonym = (synonym or "").strip()
     synonym_lower = synonym.lower()
+    unit = (unit or "").strip()
+    unit_lower = unit.lower()
     if not synonym or not analyte_id:
         return False, "synonym и analyte_id обязательны"
     try:
         with get_pg_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("""
-                    INSERT INTO analyte_synonyms (id, analyte_id, synonym, synonym_lower)
-                    VALUES (%s, %s, %s, %s)
-                """, (str(uuid.uuid4()), analyte_id, synonym, synonym_lower))
+                    INSERT INTO analyte_synonyms (id, analyte_id, synonym, synonym_lower, unit, unit_lower, coefficient)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s)
+                """, (str(uuid.uuid4()), analyte_id, synonym, synonym_lower, unit, unit_lower, float(coefficient)))
             conn.commit()
         return True, None
     except psycopg2.IntegrityError as e:
-        if "ix_analyte_synonyms_synonym_lower_unique" in str(e) or "duplicate key" in str(e).lower():
-            return False, "Этот синоним уже существует в маппинге"
+        if "ix_analyte_synonyms_synonym_unit_unique" in str(e) or "duplicate key" in str(e).lower():
+            return False, "Эта комбинация (название + единица) уже существует в маппинге"
         raise
     except Exception as e:
         return False, str(e)
 
 
-def create_unit_conversion(analyte_id: str, from_unit: str):
-    """
-    Добавить единицу измерения в unit_conversions для анализа.
-    Возвращает (success, error_message).
-    Если единица уже есть — игнорирует (успех).
-    """
-    import uuid
-    from_unit = (from_unit or "").strip()
-    if not from_unit or not analyte_id:
-        return True, None  # Пустая единица — не ошибка, просто пропускаем
-    from_unit_lower = from_unit.lower()
-    try:
-        with get_pg_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("""
-                    INSERT INTO unit_conversions (id, analyte_id, from_unit, from_unit_lower, coefficient)
-                    VALUES (%s, %s, %s, %s, 1.0)
-                    ON CONFLICT (analyte_id, from_unit_lower) DO NOTHING
-                """, (str(uuid.uuid4()), analyte_id, from_unit, from_unit_lower))
-            conn.commit()
-        return True, None
-    except psycopg2.IntegrityError as e:
-        if "ix_unit_conversions_analyte_unit" in str(e) or "duplicate key" in str(e).lower():
-            return True, None  # Уже есть — считаем успехом
-        raise
-    except Exception as e:
-        return False, str(e)
+def _create_unit_conversion_deprecated(analyte_id: str, from_unit: str):
+    """DEPRECATED: unit_conversions объединены с analyte_synonyms."""
+    return True, None  # no-op
 
 def call_backend_reload():
     """Вызвать backend текущего окружения для инвалидации кэша нормализации"""
@@ -2037,16 +2016,12 @@ def api_analytes_create_mapping():
     synonym = data.get('synonym', '').strip()
     analyte_id = data.get('analyte_id', '').strip()
     unit = (data.get('unit') or '').strip()
+    coefficient = float(data.get('coefficient', 1.0))
     if not synonym or not analyte_id:
         return jsonify({'success': False, 'error': 'synonym и analyte_id обязательны'}), 400
-    success, err = create_analyte_synonym(synonym, analyte_id)
+    success, err = create_analyte_synonym(synonym, analyte_id, unit=unit, coefficient=coefficient)
     if not success:
         return jsonify({'success': False, 'error': err or 'Ошибка создания маппинга'}), 400
-    # Добавить единицу в unit_conversions, если указана
-    if unit:
-        ok_unit, err_unit = create_unit_conversion(analyte_id, unit)
-        if not ok_unit:
-            return jsonify({'success': False, 'error': f'Маппинг добавлен, но единица не записана: {err_unit}'}), 400
     # Инвалидировать кэш в backend
     ok, msg = call_backend_reload()
     if not ok:

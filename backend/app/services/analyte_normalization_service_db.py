@@ -26,6 +26,9 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 import logging
 
+# Тип ключа: (synonym_lower, unit_lower) -> (canonical_name, coefficient)
+SynonymUnitKey = Tuple[str, str]
+
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text
 from sqlalchemy.orm import selectinload
@@ -65,7 +68,8 @@ class AnalyteNormalizationServiceDB:
         # Кэш данных
         self._categories: Dict[str, CachedCategory] = {}  # id -> category
         self._analytes: Dict[str, CachedAnalyte] = {}  # canonical_name -> analyte
-        self._synonym_index: Dict[str, str] = {}  # synonym_lower -> canonical_name
+        # (synonym_lower, unit_lower) -> (canonical_name, coefficient)
+        self._synonym_unit_index: Dict[SynonymUnitKey, Tuple[str, float]] = {}
         self._loaded: bool = False
         self._last_load: Optional[datetime] = None
         self._cache_ttl: timedelta = timedelta(hours=1)
@@ -148,55 +152,37 @@ class AnalyteNormalizationServiceDB:
                 self._analytes[analyte.canonical_name] = analyte
                 analyte_ids.append(str(row[0]))
             
-            # Загружаем синонимы
+            # Загружаем синонимы с unit и coefficient (unit_conversions объединены в analyte_synonyms)
             if analyte_ids:
                 synonyms_result = await db.execute(
                     text("""
-                        SELECT analyte_id, synonym, synonym_lower
+                        SELECT analyte_id, synonym, synonym_lower, COALESCE(unit, ''), COALESCE(unit_lower, ''), COALESCE(coefficient, 1.0)
                         FROM analyte_synonyms
                         WHERE analyte_id = ANY(:ids)
                     """),
                     {"ids": analyte_ids}
                 )
                 
-                self._synonym_index = {}
+                self._synonym_unit_index = {}
                 analyte_id_to_name = {a.id: a.canonical_name for a in self._analytes.values()}
                 
                 for row in synonyms_result.fetchall():
                     analyte_id = str(row[0])
                     synonym = row[1]
                     synonym_lower = row[2]
+                    unit = str(row[3]) if row[3] is not None else ""
+                    unit_lower = str(row[4]) if row[4] is not None else ""
+                    coefficient = float(row[5])
                     
                     canonical_name = analyte_id_to_name.get(analyte_id)
                     if canonical_name:
-                        self._synonym_index[synonym_lower] = canonical_name
+                        key: SynonymUnitKey = (synonym_lower, unit_lower)
+                        self._synonym_unit_index[key] = (canonical_name, coefficient)
                         if canonical_name in self._analytes:
-                            self._analytes[canonical_name].synonyms.append(synonym)
-            
-            # Загружаем конверсии единиц
-            if analyte_ids:
-                conversions_result = await db.execute(
-                    text("""
-                        SELECT analyte_id, from_unit, from_unit_lower, coefficient
-                        FROM unit_conversions
-                        WHERE analyte_id = ANY(:ids)
-                    """),
-                    {"ids": analyte_ids}
-                )
-                
-                analyte_id_to_name = {a.id: a.canonical_name for a in self._analytes.values()}
-                
-                for row in conversions_result.fetchall():
-                    analyte_id = str(row[0])
-                    from_unit = row[1]
-                    from_unit_lower = row[2]
-                    coefficient = float(row[3])
-                    
-                    canonical_name = analyte_id_to_name.get(analyte_id)
-                    if canonical_name and canonical_name in self._analytes:
-                        self._analytes[canonical_name].conversions[from_unit] = coefficient
-                        # Также добавляем по lowercase для поиска
-                        self._analytes[canonical_name].conversions[from_unit_lower] = coefficient
+                            self._analytes[canonical_name].synonyms.append(f"{synonym} [{unit}]" if unit else synonym)
+                            # conversions для convert_value: unit_lower -> coefficient
+                            if unit_lower:
+                                self._analytes[canonical_name].conversions[unit_lower] = coefficient
             
             self._loaded = True
             self._last_load = datetime.utcnow()
@@ -204,7 +190,7 @@ class AnalyteNormalizationServiceDB:
             logger.info(
                 f"✅ Загружено: {len(self._categories)} категорий, "
                 f"{len(self._analytes)} анализов, "
-                f"{len(self._synonym_index)} синонимов"
+                f"{len(self._synonym_unit_index)} синонимов"
             )
             
         except Exception as e:
@@ -218,13 +204,11 @@ class AnalyteNormalizationServiceDB:
     
     def get_canonical_name(self, test_name: str, unit: Optional[str] = None) -> Optional[str]:
         """
-        Возвращает каноническое название анализа по любому из синонимов.
-        Учитывает единицу измерения для различения анализов с одинаковым названием
-        (например, "Лимфоциты" в % и в абсолютных значениях).
+        Возвращает каноническое название анализа по паре (test_name, unit).
         
         Args:
             test_name: Название анализа из документа
-            unit: Единица измерения (опционально)
+            unit: Единица измерения (обязательна для различения, напр. "%" vs "10^9/л")
             
         Returns:
             Каноническое название или None если не найдено
@@ -233,38 +217,19 @@ class AnalyteNormalizationServiceDB:
             return None
         
         normalized = test_name.lower().strip()
-        canonical = self._synonym_index.get(normalized)
+        unit_lower = (unit or "").lower().strip()
         
-        # Умный маппинг: если найдено каноническое название и есть unit,
-        # проверяем, не нужно ли переключиться на процентный/абсолютный вариант
-        if canonical and unit:
-            unit_lower = unit.lower().strip()
-            is_percentage = '%' in unit_lower
-            
-            # Список анализов, которые имеют отдельные версии в % и абсолютные
-            dual_analytes = {
-                "Лимфоциты (абс)": "Лимфоциты (%)",
-                "Нейтрофилы (абс)": "Нейтрофилы (%)",
-                "Моноциты (абс)": "Моноциты (%)",
-                "Эозинофилы (абс)": "Эозинофилы (%)",
-                "Базофилы (абс)": "Базофилы (%)",
-            }
-            reverse_dual = {v: k for k, v in dual_analytes.items()}
-            
-            if is_percentage:
-                # Если unit содержит % и у нас абсолютная версия, переключаемся на %
-                if canonical in dual_analytes:
-                    percent_version = dual_analytes[canonical]
-                    if percent_version in self._analytes:
-                        return percent_version
-            else:
-                # Если unit не содержит % и у нас процентная версия, переключаемся на абс
-                if canonical in reverse_dual:
-                    abs_version = reverse_dual[canonical]
-                    if abs_version in self._analytes:
-                        return abs_version
+        # Точный поиск по (synonym_lower, unit_lower)
+        key: SynonymUnitKey = (normalized, unit_lower)
+        if key in self._synonym_unit_index:
+            return self._synonym_unit_index[key][0]
         
-        return canonical
+        # Fallback: синонимы с unit='' (универсальный маппинг по имени)
+        fallback_key: SynonymUnitKey = (normalized, "")
+        if fallback_key in self._synonym_unit_index:
+            return self._synonym_unit_index[fallback_key][0]
+        
+        return None
     
     def get_analyte(self, canonical_name: str) -> Optional[CachedAnalyte]:
         """Возвращает данные анализа по каноническому названию"""
@@ -352,7 +317,7 @@ class AnalyteNormalizationServiceDB:
         Returns:
             Кортеж (canonical_name, converted_value, standard_unit, category)
         """
-        canonical_name = self.get_canonical_name(test_name)
+        canonical_name = self.get_canonical_name(test_name, unit)
         
         if not canonical_name:
             return None, None, None, None
@@ -433,9 +398,9 @@ class AnalyteNormalizationServiceDB:
         
         return result
     
-    def is_known_analyte(self, test_name: str) -> bool:
-        """Проверяет, известен ли анализ в справочнике"""
-        return self.get_canonical_name(test_name) is not None
+    def is_known_analyte(self, test_name: str, unit: Optional[str] = None) -> bool:
+        """Проверяет, известен ли анализ в справочнике (по test_name и unit)"""
+        return self.get_canonical_name(test_name, unit) is not None
     
     def get_stats(self) -> Dict[str, Any]:
         """Возвращает статистику справочника"""
@@ -444,7 +409,7 @@ class AnalyteNormalizationServiceDB:
             "last_load": self._last_load.isoformat() if self._last_load else None,
             "categories_count": len(self._categories),
             "analytes_count": len(self._analytes),
-            "synonyms_count": len(self._synonym_index)
+            "synonyms_count": len(self._synonym_unit_index)
         }
 
 
