@@ -15,8 +15,7 @@ from app.models.family import FamilyRelation, FamilyInvite
 from app.models.document import Document, Tag, DocumentTag, Specialty, DocumentType
 from app.models.report import Report
 from app.models.analyte import (
-    AnalyteCategory, AnalyteStandard, AnalyteSynonym, 
-    UnitConversion, UserAnalyteMapping
+    AnalyteCategory, AnalyteStandard, AnalyteSynonym, UserAnalyteMapping
 )
 
 # Import analyte normalization service
