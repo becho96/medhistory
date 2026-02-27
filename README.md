@@ -1,5 +1,7 @@
 # MedHistory
 
+тест
+
 Personal medical history management system with AI-powered document analysis and lab result interpretation.
 
 ## Overview
