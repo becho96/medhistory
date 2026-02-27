@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { FileText, Activity, Upload, TrendingUp, Users, Brain, Calendar, ArrowRight, Heart } from 'lucide-react'
+import { FileText, Upload, Calendar, ArrowRight, Heart, BookOpen, Plus } from 'lucide-react'
 import { documentsService } from '../services/documents'
-import { timelineService } from '../services/timeline'
 import { Link } from 'react-router-dom'
 import UploadModal from '../components/Documents/UploadModal'
 
@@ -20,11 +19,6 @@ export default function Dashboard() {
         sort_by: 'created_at'
       })
     },
-  })
-
-  const { data: stats } = useQuery({
-    queryKey: ['timeline-stats'],
-    queryFn: timelineService.getTimelineStats,
   })
 
   const getCurrentGreeting = () => {
@@ -68,73 +62,38 @@ export default function Dashboard() {
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-[#4A90E2]/10 rounded-full -ml-24 -mb-24 blur-2xl"></div>
       </div>
 
-      {/* Key Metrics - Modern Card Design */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6">
-        {/* Total Documents */}
-        <div className="medical-card group cursor-pointer">
-          <div className="flex items-start justify-between mb-2 sm:mb-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-blue-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-[#4A90E2]" />
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 md:gap-6">
+        {/* Медкарта */}
+        <Link to="/documents" className="medical-card group cursor-pointer block hover:shadow-md transition-shadow">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-blue-100 flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+              <BookOpen className="h-6 w-6 sm:h-7 sm:w-7 text-[#4A90E2]" />
             </div>
-            <div className="hidden sm:flex items-center gap-1 text-xs font-medium text-green-600">
-              <TrendingUp className="h-3 w-3" />
-              +12%
+            <div className="flex-1 min-w-0">
+              <p className="text-base sm:text-lg font-semibold text-gray-900">Медкарта</p>
+              <p className="text-xs sm:text-sm text-gray-500">Все ваши медицинские документы</p>
             </div>
-          </div>
-          <div className="space-y-0.5 sm:space-y-1">
-            <p className="text-xs sm:text-sm font-medium text-gray-500">Всего документов</p>
-            <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">{stats?.total_documents || 0}</p>
-          </div>
-        </div>
-
-        {/* Specialties */}
-        <div className="medical-card group cursor-pointer">
-          <div className="flex items-start justify-between mb-2 sm:mb-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-green-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Users className="h-5 w-5 sm:h-6 sm:w-6 text-[#7ED957]" />
-            </div>
-            <div className="hidden sm:flex items-center gap-1 text-xs font-medium text-gray-400">
-              <Activity className="h-3 w-3" />
-            </div>
-          </div>
-          <div className="space-y-0.5 sm:space-y-1">
-            <p className="text-xs sm:text-sm font-medium text-gray-500">Специализаций</p>
-            <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
-              {stats?.by_specialty ? Object.keys(stats.by_specialty).length : 0}
-            </p>
-          </div>
-        </div>
-
-        {/* Document Types */}
-        <div className="medical-card group cursor-pointer">
-          <div className="flex items-start justify-between mb-2 sm:mb-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-purple-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Activity className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
-            </div>
-          </div>
-          <div className="space-y-0.5 sm:space-y-1">
-            <p className="text-xs sm:text-sm font-medium text-gray-500">Типов документов</p>
-            <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
-              {stats?.by_type ? Object.keys(stats.by_type).length : 0}
-            </p>
-          </div>
-        </div>
-
-        {/* AI Insights */}
-        <Link to="/interpretations" className="medical-card group cursor-pointer block">
-          <div className="flex items-start justify-between mb-2 sm:mb-4">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-indigo-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Brain className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600" />
-            </div>
-            <div className="flex items-center gap-1 text-xs font-medium text-indigo-600">
-              <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
-            </div>
-          </div>
-          <div className="space-y-0.5 sm:space-y-1">
-            <p className="text-xs sm:text-sm font-medium text-gray-500">AI Интерпретации</p>
-            <p className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">Доступно</p>
+            <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-[#4A90E2] group-hover:translate-x-1 transition-all flex-shrink-0" />
           </div>
         </Link>
+
+        {/* Добавить новый документ */}
+        <button
+          onClick={() => setIsUploadModalOpen(true)}
+          className="medical-card group cursor-pointer text-left hover:shadow-md transition-shadow w-full"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-xl bg-green-100 flex items-center justify-center group-hover:scale-110 transition-transform flex-shrink-0">
+              <Plus className="h-6 w-6 sm:h-7 sm:w-7 text-[#7ED957]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-base sm:text-lg font-semibold text-gray-900">Добавить новый документ</p>
+              <p className="text-xs sm:text-sm text-gray-500">Загрузить PDF, фото или документ</p>
+            </div>
+            <Upload className="h-5 w-5 text-gray-400 group-hover:text-[#7ED957] transition-colors flex-shrink-0" />
+          </div>
+        </button>
       </div>
 
       {/* Recent Documents - Full Width */}
