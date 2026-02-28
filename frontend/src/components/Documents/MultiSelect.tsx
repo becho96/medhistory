@@ -52,7 +52,10 @@ export default function MultiSelect({
   const handleToggle = () => {
     if (!disabled) {
       setIsOpen(!isOpen)
-      if (!isOpen) {
+      // Only auto-focus the search input on desktop.
+      // On touch devices, focusing the input triggers the iOS keyboard which
+      // resizes the viewport and causes layout shifts on the page.
+      if (!isOpen && !window.matchMedia('(hover: none)').matches) {
         setTimeout(() => inputRef.current?.focus(), 100)
       }
     }
