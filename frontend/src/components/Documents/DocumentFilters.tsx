@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Filter, X } from 'lucide-react'
+import { Filter, X, ChevronDown } from 'lucide-react'
 import MultiSelect from './MultiSelect'
 import DateRangePicker from './DateRangePicker'
 import { documentsService } from '../../services/documents'
@@ -24,6 +24,10 @@ interface DocumentFiltersProps {
 }
 
 export default function DocumentFilters({ filters, onChange, onReset }: DocumentFiltersProps) {
+  // Collapsed by default on mobile to prevent layout shifts caused by
+  // MultiSelect dropdowns and iOS keyboard appearing on input focus
+  const [isMobileExpanded, setIsMobileExpanded] = useState(false)
+
   // State for filter values
   const [documentTypeValues, setDocumentTypeValues] = useState<string[]>([])
   const [specialtiesValues, setSpecialtiesValues] = useState<string[]>([])
@@ -117,9 +121,40 @@ export default function DocumentFilters({ filters, onChange, onReset }: Document
   }, [filters])
 
   return (
-    <div className="bg-white shadow rounded-lg p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center space-x-2">
+    <div className="bg-white shadow rounded-lg">
+      {/* Mobile: collapsible toggle header */}
+      <button
+        type="button"
+        onClick={() => setIsMobileExpanded(!isMobileExpanded)}
+        className="lg:hidden w-full flex items-center justify-between px-4 py-3"
+      >
+        <div className="flex items-center gap-2">
+          <Filter className="h-4 w-4 text-gray-500" />
+          <span className="text-sm font-medium text-gray-900">Фильтры</span>
+          {hasActiveFilters && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+              Активны
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); handleReset() }}
+              className="text-xs text-gray-400 flex items-center gap-0.5"
+            >
+              <X className="h-3 w-3" />
+              Сбросить
+            </button>
+          )}
+          <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isMobileExpanded ? 'rotate-180' : ''}`} />
+        </div>
+      </button>
+
+      {/* Desktop: always-visible header */}
+      <div className="hidden lg:flex items-center justify-between px-4 py-3 border-b border-gray-100">
+        <div className="flex items-center gap-2">
           <Filter className="h-5 w-5 text-gray-500" />
           <h3 className="text-sm font-medium text-gray-900">Фильтры</h3>
           {hasActiveFilters && (
@@ -139,7 +174,8 @@ export default function DocumentFilters({ filters, onChange, onReset }: Document
         )}
       </div>
 
-      <div className="space-y-3">
+      {/* Filter content: hidden on mobile by default, always visible on desktop */}
+      <div className={`p-4 space-y-3 ${isMobileExpanded ? 'block' : 'hidden'} lg:block`}>
         {/* Основные фильтры */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {/* Тип документа */}
