@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { FileText, Download, Trash2, FlaskConical, Eye, Upload, ChevronLeft, ChevronRight, List, Clock, Brain, X, Maximize2, Minimize2 } from 'lucide-react'
+import { FileText, Download, Trash2, FlaskConical, Upload, ChevronLeft, ChevronRight, List, Clock, Brain, X, Maximize2, Minimize2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Timeline as VisTimeline, DataSet } from 'vis-timeline/standalone'
 import { documentsService } from '../services/documents'
@@ -920,21 +920,20 @@ export default function Documents() {
 
   return (
     <div className="space-y-4 md:space-y-8 page-transition">
-      {/* Modern Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-1 md:mb-2">Медкарта</h1>
-          <p className="text-sm sm:text-base md:text-lg text-gray-600">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Медкарта</h1>
+          <p className="text-sm text-gray-500 hidden sm:block mt-0.5">
             Управляйте вашими медицинскими документами
           </p>
         </div>
         <button
           onClick={() => setIsUploadModalOpen(true)}
-          className="btn-primary text-sm sm:text-base w-full sm:w-auto"
+          className="flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 bg-gradient-to-r from-[#4A90E2] to-[#3A7BC8] text-white rounded-xl font-semibold text-sm shadow-lg shadow-blue-200/50 flex-shrink-0 transition-opacity active:opacity-80"
         >
-          <Upload className="h-4 w-4 sm:h-5 sm:w-5" />
-          <span className="hidden sm:inline">Загрузить медицинские документы</span>
-          <span className="sm:hidden">Загрузить документы</span>
+          <Upload className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+          <span className="hidden sm:inline">Загрузить документы</span>
         </button>
       </div>
 
@@ -965,7 +964,7 @@ export default function Documents() {
             <button
               onClick={() => setViewMode('timeline')}
               className={`
-                flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-xs sm:text-sm transition-all flex-1 sm:flex-initial justify-center
+                hidden lg:flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-xs sm:text-sm transition-all sm:flex-initial justify-center
                 ${viewMode === 'timeline'
                   ? 'bg-gradient-to-r from-[#4A90E2] to-[#3A7BC8] text-white shadow-lg shadow-blue-200/50'
                   : 'text-gray-600 hover:bg-gray-50'
@@ -981,25 +980,32 @@ export default function Documents() {
         {/* List View */}
         {viewMode === 'list' && (
           <>
-            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                  <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
-                    Все документы
-                  </h3>
-                  <p className="text-xs sm:text-sm text-gray-500 mt-1">Всего: {totalCount}</p>
-                </div>
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <label htmlFor="sort-by" className="text-xs sm:text-sm font-medium text-gray-600 hidden sm:inline">Сортировка:</label>
-                  <select
-                    id="sort-by"
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as 'document_date' | 'created_at')}
-                    className="block rounded-lg border-gray-200 shadow-sm focus:border-[#4A90E2] focus:ring-[#4A90E2] text-xs sm:text-sm px-2 sm:px-3 py-1.5 sm:py-2 bg-white flex-1 sm:flex-initial"
+            <div className="px-3 sm:px-6 py-3 border-b border-gray-100">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-semibold text-gray-700">
+                  {totalCount} {totalCount === 1 ? 'документ' : totalCount < 5 ? 'документа' : 'документов'}
+                </p>
+                <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs font-medium">
+                  <button
+                    onClick={() => setSortBy('document_date')}
+                    className={`px-2.5 py-1.5 transition-colors ${
+                      sortBy === 'document_date'
+                        ? 'bg-[#4A90E2] text-white'
+                        : 'bg-white text-gray-600'
+                    }`}
                   >
-                    <option value="document_date">По дате документа</option>
-                    <option value="created_at">По дате загрузки</option>
-                  </select>
+                    По документу
+                  </button>
+                  <button
+                    onClick={() => setSortBy('created_at')}
+                    className={`px-2.5 py-1.5 border-l border-gray-200 transition-colors ${
+                      sortBy === 'created_at'
+                        ? 'bg-[#4A90E2] text-white'
+                        : 'bg-white text-gray-600'
+                    }`}
+                  >
+                    По загрузке
+                  </button>
                 </div>
               </div>
             </div>
@@ -1042,178 +1048,97 @@ export default function Documents() {
               </div>
             )}
 
-            <div className="p-3 sm:p-6 space-y-2 sm:space-y-3">
+            <div className="divide-y divide-gray-50">
           {isLoading ? (
             <div className="py-12 text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4A90E2] mx-auto"></div>
             </div>
           ) : filteredDocuments && filteredDocuments.length > 0 ? (
-            filteredDocuments.map((doc, index) => (
+            filteredDocuments.map((doc) => (
               <div
                 key={doc.id}
-                className="p-3 sm:p-4 rounded-lg sm:rounded-xl bg-gray-50 hover:bg-gray-100 transition-all cursor-pointer border border-transparent hover:border-[#4A90E2]/20 group"
+                className="flex items-center gap-3 px-3 sm:px-4 py-3 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer"
                 onClick={() => setSelectedDocumentId(doc.id)}
-                style={{ animationDelay: `${index * 30}ms` }}
               >
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 sm:gap-4">
-                  <div className="flex items-start gap-2 sm:gap-4 flex-1 min-w-0">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl bg-white flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
-                      <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-[#4A90E2]" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm sm:text-base font-semibold text-gray-900 truncate mb-1 sm:mb-2">
-                        {doc.original_filename}
-                      </p>
-                      <div className="flex flex-col sm:flex-row sm:flex-wrap gap-x-4 sm:gap-x-6 gap-y-1 text-xs sm:text-sm text-gray-600">
-                        {doc.document_type && (
-                          <div className="flex items-center gap-1">
-                            <span className="font-medium text-gray-500">Тип:</span>
-                            <span className="truncate">{doc.document_type}</span>
-                          </div>
-                        )}
-                        {doc.specialty && (
-                          <div className="flex items-center gap-1">
-                            <span className="font-medium text-gray-500">Специализация:</span>
-                            <span className="truncate">{doc.specialty}</span>
-                          </div>
-                        )}
-                        {doc.document_date && (
-                          <div className="flex items-center gap-1">
-                            <span className="font-medium text-gray-500">Дата:</span>
-                            <span>{format(new Date(doc.document_date), 'dd.MM.yyyy')}</span>
-                          </div>
-                        )}
-                      </div>
-                      {doc.medical_facility && (
-                        <div className="mt-1 text-xs sm:text-sm text-gray-600 truncate">
-                          <span className="font-medium text-gray-500">Учреждение:</span> {doc.medical_facility}
-                        </div>
-                      )}
-                      {doc.patient_name && (
-                        <div className="mt-1 text-xs sm:text-sm text-gray-600">
-                          <span className="font-medium text-gray-500">Пациент:</span> {doc.patient_name}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 justify-end sm:justify-start">
-                    <span
-                      className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-semibold ${
-                        doc.processing_status === 'completed'
-                          ? 'bg-green-100 text-green-700'
-                          : doc.processing_status === 'processing'
-                          ? 'bg-yellow-100 text-yellow-700'
-                          : doc.processing_status === 'failed'
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}
+                {/* Icon */}
+                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
+                  <FileText className="h-5 w-5 text-[#4A90E2]" />
+                </div>
+
+                {/* Main content */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 truncate">
+                    {doc.original_filename}
+                  </p>
+                  <p className="text-xs text-gray-400 truncate mt-0.5">
+                    {doc.document_type || '—'}
+                    {doc.document_date && ` · ${format(new Date(doc.document_date), 'dd.MM.yy')}`}
+                    {doc.specialty && ` · ${doc.specialty}`}
+                  </p>
+                </div>
+
+                {/* Status + Actions */}
+                <div className="flex items-center gap-0.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+                  {/* Status dot */}
+                  <span className={`w-2 h-2 rounded-full mr-1.5 flex-shrink-0 ${
+                    doc.processing_status === 'completed' ? 'bg-green-400' :
+                    doc.processing_status === 'processing' ? 'bg-yellow-400' :
+                    doc.processing_status === 'failed' ? 'bg-red-400' : 'bg-gray-300'
+                  }`} />
+
+                  {/* Labs button (only for lab docs) */}
+                  {doc.document_type === 'Результаты анализа' && labsSummary[doc.id]?.has_labs && (
+                    <button
+                      onClick={() => openLabsModal(doc.id)}
+                      className="p-1.5 rounded-lg text-purple-500 hover:bg-purple-50 transition-colors"
+                      title="Анализы"
                     >
-                      <span className="hidden sm:inline">
-                        {doc.processing_status === 'completed'
-                          ? '✓ Обработан'
-                          : doc.processing_status === 'processing'
-                          ? '⏳ Обработка'
-                          : doc.processing_status === 'failed'
-                          ? '✗ Ошибка'
-                          : '⋯ Ожидание'}
-                      </span>
-                      <span className="sm:hidden">
-                        {doc.processing_status === 'completed'
-                          ? '✓'
-                          : doc.processing_status === 'processing'
-                          ? '⏳'
-                          : doc.processing_status === 'failed'
-                          ? '✗'
-                          : '⋯'}
-                      </span>
-                    </span>
-                    {doc.document_type === 'Результаты анализа' && labsSummary[doc.id] && (
-                      <span
-                        className={`inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-semibold ${
-                          labsSummary[doc.id]?.has_labs
-                            ? 'bg-purple-100 text-purple-700'
-                            : 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
-                        {labsSummary[doc.id]?.has_labs 
-                          ? `🔬 ${labsSummary[doc.id].count}`
-                          : '🔬'}
-                      </span>
-                    )}
-                    <div className="flex items-center gap-0.5 sm:gap-1">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setSelectedDocumentId(doc.id)
-                        }}
-                        className="p-1.5 sm:p-2 rounded-lg text-gray-400 hover:text-[#4A90E2] hover:bg-white transition-colors"
-                        title="Показать детали"
-                      >
-                        <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
-                      </button>
-                      {doc.document_type === 'Результаты анализа' && labsSummary[doc.id]?.has_labs && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            openLabsModal(doc.id)
-                          }}
-                          className="p-1.5 sm:p-2 rounded-lg text-purple-600 hover:text-purple-700 hover:bg-white transition-colors"
-                          title="Извлеченные анализы"
-                        >
-                          <FlaskConical className="h-4 w-4 sm:h-5 sm:w-5" />
-                        </button>
-                      )}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDownload(doc.id, doc.original_filename)
-                        }}
-                        className="p-1.5 sm:p-2 rounded-lg text-gray-400 hover:text-[#4A90E2] hover:bg-white transition-colors"
-                        title="Скачать"
-                      >
-                        <Download className="h-4 w-4 sm:h-5 sm:w-5" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          if (
-                            window.confirm(
-                              'Вы уверены, что хотите удалить этот документ?'
-                            )
-                          ) {
-                            deleteMutation.mutate(doc.id)
-                          }
-                        }}
-                        className="p-1.5 sm:p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-white transition-colors"
-                        title="Удалить"
-                      >
-                        <Trash2 className="h-4 w-4 sm:h-5 sm:w-5" />
-                      </button>
-                    </div>
-                  </div>
+                      <FlaskConical className="h-4 w-4" />
+                    </button>
+                  )}
+
+                  {/* Download — desktop only */}
+                  <button
+                    onClick={() => handleDownload(doc.id, doc.original_filename)}
+                    className="hidden sm:block p-1.5 rounded-lg text-gray-400 hover:text-[#4A90E2] hover:bg-blue-50 transition-colors"
+                    title="Скачать"
+                  >
+                    <Download className="h-4 w-4" />
+                  </button>
+
+                  {/* Delete */}
+                  <button
+                    onClick={() => {
+                      if (window.confirm('Удалить этот документ?')) {
+                        deleteMutation.mutate(doc.id)
+                      }
+                    }}
+                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                    title="Удалить"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               </div>
             ))
           ) : (
-            <div className="py-8 sm:py-12 text-center">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 rounded-full bg-gray-100 flex items-center justify-center">
-                <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-gray-400" />
+            <div className="py-12 text-center">
+              <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center">
+                <FileText className="h-7 w-7 text-gray-400" />
               </div>
-              <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-2">
-                Нет документов
-              </h3>
-              <p className="text-xs sm:text-sm text-gray-500 mb-4 sm:mb-6 px-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-1">Нет документов</h3>
+              <p className="text-xs text-gray-500 mb-4 px-4">
                 Загрузите ваш первый медицинский документ
               </p>
               <button
                 onClick={() => setIsUploadModalOpen(true)}
-                className="inline-flex items-center px-4 py-2 bg-[#4A90E2] text-white rounded-lg hover:bg-[#3A7BC8] transition-colors font-medium text-xs sm:text-sm"
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#4A90E2] text-white rounded-xl font-medium text-sm"
               >
-                <Upload className="h-4 w-4 mr-2" />
+                <Upload className="h-4 w-4" />
                 Загрузить документ
               </button>
-              </div>
-            )}
+            </div>
+          )}
           </div>
         
           {/* Bottom Pagination */}
