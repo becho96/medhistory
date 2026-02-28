@@ -56,7 +56,7 @@ export default function Layout() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
+    <div className="h-[100dvh] flex flex-col bg-gradient-to-br from-gray-50 via-white to-gray-50">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-gray-100"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
@@ -111,9 +111,9 @@ export default function Layout() {
         </div>
       </header>
 
-      <div className="flex relative">
+      <div className="flex flex-1 min-h-0 relative">
         {/* Sidebar — desktop only */}
-        <aside className="hidden lg:flex flex-col w-72 bg-white/60 backdrop-blur-sm border-r border-gray-100 min-h-[calc(100vh-73px)]">
+        <aside className="hidden lg:flex flex-col w-72 bg-white/60 backdrop-blur-sm border-r border-gray-100 overflow-y-auto">
           <nav className="p-6 flex-1">
             <div className="space-y-2">
               {navigation.map((item) => {
@@ -173,7 +173,7 @@ export default function Layout() {
 
         {/* Main content */}
         <main className="flex-1 overflow-auto">
-          <div className="p-4 sm:p-6 md:p-8 pb-24 lg:pb-8 max-w-7xl mx-auto">
+          <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto">
             {!isViewingOwnProfile && activeProfile && (
               <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
