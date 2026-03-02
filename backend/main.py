@@ -1,3 +1,4 @@
+import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -17,6 +18,7 @@ from app.models.report import Report
 from app.models.analyte import (
     AnalyteCategory, AnalyteStandard, AnalyteSynonym, UserAnalyteMapping
 )
+from app.models.chat import ChatSession, ChatMessage  # AI assistant chat history
 
 # Import analyte normalization service
 from app.services.analyte_normalization_service_db import analyte_normalization_service_db
@@ -26,6 +28,14 @@ async def lifespan(app: FastAPI):
     """Startup and shutdown events"""
     # Startup
     print("🚀 Starting MedHistory API...")
+
+    # Временная настройка логирования ассистента (отладка диалогов)
+    asst_logger = logging.getLogger("medhistory.assistant")
+    asst_logger.setLevel(logging.INFO)
+    if not asst_logger.handlers:
+        h = logging.StreamHandler()
+        h.setFormatter(logging.Formatter("%(asctime)s [%(levelname)s] %(name)s: %(message)s"))
+        asst_logger.addHandler(h)
     
     # Create database tables
     async with engine.begin() as conn:

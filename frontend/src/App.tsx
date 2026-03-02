@@ -12,6 +12,7 @@ import Reports from './pages/Reports'
 import Labs from './pages/Labs'
 import Interpretations from './pages/Interpretations'
 import HealthEvents from './pages/HealthEvents'
+import AssistantPage from './pages/AssistantPage'
 
 // Layout
 import Layout from './components/Layout/Layout'
@@ -39,6 +40,7 @@ function App() {
           <Route path="/interpretations" element={<Interpretations />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/labs" element={<Labs />} />
+          <Route path="/assistant" element={<AssistantPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       )}

@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Home, FileText, BarChart3, LogOut, FlaskConical, Brain, Heart, AlertCircle, Settings, Activity } from 'lucide-react'
+import { Home, FileText, BarChart3, LogOut, FlaskConical, Brain, Heart, AlertCircle, Settings, Activity, Bot } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useState, useEffect } from 'react'
 import ProfileSwitcher from '../ProfileSwitcher'
@@ -53,6 +53,7 @@ export default function Layout() {
     { name: 'Интерпретации', href: '/interpretations', icon: Brain },
     { name: 'Отчёты', href: '/reports', icon: BarChart3 },
     { name: 'Анализы', href: '/labs', icon: FlaskConical },
+    { name: 'ИИ-ассистент', href: '/assistant', icon: Bot },
   ]
 
   return (

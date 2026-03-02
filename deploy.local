@@ -139,6 +139,19 @@ docker compose -p $PROJECT_NAME --env-file "$ENV_FILE" up -d
     print_info "⏳ Ожидание готовности сервисов..."
     sleep 10
     
+    # Применение миграций (chat tables для AI Assistant)
+    MIGRATION_FILE="${PROJECT_ROOT}/backend/migrations/010_add_chat_tables.sql"
+    if [ -f "$MIGRATION_FILE" ]; then
+        print_info "📦 Применение миграции 010_add_chat_tables.sql..."
+        if cat "$MIGRATION_FILE" | docker compose -p $PROJECT_NAME --env-file "$ENV_FILE" exec -T postgres psql -U "${POSTGRES_USER:-medhistory_user}" -d "${POSTGRES_DB:-medhistory}" -q; then
+            print_success "Миграция применена"
+        else
+            print_warning "Ошибка миграции (см. вывод выше)"
+        fi
+    else
+        print_warning "Файл миграции не найден: $MIGRATION_FILE"
+    fi
+    
     # Проверка статуса
     print_info "📊 Статус сервисов:"
 docker compose -p $PROJECT_NAME --env-file "$ENV_FILE" ps

@@ -34,6 +34,22 @@ class Settings(BaseSettings):
     
     # Telegram Bot
     BOT_SECRET: str = ""  # Shared secret between n8n and backend for bot API auth
+
+    # AI Assistant — Anthropic (primary provider for assistant)
+    ANTHROPIC_API_KEY: str = ""
+
+    # Assistant model defaults (can be overridden per session)
+    ASSISTANT_PROVIDER: str = "anthropic"           # "anthropic" | "openrouter"
+    ASSISTANT_MODEL: str = "claude-sonnet-4-6"      # model id within the provider
+
+    # Chat history: how many past messages to include as context
+    CHAT_HISTORY_LIMIT: int = 20
+
+    # Assistant data retrieval limits (документы из медкарты)
+    ASSISTANT_LAB_RESULTS_LIMIT: int = 200      # Результаты анализа
+    ASSISTANT_DOCTOR_VISITS_LIMIT: int = 100    # Прием врача
+    ASSISTANT_INTERPRETATIONS_LIMIT: int = 20
+    ASSISTANT_HEALTH_EVENTS_LIMIT: int = 100
     
     # CORS
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"  # Comma-separated list
