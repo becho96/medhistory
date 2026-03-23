@@ -25,11 +25,11 @@ export default function BottomNav() {
               key={tab.href}
               to={tab.href}
               className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 transition-colors active:opacity-60 ${
-                isActive ? 'text-[#4A90E2]' : 'text-gray-400'
+                isActive ? 'text-emerald-500' : 'text-gray-400'
               }`}
             >
               {isActive && (
-                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-[#4A90E2] rounded-full" />
+                <span className="absolute top-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-emerald-500 rounded-full" />
               )}
               <tab.icon className="w-5 h-5" strokeWidth={isActive ? 2.5 : 1.75} />
               <span className="text-[10px] font-medium leading-none">{tab.name}</span>

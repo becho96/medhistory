@@ -132,7 +132,7 @@ export default function DocumentFilters({ filters, onChange, onReset }: Document
           <Filter className="h-4 w-4 text-gray-500" />
           <span className="text-sm font-medium text-gray-900">Фильтры</span>
           {hasActiveFilters && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
               Активны
             </span>
           )}

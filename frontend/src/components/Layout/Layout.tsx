@@ -57,7 +57,7 @@ export default function Layout() {
   ]
 
   return (
-    <div className="h-[100dvh] flex flex-col bg-gradient-to-br from-gray-50 via-white to-gray-50">
+    <div className="h-[100dvh] flex flex-col bg-gray-50">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-gray-100"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
@@ -66,14 +66,11 @@ export default function Layout() {
           <div className="flex justify-between items-center py-3 sm:py-4">
             {/* Logo */}
             <div className="flex items-center gap-2 sm:gap-3">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-[#4A90E2] to-[#3A7BC8] flex items-center justify-center shadow-lg shadow-blue-200/50">
-                <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-              </div>
+              <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500" strokeWidth={2} />
               <div>
-                <h1 className="text-base sm:text-xl font-bold bg-gradient-to-r from-[#4A90E2] to-[#3A7BC8] bg-clip-text text-transparent">
+                <h1 className="text-base sm:text-xl font-semibold text-gray-900 tracking-tight">
                   MedHistory
                 </h1>
-                <p className="text-xs text-gray-500 hidden sm:block">История болезни</p>
               </div>
             </div>
 
@@ -128,7 +125,7 @@ export default function Layout() {
                       transition-all duration-200
                       ${
                         isActive
-                          ? 'bg-gradient-to-r from-[#4A90E2] to-[#3A7BC8] text-white shadow-lg shadow-blue-200/50'
+                          ? 'bg-emerald-500 text-white'
                           : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                       }
                     `}
@@ -152,14 +149,14 @@ export default function Layout() {
               })}
             </div>
 
-            <div className="mt-8 p-4 rounded-xl bg-gradient-to-br from-[#E8E4F3] to-[#F5F3FF] border border-purple-100">
+            <div className="mt-8 p-4 rounded-xl bg-emerald-50 border border-emerald-100">
               <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center flex-shrink-0">
-                  <span className="text-lg">💡</span>
+                <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center flex-shrink-0">
+                  <Heart className="w-4 h-4 text-emerald-500" />
                 </div>
                 <div>
-                  <h4 className="text-sm font-semibold text-gray-900 mb-1">Совет дня</h4>
-                  <p className="text-xs text-gray-600 leading-relaxed">
+                  <h4 className="text-[13px] font-semibold text-gray-900 mb-1">Совет дня</h4>
+                  <p className="text-[12px] text-gray-600 leading-relaxed">
                     Регулярно обновляйте свои медицинские документы для точного мониторинга здоровья
                   </p>
                 </div>

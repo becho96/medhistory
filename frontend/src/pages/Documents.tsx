@@ -19,8 +19,8 @@ const timelineStyles = `
   .vis-item.vis-selected {
     border-width: 3px !important;
     border-style: solid !important;
-    box-shadow: 
-      0 0 0 4px rgba(59, 130, 246, 0.4),
+    box-shadow:
+      0 0 0 4px rgba(16, 185, 129, 0.4),
       0 8px 16px rgba(0, 0, 0, 0.25),
       0 4px 8px rgba(0, 0, 0, 0.15) !important;
     z-index: 100 !important;
@@ -33,8 +33,8 @@ const timelineStyles = `
 
   .vis-item.vis-dot.vis-selected {
     border-width: 4px !important;
-    box-shadow: 
-      0 0 0 4px rgba(59, 130, 246, 0.4),
+    box-shadow:
+      0 0 0 4px rgba(16, 185, 129, 0.4),
       0 8px 16px rgba(0, 0, 0, 0.3),
       0 4px 8px rgba(0, 0, 0, 0.2) !important;
   }
@@ -48,7 +48,7 @@ const transformDocumentsToTimelineEvents = (docs: any[]): TimelineEvent[] => {
   const colorMap: Record<string, string> = {
     'прием врача': '#10B981',
     'результаты анализа': '#EF4444',
-    'инструментальное исследование': '#3B82F6',
+    'инструментальное исследование': '#0EA5E9',
     'функциональная диагностика': '#8B5CF6',
     'другое': '#6B7280'
   }
@@ -304,8 +304,8 @@ export default function Documents() {
       parts.push(`<div style="margin-top: 8px; color: #1F2937;"><strong>Summary:</strong> ${safeSummary}</div>`)
     }
     
-    parts.push(`<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #E5E7EB; color: #2563EB; font-size: 0.875rem;">
-      <strong>💡 Нажмите, чтобы открыть детали документа</strong>
+    parts.push(`<div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #E5E7EB; color: #059669; font-size: 0.875rem;">
+      <strong>Нажмите, чтобы открыть детали документа</strong>
     </div>`)
     
     return parts.join('')
@@ -919,20 +919,20 @@ export default function Documents() {
   const filteredDocuments = documents
 
   return (
-    <div className="space-y-4 md:space-y-8 page-transition">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Медкарта</h1>
-          <p className="text-sm text-gray-500 hidden sm:block mt-0.5">
+          <h1 className="text-[28px] sm:text-[32px] font-semibold text-gray-900 tracking-tight">Медкарта</h1>
+          <p className="text-[13px] text-gray-500 hidden sm:block mt-0.5">
             Управляйте вашими медицинскими документами
           </p>
         </div>
         <button
           onClick={() => setIsUploadModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-3 bg-gradient-to-r from-[#4A90E2] to-[#3A7BC8] text-white rounded-xl font-semibold text-sm shadow-lg shadow-blue-200/50 flex-shrink-0 transition-opacity active:opacity-80"
+          className="flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-2.5 bg-emerald-500 text-white rounded-xl font-medium text-[14px] hover:bg-emerald-600 transition-colors flex-shrink-0"
         >
-          <Upload className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+          <Upload className="h-4 w-4 flex-shrink-0" />
           <span className="hidden sm:inline">Загрузить документы</span>
         </button>
       </div>
@@ -944,34 +944,34 @@ export default function Documents() {
         onReset={() => setFilters({})}
       />
 
-      {/* Modern View Mode Tabs */}
-      <div className="medical-card overflow-hidden">
+      {/* View Mode Tabs */}
+      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         <div className="border-b border-gray-100">
           <nav className="flex gap-2 p-2">
             <button
               onClick={() => setViewMode('list')}
               className={`
-                flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-xs sm:text-sm transition-all flex-1 sm:flex-initial justify-center
+                flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-xl font-medium text-[13px] sm:text-[14px] transition-colors flex-1 sm:flex-initial justify-center
                 ${viewMode === 'list'
-                  ? 'bg-gradient-to-r from-[#4A90E2] to-[#3A7BC8] text-white shadow-lg shadow-blue-200/50'
+                  ? 'bg-emerald-500 text-white'
                   : 'text-gray-600 hover:bg-gray-50'
                 }
               `}
             >
-              <List className="h-4 w-4 sm:h-5 sm:w-5" />
+              <List className="h-4 w-4" />
               Список
             </button>
             <button
               onClick={() => setViewMode('timeline')}
               className={`
-                hidden lg:flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-xs sm:text-sm transition-all sm:flex-initial justify-center
+                hidden lg:flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2 sm:py-2.5 rounded-xl font-medium text-[13px] sm:text-[14px] transition-colors sm:flex-initial justify-center
                 ${viewMode === 'timeline'
-                  ? 'bg-gradient-to-r from-[#4A90E2] to-[#3A7BC8] text-white shadow-lg shadow-blue-200/50'
+                  ? 'bg-emerald-500 text-white'
                   : 'text-gray-600 hover:bg-gray-50'
                 }
               `}
             >
-              <Clock className="h-4 w-4 sm:h-5 sm:w-5" />
+              <Clock className="h-4 w-4" />
               Timeline
             </button>
           </nav>
@@ -982,15 +982,15 @@ export default function Documents() {
           <>
             <div className="px-3 sm:px-6 py-3 border-b border-gray-100">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-semibold text-gray-700">
+                <p className="text-[13px] font-medium text-gray-500">
                   {totalCount} {totalCount === 1 ? 'документ' : totalCount < 5 ? 'документа' : 'документов'}
                 </p>
-                <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs font-medium">
+                <div className="flex rounded-xl border border-gray-200 overflow-hidden text-[12px] font-medium">
                   <button
                     onClick={() => setSortBy('document_date')}
                     className={`px-2.5 py-1.5 transition-colors ${
                       sortBy === 'document_date'
-                        ? 'bg-[#4A90E2] text-white'
+                        ? 'bg-emerald-500 text-white'
                         : 'bg-white text-gray-600'
                     }`}
                   >
@@ -1000,7 +1000,7 @@ export default function Documents() {
                     onClick={() => setSortBy('created_at')}
                     className={`px-2.5 py-1.5 border-l border-gray-200 transition-colors ${
                       sortBy === 'created_at'
-                        ? 'bg-[#4A90E2] text-white'
+                        ? 'bg-emerald-500 text-white'
                         : 'bg-white text-gray-600'
                     }`}
                   >
@@ -1051,7 +1051,7 @@ export default function Documents() {
             <div className="divide-y divide-gray-50">
           {isLoading ? (
             <div className="py-12 text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4A90E2] mx-auto"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto"></div>
             </div>
           ) : filteredDocuments && filteredDocuments.length > 0 ? (
             filteredDocuments.map((doc) => (
@@ -1061,16 +1061,16 @@ export default function Documents() {
                 onClick={() => setSelectedDocumentId(doc.id)}
               >
                 {/* Icon */}
-                <div className="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center flex-shrink-0">
-                  <FileText className="h-5 w-5 text-[#4A90E2]" />
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+                  <FileText className="h-5 w-5 text-emerald-500" />
                 </div>
 
                 {/* Main content */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">
+                  <p className="text-[14px] font-medium text-gray-900 truncate">
                     {doc.original_filename}
                   </p>
-                  <p className="text-xs text-gray-400 truncate mt-0.5">
+                  <p className="text-[12px] text-gray-400 truncate mt-0.5">
                     {doc.document_type || '—'}
                     {doc.document_date && ` · ${format(new Date(doc.document_date), 'dd.MM.yy')}`}
                     {doc.specialty && ` · ${doc.specialty}`}
@@ -1100,7 +1100,7 @@ export default function Documents() {
                   {/* Download — desktop only */}
                   <button
                     onClick={() => handleDownload(doc.id, doc.original_filename)}
-                    className="hidden sm:block p-1.5 rounded-lg text-gray-400 hover:text-[#4A90E2] hover:bg-blue-50 transition-colors"
+                    className="hidden sm:block p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 transition-colors"
                     title="Скачать"
                   >
                     <Download className="h-4 w-4" />
@@ -1123,16 +1123,16 @@ export default function Documents() {
             ))
           ) : (
             <div className="py-12 text-center">
-              <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center">
-                <FileText className="h-7 w-7 text-gray-400" />
+              <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gray-50 flex items-center justify-center">
+                <FileText className="h-6 w-6 text-gray-300" />
               </div>
-              <h3 className="text-sm font-semibold text-gray-900 mb-1">Нет документов</h3>
-              <p className="text-xs text-gray-500 mb-4 px-4">
+              <p className="text-[15px] font-medium text-gray-900 mb-1">Нет документов</p>
+              <p className="text-[13px] text-gray-500 mb-5 px-4">
                 Загрузите ваш первый медицинский документ
               </p>
               <button
                 onClick={() => setIsUploadModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#4A90E2] text-white rounded-xl font-medium text-sm"
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-500 text-white rounded-xl font-medium text-[14px] hover:bg-emerald-600 transition-colors"
               >
                 <Upload className="h-4 w-4" />
                 Загрузить документ
@@ -1191,7 +1191,7 @@ export default function Documents() {
                   <h3 className="text-lg sm:text-xl font-semibold text-gray-900">
                     События ({timelineData?.total_count || 0})
                     {interpretationMode && selectedDocumentsForInterpretation.size > 0 && (
-                      <span className="ml-2 text-sm sm:text-base font-normal text-[#4A90E2]">
+                      <span className="ml-2 text-sm sm:text-base font-normal text-emerald-600">
                         (Выбрано: {selectedDocumentsForInterpretation.size})
                       </span>
                     )}
@@ -1208,7 +1208,7 @@ export default function Documents() {
                   {!interpretationMode ? (
                     <button
                       onClick={() => setInterpretationMode(true)}
-                      className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium text-xs sm:text-sm transition-colors shadow-lg shadow-purple-200/50 w-full sm:w-auto"
+                      className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 font-medium text-xs sm:text-sm transition-colors shadow-sm w-full sm:w-auto"
                     >
                       <Brain className="h-4 w-4 sm:h-5 sm:w-5" />
                       <span className="hidden sm:inline">Интерпретировать анализы</span>
@@ -1224,7 +1224,7 @@ export default function Documents() {
                             timelineInstance.current.setSelection([])
                           }
                         }}
-                        className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 font-medium text-xs sm:text-sm transition-colors"
+                        className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 font-medium text-xs sm:text-sm transition-colors"
                       >
                         <X className="h-4 w-4 sm:h-5 sm:w-5" />
                         Отмена
@@ -1232,7 +1232,7 @@ export default function Documents() {
                       <button
                         onClick={() => setShowInterpretationConfirmModal(true)}
                         disabled={selectedDocumentsForInterpretation.size === 0}
-                        className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium text-xs sm:text-sm transition-colors shadow-lg shadow-purple-200/50 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex-1 sm:flex-initial"
+                        className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 font-medium text-xs sm:text-sm transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex-1 sm:flex-initial"
                       >
                         <Brain className="h-4 w-4 sm:h-5 sm:w-5" />
                         Отправить ({selectedDocumentsForInterpretation.size})
@@ -1243,7 +1243,7 @@ export default function Documents() {
               </div>
               
               {interpretationMode && (
-                <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 border border-purple-200 rounded-lg sm:rounded-xl">
+                <div className="mb-4 sm:mb-6 p-3 sm:p-4 bg-purple-50 border border-purple-200 rounded-xl">
                   <p className="text-xs sm:text-sm text-purple-900">
                     <strong>Режим выбора документов для интерпретации:</strong> Нажмите на документы на таймлайне, чтобы выбрать их. 
                     <span className="hidden sm:inline"> Вы можете выбрать несколько документов, зажав Ctrl (Cmd на Mac) и кликая по документам.</span>
@@ -1253,7 +1253,7 @@ export default function Documents() {
               
               {isTimelineLoading ? (
                 <div className="flex items-center justify-center h-96">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4A90E2]"></div>
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
                 </div>
               ) : timelineData && timelineData.events.length > 0 ? (
                 <div className="relative">
@@ -1291,7 +1291,7 @@ export default function Documents() {
                     <span className="text-xs sm:text-sm text-gray-700">Анализ крови</span>
                   </div>
                   <div className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-lg bg-gray-50">
-                    <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-blue-500 flex-shrink-0"></div>
+                    <div className="w-3 h-3 sm:w-4 sm:h-4 rounded-full bg-sky-500 flex-shrink-0"></div>
                     <span className="text-xs sm:text-sm text-gray-700">УЗИ/МРТ</span>
                   </div>
                   <div className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-lg bg-gray-50">
@@ -1342,7 +1342,7 @@ export default function Documents() {
                           fullscreenTimelineInstance.current.setSelection([])
                         }
                       }}
-                      className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 font-medium text-xs sm:text-sm transition-colors"
+                      className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl hover:bg-gray-50 font-medium text-xs sm:text-sm transition-colors"
                     >
                       <X className="h-4 w-4" />
                       Отмена
@@ -1350,7 +1350,7 @@ export default function Documents() {
                     <button
                       onClick={() => setShowInterpretationConfirmModal(true)}
                       disabled={selectedDocumentsForInterpretation.size === 0}
-                      className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 font-medium text-xs sm:text-sm transition-colors shadow-lg shadow-purple-200/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="inline-flex items-center gap-2 px-3 sm:px-4 py-2 bg-purple-600 text-white rounded-xl hover:bg-purple-700 font-medium text-xs sm:text-sm transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Brain className="h-4 w-4" />
                       Отправить ({selectedDocumentsForInterpretation.size})
@@ -1371,7 +1371,7 @@ export default function Documents() {
             <div className="flex-1 overflow-hidden p-4 sm:p-6">
               {isTimelineLoading ? (
                 <div className="flex items-center justify-center h-full">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4A90E2]"></div>
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
                 </div>
               ) : timelineData && timelineData.events.length > 0 ? (
                 <div 
@@ -1398,7 +1398,7 @@ export default function Documents() {
       {openLabsFor && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div className="bg-white rounded-xl sm:rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden max-h-[90vh] flex flex-col">
-            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-purple-50 to-white">
+            <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 flex items-center justify-between bg-white">
               <div className="flex items-center gap-2 sm:gap-3">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-purple-100 flex items-center justify-center">
                   <FlaskConical className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />

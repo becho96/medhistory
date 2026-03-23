@@ -27,82 +27,82 @@ export default function Dashboard() {
 
   const getCurrentGreeting = () => {
     const hour = new Date().getHours()
-    if (hour < 12) return '☀️ Доброе утро'
-    if (hour < 18) return '🌤️ Добрый день'
-    return '🌙 Добрый вечер'
+    if (hour < 12) return 'Доброе утро'
+    if (hour < 18) return 'Добрый день'
+    return 'Добрый вечер'
   }
 
   const today = format(new Date(), "d MMMM, EEEE", { locale: ru })
   const firstName = user?.full_name?.split(' ')[0]
 
   return (
-    <div className="space-y-4 page-transition">
+    <div className="space-y-5">
       {/* Hero Section */}
-      <div className="relative overflow-hidden medical-card-gradient rounded-2xl p-5 sm:p-8">
-        <div className="relative z-10">
-          <p className="text-xs font-medium text-[#4A90E2]/80 uppercase tracking-wide mb-1 capitalize">
-            {today}
-          </p>
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-1">
-            {getCurrentGreeting()}{firstName ? `, ${firstName}` : ''}
-          </h1>
-          <p className="text-sm text-gray-500 mb-5">Здоровье под контролем ✨</p>
-          <button
-            onClick={() => setIsUploadModalOpen(true)}
-            className="btn-primary w-full sm:w-auto justify-center"
-          >
-            <Upload className="h-4 w-4" />
-            Загрузить документ
-          </button>
-        </div>
-        <div className="absolute top-0 right-0 w-48 h-48 bg-white/20 rounded-full -mr-24 -mt-24 blur-3xl pointer-events-none" />
+      <div className="bg-white rounded-2xl border border-gray-100 p-6 sm:p-8">
+        <p className="text-[13px] font-medium text-gray-400 uppercase tracking-wide mb-1 capitalize">
+          {today}
+        </p>
+        <h1 className="text-[28px] sm:text-[32px] font-semibold text-gray-900 tracking-tight mb-1">
+          {getCurrentGreeting()}{firstName ? `, ${firstName}` : ''}
+        </h1>
+        <p className="text-[15px] text-gray-500 mb-6">Здоровье под контролем</p>
+        <button
+          onClick={() => setIsUploadModalOpen(true)}
+          className="inline-flex items-center gap-2 bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-[14px] font-medium hover:bg-emerald-600 transition-colors"
+        >
+          <Upload className="h-4 w-4" />
+          Загрузить документ
+        </button>
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Link to="/documents" className="medical-card group cursor-pointer block">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Link
+          to="/documents"
+          className="bg-white rounded-2xl border border-gray-100 p-5 hover:border-emerald-200 transition-colors group block"
+        >
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-              <BookOpen className="h-6 w-6 text-[#4A90E2]" />
+            <div className="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+              <BookOpen className="h-5 w-5 text-emerald-500" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-base font-semibold text-gray-900">Медкарта</p>
-              <p className="text-xs text-gray-500">Все ваши документы</p>
+              <p className="text-[15px] font-semibold text-gray-900">Медкарта</p>
+              <p className="text-[13px] text-gray-500">Все ваши документы</p>
             </div>
-            <ArrowRight className="h-5 w-5 text-gray-300 flex-shrink-0" />
+            <ArrowRight className="h-4 w-4 text-gray-300 group-hover:text-emerald-400 transition-colors shrink-0" />
           </div>
         </Link>
 
         <button
           onClick={() => setIsUploadModalOpen(true)}
-          className="medical-card group cursor-pointer text-left w-full"
+          className="bg-white rounded-2xl border border-gray-100 p-5 hover:border-emerald-200 transition-colors group text-left w-full"
         >
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center flex-shrink-0">
-              <Plus className="h-6 w-6 text-[#7ED957]" />
+            <div className="w-11 h-11 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+              <Plus className="h-5 w-5 text-emerald-500" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-base font-semibold text-gray-900">Новый документ</p>
-              <p className="text-xs text-gray-500">PDF, фото или скан</p>
+              <p className="text-[15px] font-semibold text-gray-900">Новый документ</p>
+              <p className="text-[13px] text-gray-500">PDF, фото или скан</p>
             </div>
-            <Upload className="h-5 w-5 text-gray-300 flex-shrink-0" />
+            <Upload className="h-4 w-4 text-gray-300 group-hover:text-emerald-400 transition-colors shrink-0" />
           </div>
         </button>
       </div>
 
       {/* Recent Documents */}
-      <div className="medical-card">
-        <div className="flex items-center justify-between mb-4">
+      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <div className="flex items-center justify-between mb-5">
           <div>
-            <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-[#4A90E2]" />
+            <h3 className="text-[15px] font-semibold text-gray-900 flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-emerald-500" />
               Последние документы
             </h3>
-            <p className="text-xs text-gray-400 mt-0.5">За последние 24 часа</p>
+            <p className="text-[12px] text-gray-400 mt-0.5">За последние 24 часа</p>
           </div>
           <Link
             to="/documents"
-            className="text-xs font-semibold text-[#4A90E2] flex items-center gap-1"
+            className="text-[13px] font-medium text-emerald-600 hover:text-emerald-700 flex items-center gap-1 transition-colors"
           >
             Все
             <ArrowRight className="h-3 w-3" />
@@ -112,40 +112,40 @@ export default function Dashboard() {
         <div className="divide-y divide-gray-50">
           {documents && documents.length > 0 ? (
             documents.map((doc) => (
-              <div key={doc.id} className="py-3 flex items-center gap-3 active:opacity-70">
-                <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0">
-                  <FileText className="h-4 w-4 text-[#4A90E2]" />
+              <div key={doc.id} className="py-3 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center shrink-0">
+                  <FileText className="h-4 w-4 text-gray-400" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">
+                  <p className="text-[14px] font-medium text-gray-900 truncate">
                     {doc.original_filename}
                   </p>
-                  <p className="text-xs text-gray-400 truncate">
+                  <p className="text-[12px] text-gray-400 truncate">
                     {doc.document_type || 'Неизвестный тип'}
                     {doc.specialty && ` · ${doc.specialty}`}
                   </p>
                 </div>
-                <span className={`text-xs font-semibold flex-shrink-0 ${
-                  doc.processing_status === 'completed' ? 'text-green-500' :
-                  doc.processing_status === 'processing' ? 'text-yellow-500' :
+                <span className={`text-[12px] font-medium shrink-0 ${
+                  doc.processing_status === 'completed' ? 'text-emerald-500' :
+                  doc.processing_status === 'processing' ? 'text-amber-500' :
                   doc.processing_status === 'failed' ? 'text-red-500' : 'text-gray-300'
                 }`}>
-                  {doc.processing_status === 'completed' ? '✓' :
-                   doc.processing_status === 'processing' ? '⏳' :
-                   doc.processing_status === 'failed' ? '✗' : '·'}
+                  {doc.processing_status === 'completed' ? 'Готово' :
+                   doc.processing_status === 'processing' ? 'Обработка...' :
+                   doc.processing_status === 'failed' ? 'Ошибка' : ''}
                 </span>
               </div>
             ))
           ) : (
-            <div className="py-10 text-center">
-              <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-gray-100 flex items-center justify-center">
-                <FileText className="h-7 w-7 text-gray-400" />
+            <div className="py-12 text-center">
+              <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gray-50 flex items-center justify-center">
+                <FileText className="h-6 w-6 text-gray-300" />
               </div>
-              <p className="text-sm font-semibold text-gray-700 mb-1">Нет документов</p>
-              <p className="text-xs text-gray-400 mb-4">Загрузите первый медицинский документ</p>
+              <p className="text-[15px] font-medium text-gray-900 mb-1">Нет документов</p>
+              <p className="text-[13px] text-gray-500 mb-5">Загрузите первый медицинский документ</p>
               <button
                 onClick={() => setIsUploadModalOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#4A90E2] text-white rounded-xl text-sm font-medium"
+                className="inline-flex items-center gap-2 bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-[14px] font-medium hover:bg-emerald-600 transition-colors"
               >
                 <Upload className="h-4 w-4" />
                 Загрузить

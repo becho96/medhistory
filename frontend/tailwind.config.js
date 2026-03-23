@@ -6,6 +6,11 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['"Inter Variable"', 'Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['"Instrument Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono: ['"IBM Plex Mono"', 'ui-monospace', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+      },
       colors: {
         primary: {
           50: '#eff6ff',
@@ -24,4 +29,3 @@ export default {
   },
   plugins: [],
 }
-

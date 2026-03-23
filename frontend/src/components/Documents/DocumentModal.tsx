@@ -97,10 +97,10 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-blue-50 to-white">
+        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 flex items-center justify-between bg-white">
           <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-100 flex items-center justify-center flex-shrink-0">
-              <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+              <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-500" />
             </div>
             <div className="flex-1 min-w-0">
               <h3 className="text-base sm:text-xl font-semibold text-gray-900 truncate">
@@ -125,7 +125,7 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
         <div className="p-4 sm:p-6 overflow-y-auto flex-1">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
             </div>
           ) : doc ? (
             <div className="space-y-6">
@@ -239,7 +239,7 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
                   <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
                     📝 Краткое содержание (AI-анализ)
                   </h4>
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-4 sm:p-5">
+                  <div className="bg-emerald-50 rounded-xl p-4 sm:p-5">
                     <p className="text-sm sm:text-base text-gray-800 leading-relaxed whitespace-pre-wrap">
                       {doc.summary}
                     </p>
@@ -259,7 +259,7 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
                     </div>
                     <button
                       onClick={() => setShowLabResults(!showLabResults)}
-                      className="text-xs sm:text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                      className="text-xs sm:text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
                     >
                       {showLabResults ? 'Скрыть' : 'Показать'}
                     </button>
@@ -286,7 +286,7 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
             <div className="flex items-center gap-2 flex-1">
               <button
                 onClick={handleOpenFile}
-                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
+                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors font-medium text-[14px]"
               >
                 <Eye className="h-4 w-4" />
                 Открыть
