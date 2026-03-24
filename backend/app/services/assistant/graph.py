@@ -8,7 +8,6 @@ Graph topology:
 
 All terminal nodes route to END.
 """
-import asyncio
 import json
 import logging
 import uuid
@@ -152,14 +151,14 @@ async def _fetch_doctor_visits(mongo_db, db: AsyncSession, user_id: str,
             except Exception:
                 meta = await mongo_db.document_metadata.find_one({"document_id": meta_id}) or {}
 
-        extracted = meta.get("extracted_fields", {})
+        classification = meta.get("classification") or {}
+        specialties = classification.get("specialties") or []
+        extracted = meta.get("extracted_data") or {}
         visits.append({
             "date": str(row[1]),
             "facility": row[2],
-            "specialty": meta.get("classification", {}).get("specialty"),
+            "specialty": specialties[0] if specialties else None,
             "summary": extracted.get("summary"),
-            "diagnosis": extracted.get("diagnosis"),
-            "recommendations": extracted.get("recommendations"),
         })
 
     return visits
@@ -182,6 +181,61 @@ async def _fetch_interpretations(db: AsyncSession, user_id: str, limit: int | No
         {"date": (r[1] or r[2]).isoformat(), "text": r[0]}
         for r in rows
     ]
+
+
+async def _fetch_studies(mongo_db, db: AsyncSession, user_id: str,
+                          params: dict, limit: int | None = None) -> list:
+    """Fetch instrumental studies and functional diagnostics."""
+    from sqlalchemy import text
+
+    if limit is None:
+        limit = settings.ASSISTANT_STUDIES_LIMIT
+
+    date_from = params.get("date_from")
+    date_to   = params.get("date_to")
+
+    conditions = [
+        "user_id = :uid",
+        "document_type IN ('Инструментальное исследование', 'Функциональная диагностика')",
+        "processing_status = 'completed'",
+    ]
+    bind: dict = {"uid": user_id}
+
+    if date_from:
+        conditions.append("document_date >= :df")
+        bind["df"] = date_from
+    if date_to:
+        conditions.append("document_date <= :dt")
+        bind["dt"] = date_to
+
+    where = " AND ".join(conditions)
+    rows = (await db.execute(
+        text(f"SELECT mongodb_metadata_id, document_date, medical_facility, document_type "
+             f"FROM documents WHERE {where} ORDER BY document_date DESC LIMIT :lim"),
+        {**bind, "lim": limit},
+    )).fetchall()
+
+    studies = []
+    for row in rows:
+        meta_id = row[0]
+        summary = None
+        if meta_id:
+            try:
+                from bson import ObjectId
+                meta = await mongo_db.document_metadata.find_one({"_id": ObjectId(meta_id)})
+            except Exception:
+                meta = await mongo_db.document_metadata.find_one({"document_id": meta_id})
+            if meta:
+                summary = (meta.get("extracted_data") or {}).get("summary")
+
+        studies.append({
+            "date": str(row[1]),
+            "facility": row[2],
+            "type": row[3],
+            "summary": summary,
+        })
+
+    return studies
 
 
 async def _fetch_health_events(mongo_db, db: AsyncSession, user_id: str,
@@ -241,6 +295,7 @@ def _log_retrieved_data(intent: str, params: dict, retrieved: dict, user_id: str
     visits = retrieved.get("doctor_visits") or []
     interps = retrieved.get("interpretations") or []
     events = retrieved.get("health_events") or []
+    studies = retrieved.get("studies") or []
     analyte = retrieved.get("analyte_standards")
 
     summary = []
@@ -254,6 +309,7 @@ def _log_retrieved_data(intent: str, params: dict, retrieved: dict, user_id: str
     if intent in ("health_history", "doctor_recommendation"):
         summary.append(f"doctor_visits: {len(visits)}")
         summary.append(f"interpretations: {len(interps)}")
+        summary.append(f"studies: {len(studies)}")
     if intent == "doctor_recommendation":
         summary.append(f"health_events: {len(events)}")
     if analyte:
@@ -300,35 +356,24 @@ def build_graph(db: AsyncSession, mongo_db):
         retrieved: dict = {}
 
         if intent in ("lab_analysis", "health_trends"):
-            lab, analyte_std = await asyncio.gather(
-                _fetch_lab_results(mongo_db, db, uid, params),
-                _fetch_analyte_standard(db, params.get("analyte_name"), gender),
-            )
-            retrieved["lab_results"] = lab
+            # Sequential: asyncpg does not allow concurrent ops on one connection
+            retrieved["lab_results"] = await _fetch_lab_results(mongo_db, db, uid, params)
+            analyte_std = await _fetch_analyte_standard(db, params.get("analyte_name"), gender)
             if analyte_std:
                 retrieved["analyte_standards"] = analyte_std
 
         elif intent == "health_history":
-            visits, interps, lab = await asyncio.gather(
-                _fetch_doctor_visits(mongo_db, db, uid, params),
-                _fetch_interpretations(db, uid),
-                _fetch_lab_results(mongo_db, db, uid, params),
-            )
-            retrieved["doctor_visits"]    = visits
-            retrieved["interpretations"]  = interps
-            retrieved["lab_results"]      = lab
+            retrieved["doctor_visits"]   = await _fetch_doctor_visits(mongo_db, db, uid, params)
+            retrieved["interpretations"] = await _fetch_interpretations(db, uid)
+            retrieved["lab_results"]     = await _fetch_lab_results(mongo_db, db, uid, params)
+            retrieved["studies"]         = await _fetch_studies(mongo_db, db, uid, params)
 
         elif intent == "doctor_recommendation":
-            lab, visits, interps, events = await asyncio.gather(
-                _fetch_lab_results(mongo_db, db, uid, params),
-                _fetch_doctor_visits(mongo_db, db, uid, params),
-                _fetch_interpretations(db, uid),
-                _fetch_health_events(mongo_db, db, uid, params),
-            )
-            retrieved["lab_results"]     = lab
-            retrieved["doctor_visits"]   = visits
-            retrieved["interpretations"] = interps
-            retrieved["health_events"]   = events
+            retrieved["lab_results"]     = await _fetch_lab_results(mongo_db, db, uid, params)
+            retrieved["doctor_visits"]   = await _fetch_doctor_visits(mongo_db, db, uid, params)
+            retrieved["interpretations"] = await _fetch_interpretations(db, uid)
+            retrieved["health_events"]   = await _fetch_health_events(mongo_db, db, uid, params)
+            retrieved["studies"]         = await _fetch_studies(mongo_db, db, uid, params)
 
         # Лог получения данных истории болезни (аналог MCP-источников: documents, lab_results, etc.)
         _log_retrieved_data(intent, params, retrieved, uid)

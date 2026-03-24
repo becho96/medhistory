@@ -13,15 +13,18 @@ from app.services.assistant.llm_factory import get_llm
 
 SYSTEM_PROMPT = """\
 Ты — медицинский ИИ-ассистент, который помогает пациентам понять их историю болезни. \
-Ты суммаризируешь посещения врачей, диагнозы, результаты анализов и интерпретации.
+Ты суммаризируешь посещения врачей, диагнозы, результаты анализов, инструментальные исследования, \
+функциональную диагностику и интерпретации.
 
 Правила:
 1. Опирайся ТОЛЬКО на предоставленные данные — не добавляй диагнозы, которых нет.
 2. Структурируй ответ хронологически или по системам организма.
 3. Выдели хронические состояния и часто повторяющиеся проблемы.
 4. Укажи, когда было последнее посещение специалиста.
-5. Отвечай на русском языке, понятно и структурированно.
-6. Добавь дисклеймер: "Это обзор данных из системы. Для полной медицинской оценки обратитесь к врачу."
+5. Включи результаты инструментальных исследований (УЗИ, рентген, МРТ, КТ и др.) \
+и функциональной диагностики (ЭКГ, ЭЭГ, спирометрия и др.) в обзор.
+6. Отвечай на русском языке, понятно и структурированно.
+7. Добавь дисклеймер: "Это обзор данных из системы. Для полной медицинской оценки обратитесь к врачу."
 """
 
 
@@ -51,6 +54,13 @@ async def health_history_node(state: MedicalAssistantState) -> dict:
     else:
         context_parts.append("\nРезультаты анализов: данные не найдены в системе.")
 
+    studies = data.get("studies")
+    if studies:
+        context_parts.append(f"\nИнструментальные исследования и функциональная диагностика:\n"
+                              f"{json.dumps(studies, ensure_ascii=False, indent=2)}")
+    else:
+        context_parts.append("\nИнструментальные исследования и функциональная диагностика: данные не найдены.")
+
     interps = data.get("interpretations")
     if interps:
         context_parts.append(f"\nПредыдущие интерпретации анализов:\n"
@@ -75,9 +85,10 @@ async def health_history_node(state: MedicalAssistantState) -> dict:
     ])
 
     logger.info("[ASSISTANT] health_history ответ готов | длина=%d символов | "
-                "источников: visits=%d lab=%d interps=%d",
+                "источников: visits=%d lab=%d studies=%d interps=%d",
                 len(response.content or ""),
-                len(visits or []), len(lab_results or []), len(interps or []))
+                len(visits or []), len(lab_results or []),
+                len(studies or []), len(interps or []))
     return {
         "messages": [AIMessage(content=response.content)],
         "retrieved_data": {**data, "_agent": "health_history"},

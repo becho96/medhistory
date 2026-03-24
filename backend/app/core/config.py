@@ -50,6 +50,7 @@ class Settings(BaseSettings):
     ASSISTANT_DOCTOR_VISITS_LIMIT: int = 100    # Прием врача
     ASSISTANT_INTERPRETATIONS_LIMIT: int = 20
     ASSISTANT_HEALTH_EVENTS_LIMIT: int = 100
+    ASSISTANT_STUDIES_LIMIT: int = 100          # Инструментальные исследования + Функциональная диагностика
     
     # CORS
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"  # Comma-separated list

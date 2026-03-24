@@ -49,11 +49,16 @@ async def recommendation_node(state: MedicalAssistantState) -> dict:
     if data.get("interpretations"):
         context_parts.append(f"\nИнтерпретации:\n{json.dumps(data['interpretations'], ensure_ascii=False, indent=2)}")
 
+    if data.get("studies"):
+        context_parts.append(f"\nИнструментальные исследования и функциональная диагностика:\n"
+                              f"{json.dumps(data['studies'], ensure_ascii=False, indent=2)}")
+
     if data.get("health_events"):
         context_parts.append(f"\nСамочувствие (последние показатели):\n"
                               f"{json.dumps(data['health_events'], ensure_ascii=False, indent=2)}")
 
-    if not any([data.get("lab_results"), data.get("doctor_visits"), data.get("interpretations")]):
+    if not any([data.get("lab_results"), data.get("doctor_visits"),
+                data.get("interpretations"), data.get("studies")]):
         context_parts.append("\nМедицинских данных в системе не найдено.")
 
     context = "\n".join(context_parts)

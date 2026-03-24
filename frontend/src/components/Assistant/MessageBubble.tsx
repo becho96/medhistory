@@ -1,6 +1,14 @@
 import ReactMarkdown from 'react-markdown'
 import type { AssistantMessage } from '../../services/assistant'
 
+function InlineMarkdown({ content }: { content: string }) {
+  return (
+    <ReactMarkdown components={{ p: ({ children }) => <>{children}</> }}>
+      {content}
+    </ReactMarkdown>
+  )
+}
+
 /** Parses GFM markdown table and returns { head: string[], rows: string[][] } or null */
 function parseMarkdownTable(tableBlock: string): { head: string[]; rows: string[][] } | null {
   const lines = tableBlock.trim().split('\n')
@@ -92,8 +100,8 @@ export default function MessageBubble({ message, isStreaming }: Props) {
                       return (
                         <div key={i} className="my-2 overflow-x-auto">
                           <table className="min-w-full text-sm border border-gray-200">
-                            <thead><tr>{t.head.map((h, j) => <th key={j} className="bg-gray-100 px-3 py-2 border border-gray-200 text-left">{h}</th>)}</tr></thead>
-                            <tbody>{t.rows.map((row, ri) => <tr key={ri}>{row.map((cell, ci) => <td key={ci} className="px-3 py-2 border border-gray-200">{cell}</td>)}</tr>)}</tbody>
+                            <thead><tr>{t.head.map((h, j) => <th key={j} className="bg-gray-100 px-3 py-2 border border-gray-200 text-left"><InlineMarkdown content={h} /></th>)}</tr></thead>
+                            <tbody>{t.rows.map((row, ri) => <tr key={ri}>{row.map((cell, ci) => <td key={ci} className="px-3 py-2 border border-gray-200"><InlineMarkdown content={cell} /></td>)}</tr>)}</tbody>
                           </table>
                         </div>
                       )
