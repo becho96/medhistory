@@ -11,7 +11,7 @@ const Landing = () => {
     <div className="min-h-screen bg-white font-sans">
       {/* Header */}
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md">
-        <div className="max-w-[1400px] mx-auto px-10 flex justify-between items-center h-[52px]">
+        <div className="max-w-[1400px] mx-auto px-4 sm:px-10 flex justify-between items-center h-[52px]">
           <Link to="/" className="flex items-center gap-2">
             <HeartPulse className="w-[18px] h-[18px] text-emerald-500" strokeWidth={2} />
             <span className="text-[16px] font-semibold text-gray-900 tracking-tight">MedHistory</span>
@@ -25,7 +25,7 @@ const Landing = () => {
           </nav>
           <Link
             to="/register"
-            className="bg-gray-900 text-white px-6 py-2.5 rounded-full text-[14px] font-medium hover:bg-gray-800 transition-colors"
+            className="bg-gray-900 text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-[13px] sm:text-[14px] font-medium hover:bg-gray-800 transition-colors"
           >
             Начать бесплатно
           </Link>
@@ -33,30 +33,30 @@ const Landing = () => {
       </header>
 
       {/* Hero */}
-      <section className="pt-16 pb-20 px-10">
+      <section className="pt-12 sm:pt-16 pb-16 sm:pb-20 px-4 sm:px-10">
         <div className="max-w-[1400px] mx-auto text-center">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 border border-gray-200 rounded-full px-1 py-1 mb-8">
-            <span className="bg-emerald-400 text-white text-[12px] font-medium px-2.5 py-0.5 rounded-full">Новое</span>
-            <span className="text-[14px] text-gray-600 pr-2 flex items-center gap-1">
+          <div className="inline-flex items-center gap-2 border border-gray-200 rounded-full px-1 py-1 mb-6 sm:mb-8">
+            <span className="bg-emerald-400 text-white text-[11px] sm:text-[12px] font-medium px-2.5 py-0.5 rounded-full">Новое</span>
+            <span className="text-[13px] sm:text-[14px] text-gray-600 pr-2 flex items-center gap-1">
               AI-ассистент на основе вашей истории
               <ChevronRight className="w-4 h-4 text-gray-400" />
             </span>
           </div>
 
-          <h1 className="text-[64px] leading-[1.05] font-semibold text-gray-900 tracking-tight max-w-[1088px] mx-auto mb-6">
+          <h1 className="text-[38px] sm:text-[52px] md:text-[64px] leading-[1.05] font-semibold text-gray-900 tracking-tight max-w-[1088px] mx-auto mb-5 sm:mb-6">
             Умное управление{' '}
             <span className="text-emerald-500">медицинской историей</span>
           </h1>
-          <p className="text-[18px] leading-[1.6] text-gray-500 max-w-[680px] mx-auto mb-10">
+          <p className="text-[16px] sm:text-[18px] leading-[1.6] text-gray-500 max-w-[680px] mx-auto mb-8 sm:mb-10">
             Загружайте документы, отслеживайте динамику показателей и получайте персональные AI-рекомендации — всё в одном месте.
           </p>
 
           {/* CTA Button */}
-          <div className="mb-8">
+          <div className="mb-7 sm:mb-8">
             <Link
               to="/register"
-              className="inline-block bg-emerald-500 text-white px-10 py-4 rounded-full text-[16px] font-medium hover:bg-emerald-600 transition-colors"
+              className="inline-block bg-emerald-500 text-white px-8 sm:px-10 py-3.5 sm:py-4 rounded-full text-[15px] sm:text-[16px] font-medium hover:bg-emerald-600 transition-colors"
             >
               Попробовать
             </Link>
@@ -77,34 +77,34 @@ const Landing = () => {
       </section>
 
       {/* Dashboard Mockup */}
-      <section className="px-10 pb-20">
+      <section className="px-4 sm:px-10 pb-16 sm:pb-20">
         <div className="max-w-[1400px] mx-auto">
-          <div className="bg-gray-50 rounded-2xl border border-gray-200 p-6 overflow-hidden">
+          <div className="bg-gray-50 rounded-2xl border border-gray-200 p-4 sm:p-6 overflow-hidden">
             {/* Stats row */}
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              <div className="bg-white rounded-xl border border-gray-100 p-5">
-                <p className="text-[14px] text-gray-500 mb-2">Документы загружены</p>
-                <p className="text-[36px] font-semibold text-gray-900 tracking-tight">47</p>
-                <span className="text-[12px] text-emerald-500 font-medium">+12 за месяц</span>
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-3 sm:mb-4">
+              <div className="bg-white rounded-xl border border-gray-100 p-3 sm:p-5">
+                <p className="text-[11px] sm:text-[14px] text-gray-500 mb-1 sm:mb-2 leading-tight">Документы загружены</p>
+                <p className="text-[24px] sm:text-[36px] font-semibold text-gray-900 tracking-tight">47</p>
+                <span className="text-[10px] sm:text-[12px] text-emerald-500 font-medium">+12 за месяц</span>
               </div>
-              <div className="bg-white rounded-xl border border-gray-100 p-5">
-                <p className="text-[14px] text-gray-500 mb-2">Показателей отслеживается</p>
-                <p className="text-[36px] font-semibold text-gray-900 tracking-tight">128</p>
-                <span className="text-[12px] text-emerald-500 font-medium">+18.2%</span>
+              <div className="bg-white rounded-xl border border-gray-100 p-3 sm:p-5">
+                <p className="text-[11px] sm:text-[14px] text-gray-500 mb-1 sm:mb-2 leading-tight">Показателей отслеживается</p>
+                <p className="text-[24px] sm:text-[36px] font-semibold text-gray-900 tracking-tight">128</p>
+                <span className="text-[10px] sm:text-[12px] text-emerald-500 font-medium">+18.2%</span>
               </div>
-              <div className="bg-white rounded-xl border border-gray-100 p-5">
-                <p className="text-[14px] text-gray-500 mb-2">AI-рекомендаций</p>
-                <p className="text-[36px] font-semibold text-gray-900 tracking-tight">15</p>
-                <span className="text-[12px] text-emerald-500 font-medium">3 новых</span>
+              <div className="bg-white rounded-xl border border-gray-100 p-3 sm:p-5">
+                <p className="text-[11px] sm:text-[14px] text-gray-500 mb-1 sm:mb-2 leading-tight">AI-рекомендаций</p>
+                <p className="text-[24px] sm:text-[36px] font-semibold text-gray-900 tracking-tight">15</p>
+                <span className="text-[10px] sm:text-[12px] text-emerald-500 font-medium">3 новых</span>
               </div>
             </div>
 
             {/* Chart + sidebar */}
-            <div className="grid grid-cols-[1fr_300px] gap-4">
-              <div className="bg-white rounded-xl border border-gray-100 p-5">
+            <div className="grid grid-cols-1 md:grid-cols-[1fr_300px] gap-3 sm:gap-4">
+              <div className="bg-white rounded-xl border border-gray-100 p-4 sm:p-5">
                 <GraphVisualization />
               </div>
-              <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
+              <div className="bg-white rounded-xl border border-gray-100 p-4 sm:p-5 space-y-3 sm:space-y-4">
                 <p className="text-[14px] font-medium text-gray-900">AI-рекомендации</p>
 
                 <div className="flex gap-2.5 items-start">
@@ -149,11 +149,11 @@ const Landing = () => {
       </section>
 
       {/* Bento Grid Features */}
-      <section className="px-10 pb-20 bg-gray-50">
-        <div className="max-w-[1400px] mx-auto pt-20">
-          <div className="grid grid-cols-3 gap-5">
+      <section className="px-4 sm:px-10 pb-16 sm:pb-20 bg-gray-50">
+        <div className="max-w-[1400px] mx-auto pt-16 sm:pt-20">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {/* Left card */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-8 flex flex-col">
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 flex flex-col">
               <div className="flex items-center gap-2 mb-3">
                 <FileSearch className="w-5 h-5 text-emerald-500" />
                 <h3 className="text-[16px] font-semibold text-gray-900">Умная обработка</h3>
@@ -177,10 +177,10 @@ const Landing = () => {
               </div>
             </div>
 
-            {/* Center card - large */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-8 flex flex-col">
+            {/* Center card */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 flex flex-col">
               <div className="text-center mb-6">
-                <h3 className="text-[28px] font-semibold text-gray-900 tracking-tight mb-2">
+                <h3 className="text-[22px] sm:text-[28px] font-semibold text-gray-900 tracking-tight mb-2">
                   Управляйте расходами на здоровье как команда
                 </h3>
                 <p className="text-[15px] text-gray-500 leading-relaxed">
@@ -208,7 +208,7 @@ const Landing = () => {
             </div>
 
             {/* Right card */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-8 flex flex-col">
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 flex flex-col sm:col-span-2 lg:col-span-1">
               <div className="flex items-center gap-2 mb-3">
                 <BarChart3 className="w-5 h-5 text-emerald-500" />
                 <h3 className="text-[16px] font-semibold text-gray-900">Динамика показателей</h3>
@@ -228,9 +228,9 @@ const Landing = () => {
             </div>
 
             {/* Bottom left - wide */}
-            <div className="col-span-2 bg-white rounded-2xl border border-gray-200 p-8 flex gap-8">
+            <div className="col-span-1 sm:col-span-2 bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 flex flex-col sm:flex-row gap-6 sm:gap-8">
               <div className="flex-1">
-                <h3 className="text-[28px] font-semibold text-gray-900 tracking-tight mb-3">
+                <h3 className="text-[22px] sm:text-[28px] font-semibold text-gray-900 tracking-tight mb-3">
                   Отчёт для врача за одну минуту
                 </h3>
                 <p className="text-[15px] text-gray-500 leading-relaxed mb-6">
@@ -245,7 +245,7 @@ const Landing = () => {
                   </Link>
                 </div>
               </div>
-              <div className="w-[300px] bg-gray-50 rounded-xl border border-gray-100 p-4 space-y-3">
+              <div className="w-full sm:w-[300px] bg-gray-50 rounded-xl border border-gray-100 p-4 space-y-3">
                 {['Анализ крови — 12.03.2024', 'ЭКГ — 15.01.2024', 'УЗИ — 08.11.2023'].map((item) => (
                   <div key={item} className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center shrink-0">
@@ -258,7 +258,7 @@ const Landing = () => {
             </div>
 
             {/* Bottom right */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-8 flex flex-col items-center justify-center text-center">
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 flex flex-col items-center justify-center text-center">
               <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center mb-4">
                 <Shield className="w-6 h-6 text-emerald-500" />
               </div>
@@ -272,16 +272,16 @@ const Landing = () => {
       </section>
 
       {/* Testimonials */}
-      <section className="px-10 py-20">
+      <section className="px-4 sm:px-10 py-16 sm:py-20">
         <div className="max-w-[1400px] mx-auto text-center">
-          <h2 className="text-[40px] font-semibold text-gray-900 tracking-tight mb-3">
+          <h2 className="text-[28px] sm:text-[40px] font-semibold text-gray-900 tracking-tight mb-3">
             Что говорят пользователи
           </h2>
-          <p className="text-[16px] text-gray-500 max-w-[600px] mx-auto mb-12">
+          <p className="text-[15px] sm:text-[16px] text-gray-500 max-w-[600px] mx-auto mb-10 sm:mb-12">
             Тысячи людей уже управляют медицинской историей с MedHistory
           </p>
 
-          <div className="grid grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {[
               { text: 'Наконец-то все анализы в одном месте. AI-подсказки реально помогают не забывать про чекапы.', name: 'Анна М.', role: 'Пользователь' },
               { text: 'Веду историю всей семьи — детей, родителей. Отчёт для врача формируется за секунды, врачи в восторге.', name: 'Дмитрий К.', role: 'Пользователь' },
@@ -303,16 +303,16 @@ const Landing = () => {
       </section>
 
       {/* How it works */}
-      <section className="px-10 py-20 bg-gray-50">
+      <section className="px-4 sm:px-10 py-16 sm:py-20 bg-gray-50">
         <div className="max-w-[1400px] mx-auto text-center">
-          <h2 className="text-[40px] font-semibold text-gray-900 tracking-tight mb-3">
+          <h2 className="text-[28px] sm:text-[40px] font-semibold text-gray-900 tracking-tight mb-3">
             Как это работает
           </h2>
-          <p className="text-[16px] text-gray-500 max-w-[600px] mx-auto mb-12">
+          <p className="text-[15px] sm:text-[16px] text-gray-500 max-w-[600px] mx-auto mb-10 sm:mb-12">
             Три простых шага до полного контроля за здоровьем
           </p>
 
-          <div className="grid grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-8">
             {[
               { step: '01', title: 'Загрузите документы', desc: 'PDF, фото, скан или сделайте фото прямо в приложении' },
               { step: '02', title: 'Автоматическая обработка', desc: 'Система распознает тип, извлечёт данные и построит графики' },
@@ -322,8 +322,8 @@ const Landing = () => {
                 <div className="w-12 h-12 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto mb-5 text-[16px] font-semibold">
                   {item.step}
                 </div>
-                <h3 className="text-[18px] font-semibold text-gray-900 mb-2">{item.title}</h3>
-                <p className="text-[15px] text-gray-500 leading-relaxed">{item.desc}</p>
+                <h3 className="text-[17px] sm:text-[18px] font-semibold text-gray-900 mb-2">{item.title}</h3>
+                <p className="text-[14px] sm:text-[15px] text-gray-500 leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -331,29 +331,29 @@ const Landing = () => {
       </section>
 
       {/* CTA */}
-      <section className="px-10 py-20">
+      <section className="px-4 sm:px-10 py-16 sm:py-20">
         <div className="max-w-[1400px] mx-auto">
-          <div className="bg-gray-900 rounded-3xl p-16 flex items-center gap-16">
-            <div className="flex-1">
-              <h2 className="text-[48px] font-semibold text-white leading-[1.1] tracking-tight mb-6">
+          <div className="bg-gray-900 rounded-3xl p-8 sm:p-16 flex flex-col lg:flex-row items-center gap-8 sm:gap-16">
+            <div className="flex-1 text-center lg:text-left">
+              <h2 className="text-[30px] sm:text-[40px] lg:text-[48px] font-semibold text-white leading-[1.1] tracking-tight mb-6">
                 Начните управлять медицинской историей уже сегодня
               </h2>
-              <div className="flex gap-3">
+              <div className="flex gap-3 justify-center lg:justify-start">
                 <Link
                   to="/register"
-                  className="bg-emerald-500 text-white px-7 py-3.5 rounded-full text-[15px] font-medium hover:bg-emerald-600 transition-colors"
+                  className="bg-emerald-500 text-white px-6 sm:px-7 py-3 sm:py-3.5 rounded-full text-[14px] sm:text-[15px] font-medium hover:bg-emerald-600 transition-colors"
                 >
                   Создать аккаунт
                 </Link>
                 <Link
                   to="/login"
-                  className="border border-gray-600 text-white px-7 py-3.5 rounded-full text-[15px] font-medium hover:bg-gray-800 transition-colors"
+                  className="border border-gray-600 text-white px-6 sm:px-7 py-3 sm:py-3.5 rounded-full text-[14px] sm:text-[15px] font-medium hover:bg-gray-800 transition-colors"
                 >
                   Войти
                 </Link>
               </div>
             </div>
-            <div className="w-[400px] h-[300px] bg-gray-800 rounded-2xl overflow-hidden flex items-center justify-center">
+            <div className="hidden lg:flex w-[400px] h-[300px] bg-gray-800 rounded-2xl overflow-hidden items-center justify-center">
               <Bot className="w-16 h-16 text-gray-600" />
             </div>
           </div>
@@ -361,10 +361,10 @@ const Landing = () => {
       </section>
 
       {/* Footer */}
-      <footer className="px-10 py-12 border-t border-gray-100">
+      <footer className="px-4 sm:px-10 py-10 sm:py-12 border-t border-gray-100">
         <div className="max-w-[1400px] mx-auto">
-          <div className="grid grid-cols-4 gap-8 mb-12">
-            <div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 mb-10 sm:mb-12">
+            <div className="col-span-2 sm:col-span-1">
               <div className="flex items-center gap-2 mb-4">
                 <HeartPulse className="w-[18px] h-[18px] text-emerald-500" />
                 <span className="text-[16px] font-semibold text-gray-900">MedHistory</span>
