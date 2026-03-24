@@ -94,7 +94,7 @@ export default function AssistantPage() {
       (agent) => setThinkingAgent(agent),
 
       // onDone
-      (messageId, intent) => {
+      (_messageId, _intent) => {
         setStreaming(false)
         setThinkingAgent(null)
         // Reload messages and session list to reflect saved data
@@ -107,7 +107,7 @@ export default function AssistantPage() {
       },
 
       // onError
-      (detail) => {
+      (_detail) => {
         setStreaming(false)
         setThinkingAgent(null)
         setStreamingContent('')

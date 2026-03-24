@@ -77,7 +77,7 @@ export class AssistantWebSocket {
 
       this.ws.onopen = () => resolve()
 
-      this.ws.onerror = (ev) => {
+      this.ws.onerror = (_ev) => {
         reject(new Error('WebSocket connection failed'))
         this.onErrorCb?.('Не удалось подключиться к ассистенту')
       }

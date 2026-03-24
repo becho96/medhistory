@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight, FileSearch, BarChart3, Users, FileCheck,
+  FileSearch, BarChart3, FileCheck,
   HeartPulse, Bot, CheckCircle2, AlertTriangle, Calendar,
-  Shield, Lock, ChevronRight,
+  Shield, ChevronRight,
 } from 'lucide-react';
 import GraphVisualization from '../components/Landing/GraphVisualization';
 
