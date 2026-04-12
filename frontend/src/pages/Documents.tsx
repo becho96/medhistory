@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { FileText, Download, Trash2, FlaskConical, Upload, ChevronLeft, ChevronRight, List, Clock, Brain, X, Maximize2, Minimize2 } from 'lucide-react'
+import { FileText, FlaskConical, Upload, ChevronLeft, ChevronRight, List, Clock, Brain, X, Maximize2, Minimize2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Timeline as VisTimeline, DataSet } from 'vis-timeline/standalone'
 import { documentsService } from '../services/documents'
@@ -9,7 +9,7 @@ import DocumentFilters, { DocumentFilterValues } from '../components/Documents/D
 import InterpretationConfirmModal from '../components/Documents/InterpretationConfirmModal'
 import DocumentModal from '../components/Documents/DocumentModal'
 import DocumentListItem from '../components/Documents/DocumentListItem'
-import { format } from 'date-fns'
+
 import type { TimelineEvent } from '../types'
 import 'vis-timeline/styles/vis-timeline-graph2d.min.css'
 
