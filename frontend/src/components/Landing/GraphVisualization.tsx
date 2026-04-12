@@ -1,4 +1,4 @@
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, ReferenceArea } from 'recharts';
 
 const hemoglobinData = [
   { date: 'Янв', value: 110, normal_min: 120, normal_max: 160 },
@@ -20,7 +20,7 @@ const GraphVisualization = () => {
             <span className="text-[12px] text-gray-500">Ваш показатель</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-2.5 h-[1px] border-t border-dashed border-gray-400 w-4" />
+            <div className="h-3 w-8 rounded-sm bg-emerald-100 border border-emerald-300 border-dashed" />
             <span className="text-[12px] text-gray-500">Норма</span>
           </div>
         </div>
@@ -45,8 +45,9 @@ const GraphVisualization = () => {
             axisLine={false}
           />
 
-          <ReferenceLine y={120} stroke="#d1d5db" strokeDasharray="4 4" />
-          <ReferenceLine y={160} stroke="#d1d5db" strokeDasharray="4 4" />
+          <ReferenceArea y1={120} y2={160} fill="#d1fae5" fillOpacity={0.35} />
+          <ReferenceLine y={120} stroke="#6ee7b7" strokeDasharray="4 4" label={{ value: 'норма', position: 'insideBottomLeft', fontSize: 10, fill: '#6ee7b7' }} />
+          <ReferenceLine y={160} stroke="#6ee7b7" strokeDasharray="4 4" />
 
           <Tooltip
             contentStyle={{

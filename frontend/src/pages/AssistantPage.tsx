@@ -29,6 +29,7 @@ export default function AssistantPage() {
   const [streaming, setStreaming] = useState(false)
   const [streamingContent, setStreamingContent] = useState('')
   const [thinkingAgent, setThinkingAgent] = useState<string | null>(null)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   // Model selection (persisted to localStorage)
   const [modelConfig, setModelConfig] = useState<ModelConfig>(loadSavedModelConfig)
@@ -97,6 +98,7 @@ export default function AssistantPage() {
       (_messageId, _intent) => {
         setStreaming(false)
         setThinkingAgent(null)
+        setErrorMessage(null)
         // Reload messages and session list to reflect saved data
         const currentSessionId = activeSessionIdRef.current
         if (currentSessionId) {
@@ -107,10 +109,11 @@ export default function AssistantPage() {
       },
 
       // onError
-      (_detail) => {
+      (detail) => {
         setStreaming(false)
         setThinkingAgent(null)
         setStreamingContent('')
+        setErrorMessage(detail || 'Произошла ошибка при обработке запроса')
       },
 
       // onSession
@@ -151,6 +154,7 @@ export default function AssistantPage() {
     setStreaming(true)
     setStreamingContent('')
     setThinkingAgent(null)
+    setErrorMessage(null)
 
     wsRef.current.send(text, activeSessionIdRef.current ?? undefined, modelConfig)
   }, [input, streaming, modelConfig])
@@ -192,6 +196,7 @@ export default function AssistantPage() {
           modelConfig={modelConfig}
           onModelChange={setModelConfig}
           sessionId={activeSessionId}
+          errorMessage={errorMessage}
         />
       </div>
     </div>

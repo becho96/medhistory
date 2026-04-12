@@ -49,11 +49,14 @@ export default function Layout() {
   const navigation = [
     { name: 'Главная', href: '/', icon: Home },
     { name: 'Медкарта', href: '/documents', icon: FileText },
+    { name: 'Анализы', href: '/labs', icon: FlaskConical },
+    { name: 'ИИ-ассистент', href: '/assistant', icon: Bot },
+  ]
+
+  const navigationSoon = [
     { name: 'Самочувствие', href: '/health-events', icon: Activity },
     { name: 'Интерпретации', href: '/interpretations', icon: Brain },
     { name: 'Отчёты', href: '/reports', icon: BarChart3 },
-    { name: 'Анализы', href: '/labs', icon: FlaskConical },
-    { name: 'ИИ-ассистент', href: '/assistant', icon: Bot },
   ]
 
   return (
@@ -147,25 +150,23 @@ export default function Layout() {
                   </Link>
                 )
               })}
+
+              {navigationSoon.map((item) => (
+                <div
+                  key={item.name}
+                  className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl text-gray-400 cursor-default select-none"
+                >
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-gray-100">
+                    <item.icon className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <span>{item.name}</span>
+                  <span className="ml-auto text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">
+                    скоро
+                  </span>
+                </div>
+              ))}
             </div>
 
-            <div className="mt-8 p-4 rounded-xl bg-emerald-50 border border-emerald-100">
-              <div className="flex items-start gap-3">
-                <div className="w-8 h-8 rounded-xl bg-white flex items-center justify-center flex-shrink-0">
-                  <Heart className="w-4 h-4 text-emerald-500" />
-                </div>
-                <div>
-                  <h4 className="text-[13px] font-semibold text-gray-900 mb-1">Совет дня</h4>
-                  <p className="text-[12px] text-gray-600 leading-relaxed">
-                    Регулярно обновляйте свои медицинские документы для точного мониторинга здоровья
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4">
-              <ProfileSwitcher onManageFamily={() => setIsFamilyModalOpen(true)} />
-            </div>
           </nav>
         </aside>
 

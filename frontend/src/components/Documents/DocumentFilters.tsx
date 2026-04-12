@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Filter, X, ChevronDown } from 'lucide-react'
+import { X, ChevronDown } from 'lucide-react'
+import { format, subDays, subMonths, startOfMonth } from 'date-fns'
 import MultiSelect from './MultiSelect'
 import DateRangePicker from './DateRangePicker'
 import { documentsService } from '../../services/documents'
@@ -23,79 +24,109 @@ interface DocumentFiltersProps {
   onReset?: () => void
 }
 
-export default function DocumentFilters({ filters, onChange, onReset }: DocumentFiltersProps) {
-  // Collapsed by default on mobile to prevent layout shifts caused by
-  // MultiSelect dropdowns and iOS keyboard appearing on input focus
-  const [isMobileExpanded, setIsMobileExpanded] = useState(false)
+const DOCUMENT_TYPE_CHIPS = [
+  'Прием врача',
+  'Результаты анализа',
+  'Инструментальное исследование',
+  'Функциональная диагностика',
+  'Другое',
+]
 
-  // State for filter values
-  const [documentTypeValues, setDocumentTypeValues] = useState<string[]>([])
+type DatePresetId = 'week' | 'month' | '3months' | 'older'
+
+const DATE_PRESETS: { id: DatePresetId; label: string }[] = [
+  { id: 'week',    label: 'Неделя' },
+  { id: 'month',   label: 'Месяц' },
+  { id: '3months', label: '3 месяца' },
+  { id: 'older',   label: 'Раньше' },
+]
+
+const computeDateRange = (id: DatePresetId): { date_from?: string; date_to?: string } => {
+  const today = new Date()
+  const fmt = (d: Date) => format(d, 'yyyy-MM-dd')
+  switch (id) {
+    case 'week':    return { date_from: fmt(subDays(today, 7)),    date_to: fmt(today) }
+    case 'month':   return { date_from: fmt(startOfMonth(today)),  date_to: fmt(today) }
+    case '3months': return { date_from: fmt(subMonths(today, 3)), date_to: fmt(today) }
+    case 'older':   return { date_from: undefined,                 date_to: fmt(subMonths(today, 3)) }
+  }
+}
+
+// Computes the union date range from multiple selected presets
+const computeUnionDateRange = (presets: DatePresetId[]): { date_from?: string; date_to?: string } => {
+  if (presets.length === 0) return { date_from: undefined, date_to: undefined }
+  const ranges = presets.map(computeDateRange)
+  const hasNoFrom = ranges.some(r => r.date_from === undefined)
+  const date_from = hasNoFrom
+    ? undefined
+    : ranges.map(r => r.date_from!).sort()[0]
+  const date_to = ranges.map(r => r.date_to).filter(Boolean).sort().reverse()[0] ?? undefined
+  return { date_from, date_to }
+}
+
+const ADVANCED_FIELDS: (keyof DocumentFilterValues)[] = [
+  'specialties', 'document_subtype', 'research_area',
+  'medical_facility', 'patient_name', 'created_from', 'created_to',
+]
+
+export default function DocumentFilters({ filters, onChange, onReset }: DocumentFiltersProps) {
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
+  const [selectedDatePresets, setSelectedDatePresets] = useState<DatePresetId[]>([])
+
   const [specialtiesValues, setSpecialtiesValues] = useState<string[]>([])
   const [documentSubtypeValues, setDocumentSubtypeValues] = useState<string[]>([])
   const [researchAreaValues, setResearchAreaValues] = useState<string[]>([])
   const [medicalFacilityValues, setMedicalFacilityValues] = useState<string[]>([])
   const [patientNameValues, setPatientNameValues] = useState<string[]>([])
-  
-  // Loading states
+
   const [loadingStates, setLoadingStates] = useState({
     specialties: false,
     document_subtype: false,
     research_area: false,
     medical_facility: false,
     patient_name: false,
-    document_type: false
   })
 
-  // Fetch filter values - обернуто в useCallback для предотвращения бесконечного цикла
   const fetchFilterValues = useCallback(async (field: string, query?: string) => {
     try {
       setLoadingStates(prev => ({ ...prev, [field]: true }))
       const values = await documentsService.getFilterValues(field, query, 50)
-      
       switch (field) {
-        case 'document_type':
-          setDocumentTypeValues(values)
-          break
-        case 'specialties':
-          setSpecialtiesValues(values)
-          break
-        case 'document_subtype':
-          setDocumentSubtypeValues(values)
-          break
-        case 'research_area':
-          setResearchAreaValues(values)
-          break
-        case 'medical_facility':
-          setMedicalFacilityValues(values)
-          break
-        case 'patient_name':
-          setPatientNameValues(values)
-          break
+        case 'specialties': setSpecialtiesValues(values); break
+        case 'document_subtype': setDocumentSubtypeValues(values); break
+        case 'research_area': setResearchAreaValues(values); break
+        case 'medical_facility': setMedicalFacilityValues(values); break
+        case 'patient_name': setPatientNameValues(values); break
       }
     } catch (error) {
-      console.error(`Error fetching ${field} values:`, error)
+      // silently ignore fetch errors for filter values
     } finally {
       setLoadingStates(prev => ({ ...prev, [field]: false }))
     }
   }, [])
 
-
-  // Мемоизированные обработчики поиска для каждого поля
   const handleSearchSpecialties = useCallback((q: string) => fetchFilterValues('specialties', q), [fetchFilterValues])
   const handleSearchDocumentSubtype = useCallback((q: string) => fetchFilterValues('document_subtype', q), [fetchFilterValues])
   const handleSearchResearchArea = useCallback((q: string) => fetchFilterValues('research_area', q), [fetchFilterValues])
   const handleSearchMedicalFacility = useCallback((q: string) => fetchFilterValues('medical_facility', q), [fetchFilterValues])
   const handleSearchPatientName = useCallback((q: string) => fetchFilterValues('patient_name', q), [fetchFilterValues])
 
-  // Initial load of all filters
   useEffect(() => {
-    fetchFilterValues('document_type')
     fetchFilterValues('medical_facility')
     fetchFilterValues('patient_name')
     fetchFilterValues('specialties')
     fetchFilterValues('document_subtype')
     fetchFilterValues('research_area')
   }, [fetchFilterValues])
+
+  // Auto-open advanced panel if any advanced filter is pre-populated on mount
+  useEffect(() => {
+    const hasAdvanced = ADVANCED_FIELDS.some(k => {
+      const v = filters[k]
+      return Array.isArray(v) ? v.length > 0 : !!v
+    })
+    if (hasAdvanced) setIsAdvancedOpen(true)
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleChange = (field: keyof DocumentFilterValues, value: any) => {
     onChange({
@@ -104,158 +135,174 @@ export default function DocumentFilters({ filters, onChange, onReset }: Document
     })
   }
 
-  const handleReset = () => {
-    if (onReset) {
-      onReset()
-    } else {
-      onChange({})
-    }
+  const handleChipToggle = (type: string) => {
+    const current = filters.document_type ?? []
+    const next = current.includes(type)
+      ? current.filter(t => t !== type)
+      : [...current, type]
+    handleChange('document_type', next.length > 0 ? next : undefined)
   }
 
-  // Check if any filters are active
+  const handleDatePreset = (id: DatePresetId) => {
+    const next = selectedDatePresets.includes(id)
+      ? selectedDatePresets.filter(p => p !== id)
+      : [...selectedDatePresets, id]
+    setSelectedDatePresets(next)
+    const range = computeUnionDateRange(next)
+    onChange({ ...filters, date_from: range.date_from, date_to: range.date_to })
+  }
+
+  // Sync preset state when filters are cleared externally
+  useEffect(() => {
+    if (!filters.date_from && !filters.date_to) {
+      setSelectedDatePresets([])
+    }
+  }, [filters.date_from, filters.date_to])
+
+  const handleReset = () => {
+    setSelectedDatePresets([])
+    if (onReset) onReset()
+    else onChange({})
+  }
+
   const hasActiveFilters = useMemo(() => {
-    return Object.values(filters).some(v => {
-      if (Array.isArray(v)) return v.length > 0
-      return !!v
-    })
+    return Object.values(filters).some(v => Array.isArray(v) ? v.length > 0 : !!v)
+  }, [filters])
+
+  const activeAdvancedCount = useMemo(() => {
+    return ADVANCED_FIELDS.filter(k => {
+      const v = filters[k]
+      return Array.isArray(v) ? v.length > 0 : !!v
+    }).length
   }, [filters])
 
   return (
-    <div className="bg-white shadow rounded-lg">
-      {/* Mobile: collapsible toggle header */}
-      <button
-        type="button"
-        onClick={() => setIsMobileExpanded(!isMobileExpanded)}
-        className="lg:hidden w-full flex items-center justify-between px-4 py-3"
-      >
-        <div className="flex items-center gap-2">
-          <Filter className="h-4 w-4 text-gray-500" />
-          <span className="text-sm font-medium text-gray-900">Фильтры</span>
-          {hasActiveFilters && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700">
-              Активны
-            </span>
-          )}
+    <div className="bg-white rounded-2xl border border-gray-100 px-4 py-3 space-y-3">
+      {/* Tier 1: chip groups */}
+      <div className="space-y-2">
+        {/* Document type */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-gray-400 w-14 shrink-0">Тип</span>
+          {DOCUMENT_TYPE_CHIPS.map(type => {
+            const isActive = (filters.document_type ?? []).includes(type)
+            return (
+              <button
+                key={type}
+                type="button"
+                onClick={() => handleChipToggle(type)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap
+                  ${isActive
+                    ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+              >
+                {type}
+              </button>
+            )
+          })}
         </div>
-        <div className="flex items-center gap-3">
+
+        {/* Date presets */}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-medium text-gray-400 w-14 shrink-0">Период</span>
+          {DATE_PRESETS.map(({ id, label }) => {
+            const isActive = selectedDatePresets.includes(id)
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => handleDatePreset(id)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap
+                  ${isActive
+                    ? 'bg-emerald-500 text-white hover:bg-emerald-600'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+              >
+                {label}
+              </button>
+            )
+          })}
+
           {hasActiveFilters && (
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); handleReset() }}
-              className="text-xs text-gray-400 flex items-center gap-0.5"
+              onClick={handleReset}
+              className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 transition-colors ml-1"
             >
-              <X className="h-3 w-3" />
+              <X className="h-3.5 w-3.5" />
               Сбросить
             </button>
           )}
-          <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform duration-200 ${isMobileExpanded ? 'rotate-180' : ''}`} />
         </div>
-      </button>
-
-      {/* Desktop: always-visible header */}
-      <div className="hidden lg:flex items-center justify-between px-4 py-3 border-b border-gray-100">
-        <div className="flex items-center gap-2">
-          <Filter className="h-5 w-5 text-gray-500" />
-          <h3 className="text-sm font-medium text-gray-900">Фильтры</h3>
-          {hasActiveFilters && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
-              Активны
-            </span>
-          )}
-        </div>
-        {hasActiveFilters && (
-          <button
-            onClick={handleReset}
-            className="text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
-          >
-            <X className="h-4 w-4" />
-            Сбросить
-          </button>
-        )}
       </div>
 
-      {/* Filter content: hidden on mobile by default, always visible on desktop */}
-      <div className={`p-4 space-y-3 ${isMobileExpanded ? 'block' : 'hidden'} lg:block`}>
-        {/* Основные фильтры */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {/* Тип документа */}
-          <MultiSelect
-            label="Тип документа"
-            placeholder="Все типы"
-            values={documentTypeValues}
-            selectedValues={filters.document_type || []}
-            onChange={(values) => handleChange('document_type', values)}
-            loading={loadingStates.document_type}
-          />
+      {/* Tier 2: advanced toggle */}
+      <div>
+        <button
+          type="button"
+          onClick={() => setIsAdvancedOpen(v => !v)}
+          className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+        >
+          <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isAdvancedOpen ? 'rotate-180' : ''}`} />
+          Расширенные фильтры
+          {!isAdvancedOpen && activeAdvancedCount > 0 && (
+            <span className="ml-1 px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+              {activeAdvancedCount}
+            </span>
+          )}
+        </button>
+      </div>
 
-          {/* Имя пациента */}
-          <MultiSelect
-            label="Имя пациента"
-            placeholder="Все пациенты"
-            values={patientNameValues}
-            selectedValues={filters.patient_name || []}
-            onChange={(values) => handleChange('patient_name', values)}
-            onSearch={handleSearchPatientName}
-            loading={loadingStates.patient_name}
-          />
-
-          {/* Медицинское учреждение */}
-          <MultiSelect
-            label="Медучреждение"
-            placeholder="Все учреждения"
-            values={medicalFacilityValues}
-            selectedValues={filters.medical_facility || []}
-            onChange={(values) => handleChange('medical_facility', values)}
-            onSearch={handleSearchMedicalFacility}
-            loading={loadingStates.medical_facility}
-          />
-
-          {/* Специализация */}
-          <MultiSelect
-            label="Специализация"
-            placeholder="Все специализации"
-            values={specialtiesValues}
-            selectedValues={filters.specialties || []}
-            onChange={(values) => handleChange('specialties', values)}
-            onSearch={handleSearchSpecialties}
-            loading={loadingStates.specialties}
-          />
-
-          {/* Подтип документа */}
-          <MultiSelect
-            label="Подтип документа"
-            placeholder="Все подтипы"
-            values={documentSubtypeValues}
-            selectedValues={filters.document_subtype || []}
-            onChange={(values) => handleChange('document_subtype', values)}
-            onSearch={handleSearchDocumentSubtype}
-            loading={loadingStates.document_subtype}
-          />
-
-          {/* Область исследования */}
-          <MultiSelect
-            label="Область исследования"
-            placeholder="Все области"
-            values={researchAreaValues}
-            selectedValues={filters.research_area || []}
-            onChange={(values) => handleChange('research_area', values)}
-            onSearch={handleSearchResearchArea}
-            loading={loadingStates.research_area}
-          />
-        </div>
-
-        {/* Диапазоны дат */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {/* Дата документа */}
-          <DateRangePicker
-            label="Дата документа"
-            fromValue={filters.date_from || ''}
-            toValue={filters.date_to || ''}
-            onFromChange={(value) => handleChange('date_from', value || undefined)}
-            onToChange={(value) => handleChange('date_to', value || undefined)}
-          />
-
-          {/* Дата загрузки */}
+      {/* Tier 3: advanced panel */}
+      {isAdvancedOpen && (
+        <div className="border-t border-gray-100 pt-3 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <MultiSelect
+              label="Специализация"
+              placeholder="Все специализации"
+              values={specialtiesValues}
+              selectedValues={filters.specialties || []}
+              onChange={(values) => handleChange('specialties', values)}
+              onSearch={handleSearchSpecialties}
+              loading={loadingStates.specialties}
+            />
+            <MultiSelect
+              label="Подтип документа"
+              placeholder="Все подтипы"
+              values={documentSubtypeValues}
+              selectedValues={filters.document_subtype || []}
+              onChange={(values) => handleChange('document_subtype', values)}
+              onSearch={handleSearchDocumentSubtype}
+              loading={loadingStates.document_subtype}
+            />
+            <MultiSelect
+              label="Область исследования"
+              placeholder="Все области"
+              values={researchAreaValues}
+              selectedValues={filters.research_area || []}
+              onChange={(values) => handleChange('research_area', values)}
+              onSearch={handleSearchResearchArea}
+              loading={loadingStates.research_area}
+            />
+            <MultiSelect
+              label="Медучреждение"
+              placeholder="Все учреждения"
+              values={medicalFacilityValues}
+              selectedValues={filters.medical_facility || []}
+              onChange={(values) => handleChange('medical_facility', values)}
+              onSearch={handleSearchMedicalFacility}
+              loading={loadingStates.medical_facility}
+            />
+            <MultiSelect
+              label="Имя пациента"
+              placeholder="Все пациенты"
+              values={patientNameValues}
+              selectedValues={filters.patient_name || []}
+              onChange={(values) => handleChange('patient_name', values)}
+              onSearch={handleSearchPatientName}
+              loading={loadingStates.patient_name}
+            />
+          </div>
           <DateRangePicker
             label="Дата загрузки"
             fromValue={filters.created_from || ''}
@@ -264,7 +311,7 @@ export default function DocumentFilters({ filters, onChange, onReset }: Document
             onToChange={(value) => handleChange('created_to', value || undefined)}
           />
         </div>
-      </div>
+      )}
     </div>
   )
 }

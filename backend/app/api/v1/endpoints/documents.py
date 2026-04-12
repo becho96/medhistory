@@ -662,6 +662,10 @@ async def get_lab_timeseries(
         standard_unit = None
         category = "Другие анализы"
     
+    # Синонимы в CachedAnalyte хранятся как "название [единица]" (например "Лимфоциты [10*9/л]").
+    # Для поиска в MongoDB нужны только имена без суффикса с единицей.
+    synonyms = list(set(s.split(' [')[0] for s in synonyms))
+
     # Строим regex для поиска всех синонимов
     # Экранируем специальные символы в названиях
     import re

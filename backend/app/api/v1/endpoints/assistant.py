@@ -4,7 +4,7 @@ AI Assistant endpoints.
 WebSocket: WS /api/v1/assistant/ws
   - JWT auth via ?token=<jwt> query param
   - Client sends: {"message": "...", "session_id": "uuid|null",
-                   "model": {"provider": "anthropic", "model_id": "claude-sonnet-4-6"}}
+                   "model": {"provider": "openrouter", "model_id": "google/gemini-2.5-flash"}}
   - Server streams: {"type": "thinking"|"token"|"done"|"error"|"session_created", ...}
 
 REST:
@@ -33,11 +33,10 @@ from app.services.assistant.llm_factory import AVAILABLE_MODELS, get_llm
 from app.core.config import settings
 
 router = APIRouter()
-# Временный логер для отладки ассистента (виден в консоли при LOG_LEVEL=DEBUG)
 logger = logging.getLogger("medhistory.assistant")
 
 
-# ─── Auth helper for WebSocket (query-param token) ────────────────────────────
+# ─── Auth helper for WebSocket ────────────────────────────────────────────────
 
 async def _ws_authenticate(token: str, db: AsyncSession) -> Optional[User]:
     payload = decode_access_token(token)
@@ -99,7 +98,7 @@ async def _load_history(db: AsyncSession, session_id: uuid.UUID, limit: int) -> 
         if row.role == "user":
             messages.append(HumanMessage(content=row.content))
         else:
-            messages.append(AIMessage(content=row.content))  # type: ignore[arg-type]
+            messages.append(AIMessage(content=row.content))
     return messages
 
 
@@ -108,7 +107,7 @@ async def _save_messages(
     session_id: uuid.UUID,
     user_text: str,
     assistant_text: str,
-    intent: str,
+    tools_used: list[str],
     model_provider: str,
     model_id: str,
 ) -> uuid.UUID:
@@ -124,7 +123,7 @@ async def _save_messages(
         session_id=session_id,
         role="assistant",
         content=assistant_text,
-        metadata_={"intent": intent, "model_provider": model_provider, "model_id": model_id},
+        metadata_={"tools_used": tools_used, "model_provider": model_provider, "model_id": model_id},
     )
     db.add(asst_msg)
     await db.flush()
@@ -180,91 +179,125 @@ async def assistant_ws(
                 continue
 
             logger.info(
-                "[ASSISTANT] Новое сообщение | user_id=%s session_id=%s | текст: %s",
-                user.id, session_id, user_text[:80] + ("..." if len(user_text) > 80 else ""),
+                "[ASSISTANT] Новое сообщение | user_id=%s | %s",
+                user.id, user_text[:80] + ("..." if len(user_text) > 80 else ""),
             )
 
-            session = await _get_or_create_session(
-                db, user.id, session_id, provider, model_id
-            )
-            is_new = not session_id or str(session.id) != (session_id or "")
+            try:
+                session = await _get_or_create_session(
+                    db, user.id, session_id, provider, model_id
+                )
+                is_new = not session_id or str(session.id) != (session_id or "")
 
-            if is_new:
-                await websocket.send_json({
-                    "type":       "session_created",
-                    "session_id": str(session.id),
-                })
-
-            history = await _load_history(db, session.id, settings.CHAT_HISTORY_LIMIT)
-
-            graph = build_graph(db, mongodb)
-
-            initial_state: dict = {
-                "messages":        history + [HumanMessage(content=user_text)],
-                "user_id":         str(user.id),
-                "session_id":      str(session.id),
-                "model_config":    {"provider": provider, "model_id": model_id},
-                "patient_profile": {},
-                "intent":          "",
-                "tool_params":     {},
-                "retrieved_data":  {},
-            }
-
-            assistant_text = ""
-            intent_used    = "general_qa"
-            capture_tokens = False  # Only stream from terminal agents, not supervisor
-
-            await websocket.send_json({"type": "thinking", "agent": "supervisor"})
-
-            async for event in graph.astream_events(initial_state, version="v2"):
-                kind = event.get("event")
-
-                if kind == "on_chain_start":
-                    agent_name = event.get("name", "")
-                    logger.info("[ASSISTANT] Агент запущен: %s", agent_name)
-                    if agent_name in ("lab_analysis", "health_history",
-                                      "recommendation", "general_qa"):
-                        capture_tokens = True
-                        await websocket.send_json({"type": "thinking", "agent": agent_name})
-                    elif agent_name == "supervisor":
-                        capture_tokens = False
-
-                elif kind == "on_chat_model_stream" and capture_tokens:
-                    chunk = event.get("data", {}).get("chunk")
-                    if chunk and hasattr(chunk, "content") and chunk.content:
-                        token_text = chunk.content
-                        assistant_text += token_text
-                        await websocket.send_json({"type": "token", "content": token_text})
-
-                elif kind == "on_chain_end" and event.get("name") == "supervisor":
-                    output = event.get("data", {}).get("output") or {}
-                    intent_used = output.get("intent", "general_qa")
-                    tool_params = output.get("tool_params") or {}
-                    logger.info(
-                        "[ASSISTANT] Supervisor → intent=%s | tool_params=%s",
-                        intent_used, tool_params,
-                    )
-
-            if assistant_text:
                 if is_new:
-                    await _auto_title(session, user_text, db)
+                    await websocket.send_json({
+                        "type":       "session_created",
+                        "session_id": str(session.id),
+                    })
 
-                msg_id = await _save_messages(
-                    db, session.id, user_text, assistant_text,
-                    intent_used, provider, model_id,
-                )
-                await db.commit()
+                history = await _load_history(db, session.id, settings.CHAT_HISTORY_LIMIT)
 
-                await websocket.send_json({
-                    "type":       "done",
-                    "message_id": str(msg_id),
-                    "intent":     intent_used,
-                })
+                graph = build_graph(db, mongodb)
 
-                logger.info(
-                    "[ASSISTANT] Ответ готов | intent=%s | длина ответа=%d символов",
-                    intent_used, len(assistant_text),
-                )
+                initial_state: dict = {
+                    "messages":        history + [HumanMessage(content=user_text)],
+                    "user_id":         str(user.id),
+                    "session_id":      str(session.id),
+                    "model_config":    {"provider": provider, "model_id": model_id},
+                    "patient_profile": {},
+                }
+
+                assistant_text = ""
+                tools_used: list[str] = []
+                capture_tokens = False
+
+                await websocket.send_json({"type": "thinking", "agent": "agent"})
+
+                async for event in graph.astream_events(initial_state, version="v2"):
+                    kind = event.get("event")
+                    name = event.get("name", "")
+
+                    if kind == "on_chain_start":
+                        if name == "agent":
+                            # Reset buffer — only the final agent response is kept
+                            assistant_text = ""
+                            capture_tokens = True
+                            await websocket.send_json({"type": "thinking", "agent": "agent"})
+                        elif name == "tools":
+                            capture_tokens = False
+                            await websocket.send_json({"type": "thinking", "agent": "tools"})
+
+                    elif kind == "on_chat_model_stream" and capture_tokens:
+                        chunk = event.get("data", {}).get("chunk")
+                        if chunk and hasattr(chunk, "content") and chunk.content:
+                            token_text = chunk.content
+                            assistant_text += token_text
+                            await websocket.send_json({"type": "token", "content": token_text})
+
+                    elif kind == "on_chain_end":
+                        if name == "tools":
+                            # Collect names of tools that were executed
+                            output = event.get("data", {}).get("output") or {}
+                            for msg in (output.get("messages") or []):
+                                tool_name = getattr(msg, "name", None)
+                                if tool_name and tool_name not in tools_used:
+                                    tools_used.append(tool_name)
+
+                        elif name == "agent" and not assistant_text:
+                            # Fallback: extract final response from on_chain_end
+                            # (happens when provider doesn't emit on_chat_model_stream)
+                            output = event.get("data", {}).get("output") or {}
+                            for msg in (output.get("messages") or []):
+                                if hasattr(msg, "content") and msg.content:
+                                    tc = getattr(msg, "tool_calls", None)
+                                    if not tc:  # only capture final (non-tool-call) response
+                                        assistant_text = msg.content
+                                        await websocket.send_json({
+                                            "type": "token",
+                                            "content": assistant_text,
+                                        })
+                                        logger.info(
+                                            "[ASSISTANT] Fallback on_chain_end | длина=%d",
+                                            len(assistant_text),
+                                        )
+                                        break
+
+                if assistant_text:
+                    if is_new:
+                        await _auto_title(session, user_text, db)
+
+                    msg_id = await _save_messages(
+                        db, session.id, user_text, assistant_text,
+                        tools_used, provider, model_id,
+                    )
+                    await db.commit()
+
+                    await websocket.send_json({
+                        "type":       "done",
+                        "message_id": str(msg_id),
+                        "tools_used": tools_used,
+                    })
+
+                    logger.info(
+                        "[ASSISTANT] Готово | tools=%s | длина=%d",
+                        tools_used, len(assistant_text),
+                    )
+                else:
+                    logger.warning("[ASSISTANT] Пустой ответ | user_id=%s", user.id)
+                    await websocket.send_json({
+                        "type":   "error",
+                        "detail": "Не удалось получить ответ от ассистента. Попробуйте ещё раз.",
+                    })
+
+            except Exception as msg_exc:
+                logger.exception("[ASSISTANT] Ошибка обработки сообщения: %s", msg_exc)
+                try:
+                    await websocket.send_json({
+                        "type":   "error",
+                        "detail": f"Ошибка: {msg_exc}",
+                    })
+                except Exception:
+                    pass
 
     except WebSocketDisconnect:
         pass

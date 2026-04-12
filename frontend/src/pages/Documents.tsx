@@ -8,6 +8,7 @@ import UploadModal from '../components/Documents/UploadModal'
 import DocumentFilters, { DocumentFilterValues } from '../components/Documents/DocumentFilters'
 import InterpretationConfirmModal from '../components/Documents/InterpretationConfirmModal'
 import DocumentModal from '../components/Documents/DocumentModal'
+import DocumentListItem from '../components/Documents/DocumentListItem'
 import { format } from 'date-fns'
 import type { TimelineEvent } from '../types'
 import 'vis-timeline/styles/vis-timeline-graph2d.min.css'
@@ -1055,71 +1056,19 @@ export default function Documents() {
             </div>
           ) : filteredDocuments && filteredDocuments.length > 0 ? (
             filteredDocuments.map((doc) => (
-              <div
+              <DocumentListItem
                 key={doc.id}
-                className="flex items-center gap-3 px-3 sm:px-4 py-3 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer"
-                onClick={() => setSelectedDocumentId(doc.id)}
-              >
-                {/* Icon */}
-                <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
-                  <FileText className="h-5 w-5 text-emerald-500" />
-                </div>
-
-                {/* Main content */}
-                <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-medium text-gray-900 truncate">
-                    {doc.original_filename}
-                  </p>
-                  <p className="text-[12px] text-gray-400 truncate mt-0.5">
-                    {doc.document_type || '—'}
-                    {doc.document_date && ` · ${format(new Date(doc.document_date), 'dd.MM.yy')}`}
-                    {doc.specialty && ` · ${doc.specialty}`}
-                  </p>
-                </div>
-
-                {/* Status + Actions */}
-                <div className="flex items-center gap-0.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
-                  {/* Status dot */}
-                  <span className={`w-2 h-2 rounded-full mr-1.5 flex-shrink-0 ${
-                    doc.processing_status === 'completed' ? 'bg-green-400' :
-                    doc.processing_status === 'processing' ? 'bg-yellow-400' :
-                    doc.processing_status === 'failed' ? 'bg-red-400' : 'bg-gray-300'
-                  }`} />
-
-                  {/* Labs button (only for lab docs) */}
-                  {doc.document_type === 'Результаты анализа' && labsSummary[doc.id]?.has_labs && (
-                    <button
-                      onClick={() => openLabsModal(doc.id)}
-                      className="p-1.5 rounded-lg text-purple-500 hover:bg-purple-50 transition-colors"
-                      title="Анализы"
-                    >
-                      <FlaskConical className="h-4 w-4" />
-                    </button>
-                  )}
-
-                  {/* Download — desktop only */}
-                  <button
-                    onClick={() => handleDownload(doc.id, doc.original_filename)}
-                    className="hidden sm:block p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 transition-colors"
-                    title="Скачать"
-                  >
-                    <Download className="h-4 w-4" />
-                  </button>
-
-                  {/* Delete */}
-                  <button
-                    onClick={() => {
-                      if (window.confirm('Удалить этот документ?')) {
-                        deleteMutation.mutate(doc.id)
-                      }
-                    }}
-                    className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-                    title="Удалить"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
-              </div>
+                doc={doc}
+                labsSummary={labsSummary}
+                onClick={(id) => setSelectedDocumentId(id)}
+                onOpenLabs={(id) => openLabsModal(id)}
+                onDownload={(id, filename) => handleDownload(id, filename)}
+                onDelete={(id) => {
+                  if (window.confirm('Удалить этот документ?')) {
+                    deleteMutation.mutate(id)
+                  }
+                }}
+              />
             ))
           ) : (
             <div className="py-12 text-center">

@@ -1,16 +1,20 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { FileText, Upload, ArrowRight, BookOpen, Plus, Calendar } from 'lucide-react'
 import { documentsService } from '../services/documents'
 import { Link } from 'react-router-dom'
 import { useAuthStore } from '../stores/authStore'
 import UploadModal from '../components/Documents/UploadModal'
+import DocumentListItem from '../components/Documents/DocumentListItem'
+import DocumentModal from '../components/Documents/DocumentModal'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 
 export default function Dashboard() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null)
   const { user } = useAuthStore()
+  const queryClient = useQueryClient()
 
   const { data: documents } = useQuery({
     queryKey: ['documents', 'recent'],
@@ -24,6 +28,23 @@ export default function Dashboard() {
       })
     },
   })
+
+  const deleteMutation = useMutation({
+    mutationFn: documentsService.deleteDocument,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['documents'] })
+    },
+  })
+
+  const handleDownload = (docId: string, filename: string) => {
+    const url = documentsService.getDocumentFileUrl(docId)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = filename
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
 
   const getCurrentGreeting = () => {
     const hour = new Date().getHours()
@@ -45,7 +66,6 @@ export default function Dashboard() {
         <h1 className="text-[28px] sm:text-[32px] font-semibold text-gray-900 tracking-tight mb-1">
           {getCurrentGreeting()}{firstName ? `, ${firstName}` : ''}
         </h1>
-        <p className="text-[15px] text-gray-500 mb-6">Здоровье под контролем</p>
         <button
           onClick={() => setIsUploadModalOpen(true)}
           className="inline-flex items-center gap-2 bg-emerald-500 text-white px-5 py-2.5 rounded-xl text-[14px] font-medium hover:bg-emerald-600 transition-colors"
@@ -109,32 +129,20 @@ export default function Dashboard() {
           </Link>
         </div>
 
-        <div className="divide-y divide-gray-50">
+        <div className="divide-y divide-gray-50 -mx-6">
           {documents && documents.length > 0 ? (
             documents.map((doc) => (
-              <div key={doc.id} className="py-3 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center shrink-0">
-                  <FileText className="h-4 w-4 text-gray-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-medium text-gray-900 truncate">
-                    {doc.original_filename}
-                  </p>
-                  <p className="text-[12px] text-gray-400 truncate">
-                    {doc.document_type || 'Неизвестный тип'}
-                    {doc.specialty && ` · ${doc.specialty}`}
-                  </p>
-                </div>
-                <span className={`text-[12px] font-medium shrink-0 ${
-                  doc.processing_status === 'completed' ? 'text-emerald-500' :
-                  doc.processing_status === 'processing' ? 'text-amber-500' :
-                  doc.processing_status === 'failed' ? 'text-red-500' : 'text-gray-300'
-                }`}>
-                  {doc.processing_status === 'completed' ? 'Готово' :
-                   doc.processing_status === 'processing' ? 'Обработка...' :
-                   doc.processing_status === 'failed' ? 'Ошибка' : ''}
-                </span>
-              </div>
+              <DocumentListItem
+                key={doc.id}
+                doc={doc}
+                onClick={(id) => setSelectedDocumentId(id)}
+                onDownload={(id, filename) => handleDownload(id, filename)}
+                onDelete={(id) => {
+                  if (window.confirm('Удалить этот документ?')) {
+                    deleteMutation.mutate(id)
+                  }
+                }}
+              />
             ))
           ) : (
             <div className="py-12 text-center">
@@ -159,6 +167,13 @@ export default function Dashboard() {
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
       />
+
+      {selectedDocumentId && (
+        <DocumentModal
+          documentId={selectedDocumentId}
+          onClose={() => setSelectedDocumentId(null)}
+        />
+      )}
     </div>
   )
 }

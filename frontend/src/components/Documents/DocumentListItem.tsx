@@ -1,0 +1,90 @@
+import { FileText, Download, Trash2, FlaskConical } from 'lucide-react'
+import { format } from 'date-fns'
+
+interface LabsSummaryEntry {
+  has_labs: boolean
+  count: number
+}
+
+interface DocumentListItemProps {
+  doc: {
+    id: string
+    original_filename: string
+    document_type?: string | null
+    document_date?: string | null
+    specialty?: string | null
+  }
+  labsSummary?: Record<string, LabsSummaryEntry>
+  onClick?: (id: string) => void
+  onOpenLabs?: (id: string) => void
+  onDownload?: (id: string, filename: string) => void
+  onDelete?: (id: string) => void
+}
+
+export default function DocumentListItem({
+  doc,
+  labsSummary,
+  onClick,
+  onOpenLabs,
+  onDownload,
+  onDelete,
+}: DocumentListItemProps) {
+  return (
+    <div
+      className="flex items-center gap-3 px-3 sm:px-4 py-3 hover:bg-gray-50 active:bg-gray-100 transition-colors cursor-pointer"
+      onClick={() => onClick?.(doc.id)}
+    >
+      {/* Icon */}
+      <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
+        <FileText className="h-5 w-5 text-emerald-500" />
+      </div>
+
+      {/* Main content */}
+      <div className="flex-1 min-w-0">
+        <p className="text-[14px] font-medium text-gray-900 truncate">
+          {doc.original_filename}
+        </p>
+        <p className="text-[12px] text-gray-400 truncate mt-0.5">
+          {doc.document_type || '—'}
+          {doc.document_date && ` · ${format(new Date(doc.document_date), 'dd.MM.yy')}`}
+          {doc.specialty && ` · ${doc.specialty}`}
+        </p>
+      </div>
+
+      {/* Actions */}
+      {(onDownload || onDelete || onOpenLabs) && (
+        <div className="flex items-center gap-0.5 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+          {doc.document_type === 'Результаты анализа' && labsSummary?.[doc.id]?.has_labs && (
+            <button
+              onClick={() => onOpenLabs?.(doc.id)}
+              className="p-1.5 rounded-lg text-purple-500 hover:bg-purple-50 transition-colors"
+              title="Анализы"
+            >
+              <FlaskConical className="h-4 w-4" />
+            </button>
+          )}
+
+          {onDownload && (
+            <button
+              onClick={() => onDownload(doc.id, doc.original_filename)}
+              className="hidden sm:block p-1.5 rounded-lg text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 transition-colors"
+              title="Скачать"
+            >
+              <Download className="h-4 w-4" />
+            </button>
+          )}
+
+          {onDelete && (
+            <button
+              onClick={() => onDelete(doc.id)}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              title="Удалить"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
