@@ -43,6 +43,11 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.SERVER_IP }} >> ~/.ssh/known_hosts
+          cat >> ~/.ssh/config <<EOF
+          Host ${{ secrets.SERVER_IP }}
+            ServerAliveInterval 30
+            ServerAliveCountMax 20
+          EOF
 
       - name: Login to Docker Hub on server
         continue-on-error: true
@@ -70,12 +75,16 @@ jobs:
           
           # Build and restart containers using production compose file
           # --env-file .env.production — переменные (OPENROUTER_MODEL и др.) из .env.production на сервере
+          SSH="ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=20 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}"
+          BUILD="docker compose -f docker-compose.prod.yml --env-file .env.production build --no-cache --progress=plain"
+          UP="docker compose -f docker-compose.prod.yml --env-file .env.production up -d"
+
           if [ "${{ inputs.service }}" = "all" ]; then
-            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd ${{ env.DEPLOY_PATH }} && docker compose -f docker-compose.prod.yml --env-file .env.production build --no-cache && docker compose -f docker-compose.prod.yml --env-file .env.production up -d"
+            $SSH "cd ${{ env.DEPLOY_PATH }} && $BUILD && $UP"
           elif [ "${{ inputs.service }}" = "backend" ]; then
-            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd ${{ env.DEPLOY_PATH }} && docker compose -f docker-compose.prod.yml --env-file .env.production build --no-cache backend && docker compose -f docker-compose.prod.yml --env-file .env.production up -d backend"
+            $SSH "cd ${{ env.DEPLOY_PATH }} && $BUILD backend && $UP backend"
           elif [ "${{ inputs.service }}" = "frontend" ]; then
-            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} "cd ${{ env.DEPLOY_PATH }} && docker compose -f docker-compose.prod.yml --env-file .env.production build --no-cache frontend && docker compose -f docker-compose.prod.yml --env-file .env.production up -d frontend"
+            $SSH "cd ${{ env.DEPLOY_PATH }} && $BUILD frontend && $UP frontend"
           fi
 
       - name: Health check
