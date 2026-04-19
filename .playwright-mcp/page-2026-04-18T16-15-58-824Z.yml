@@ -1,0 +1,31 @@
+- generic [ref=e2]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - img [ref=e6]
+      - generic [ref=e9]: MedHistory
+    - generic [ref=e10]:
+      - heading "Создать аккаунт" [level=1] [ref=e11]
+      - paragraph [ref=e12]: Начните управлять медицинской историей
+    - button "Продолжить через Google" [ref=e13] [cursor=pointer]:
+      - img [ref=e14]
+      - text: Продолжить через Google
+    - generic [ref=e23]: или
+    - generic [ref=e24]:
+      - generic [ref=e25]:
+        - generic [ref=e26]: Полное имя
+        - textbox "Полное имя" [ref=e27]:
+          - /placeholder: Иван Иванов
+      - generic [ref=e28]:
+        - generic [ref=e29]: Email
+        - textbox "Email" [ref=e30]:
+          - /placeholder: your@email.com
+      - generic [ref=e31]:
+        - generic [ref=e32]: Пароль
+        - textbox "Пароль" [ref=e33]:
+          - /placeholder: ••••••••
+      - button "Зарегистрироваться" [ref=e34] [cursor=pointer]
+    - paragraph [ref=e35]:
+      - text: Уже есть аккаунт?
+      - link "Войти" [ref=e36] [cursor=pointer]:
+        - /url: /login
+  - region "Notifications alt+T"

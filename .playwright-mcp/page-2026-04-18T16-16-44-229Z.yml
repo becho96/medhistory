@@ -1,0 +1,79 @@
+- generic [ref=e2]:
+  - generic [ref=e74]:
+    - banner [ref=e75]:
+      - generic [ref=e77]:
+        - generic [ref=e78]:
+          - img [ref=e79]
+          - heading "MedHistory" [level=1] [ref=e82]
+        - generic [ref=e83]:
+          - button "Профиль" [ref=e84] [cursor=pointer]:
+            - img [ref=e86]
+            - generic [ref=e89]: Профиль
+          - button "Выход" [ref=e90] [cursor=pointer]:
+            - img [ref=e91]
+            - generic [ref=e94]: Выход
+    - main [ref=e96]:
+      - generic [ref=e98]:
+        - generic [ref=e99]:
+          - paragraph [ref=e100]: 18 апреля, суббота
+          - heading "Добрый вечер, Test" [level=1] [ref=e101]
+          - button "Загрузить документ" [ref=e102] [cursor=pointer]:
+            - img [ref=e103]
+            - text: Загрузить документ
+        - generic [ref=e106]:
+          - link "Медкарта Все ваши документы" [ref=e107] [cursor=pointer]:
+            - /url: /documents
+            - generic [ref=e108]:
+              - img [ref=e110]
+              - generic [ref=e113]:
+                - paragraph [ref=e114]: Медкарта
+                - paragraph [ref=e115]: Все ваши документы
+              - img [ref=e116]
+          - button "Новый документ PDF, фото или скан" [ref=e118] [cursor=pointer]:
+            - generic [ref=e119]:
+              - img [ref=e121]
+              - generic [ref=e122]:
+                - paragraph [ref=e123]: Новый документ
+                - paragraph [ref=e124]: PDF, фото или скан
+              - img [ref=e125]
+        - generic [ref=e128]:
+          - generic [ref=e129]:
+            - generic [ref=e130]:
+              - heading "Последние документы" [level=3] [ref=e131]:
+                - img [ref=e132]
+                - text: Последние документы
+              - paragraph [ref=e134]: За последние 24 часа
+            - link "Все" [ref=e135] [cursor=pointer]:
+              - /url: /documents
+              - text: Все
+              - img [ref=e136]
+          - generic [ref=e139]:
+            - img [ref=e141]
+            - paragraph [ref=e144]: Нет документов
+            - paragraph [ref=e145]: Загрузите первый медицинский документ
+            - button "Загрузить" [ref=e146] [cursor=pointer]:
+              - img [ref=e147]
+              - text: Загрузить
+    - navigation [ref=e150]:
+      - generic [ref=e151]:
+        - link "Главная" [ref=e152] [cursor=pointer]:
+          - /url: /
+          - img [ref=e154]
+          - generic [ref=e157]: Главная
+        - link "Медкарта" [ref=e158] [cursor=pointer]:
+          - /url: /documents
+          - img [ref=e159]
+          - generic [ref=e162]: Медкарта
+        - link "Анализы" [ref=e163] [cursor=pointer]:
+          - /url: /labs
+          - img [ref=e164]
+          - generic [ref=e166]: Анализы
+        - link "ИИ" [ref=e167] [cursor=pointer]:
+          - /url: /assistant
+          - img [ref=e168]
+          - generic [ref=e171]: ИИ
+  - region "Notifications alt+T":
+    - list:
+      - listitem [ref=e172]:
+        - img [ref=e174]
+        - generic [ref=e177]: Вход выполнен успешно

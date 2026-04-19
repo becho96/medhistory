@@ -1,0 +1,31 @@
+- generic [ref=e2]:
+  - generic [ref=e38]:
+    - generic [ref=e39]:
+      - img [ref=e40]
+      - generic [ref=e43]: MedHistory
+    - generic [ref=e44]:
+      - heading "Войти в аккаунт" [level=1] [ref=e45]
+      - paragraph [ref=e46]: Добро пожаловать обратно
+    - button "Войти через Google" [ref=e47] [cursor=pointer]:
+      - img [ref=e48]
+      - text: Войти через Google
+    - generic [ref=e57]: или
+    - generic [ref=e58]:
+      - generic [ref=e59]:
+        - generic [ref=e60]: Email
+        - textbox "Email" [ref=e61]:
+          - /placeholder: your@email.com
+      - generic [ref=e62]:
+        - generic [ref=e63]: Пароль
+        - textbox "Пароль" [ref=e64]:
+          - /placeholder: ••••••••
+      - button "Войти" [ref=e65] [cursor=pointer]
+    - paragraph [ref=e66]:
+      - text: Нет аккаунта?
+      - link "Зарегистрироваться" [ref=e67] [cursor=pointer]:
+        - /url: /register
+  - region "Notifications alt+T":
+    - list:
+      - listitem [ref=e68]:
+        - img [ref=e70]
+        - generic [ref=e73]: Регистрация успешна! Теперь войдите в систему.

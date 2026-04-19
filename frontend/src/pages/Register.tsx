@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { authService } from '../services/auth'
+import { useAuthStore } from '../stores/authStore'
 import { HeartPulse } from 'lucide-react'
 
 const GoogleIcon = () => (
@@ -16,16 +17,24 @@ const GoogleIcon = () => (
 
 export default function Register() {
   const navigate = useNavigate()
+  const setAuth = useAuthStore((state) => state.setAuth)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
 
   const registerMutation = useMutation({
-    mutationFn: authService.register,
-    onSuccess: () => {
-      toast.success('Регистрация успешна! Теперь войдите в систему.')
-      navigate('/login')
+    mutationFn: async (data: { email: string; password: string; full_name: string }) => {
+      await authService.register(data)
+      const token = await authService.login({ email: data.email, password: data.password })
+      localStorage.setItem('auth_token', token.access_token)
+      const user = await authService.getCurrentUser()
+      return { user, token: token.access_token }
+    },
+    onSuccess: ({ user, token }) => {
+      setAuth(user, token)
+      toast.success('Добро пожаловать!')
+      navigate('/')
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.detail || 'Ошибка регистрации')
