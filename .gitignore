@@ -57,6 +57,12 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+.coverage.*
+htmlcov/
 
 # IDEs
 .vscode/
@@ -83,6 +89,8 @@ dist/
 build/
 *.min.js
 *.min.css
+tsconfig.tsbuildinfo
+.vite/
 
 # Uploads
 uploads/
@@ -95,6 +103,7 @@ backend/uploads/
 
 # Database
 *.sql
+!backend/migrations/*.sql
 *.db
 *.sqlite
 postgres_data/
@@ -127,6 +136,9 @@ error.log
 
 # n8n workflows (contain secrets after import)
 n8n/workflows/medhistory_telegram_bot.json
+
+# Playwright MCP test artifacts
+.playwright-mcp/
 
 # Misc
 .cache/
