@@ -169,7 +169,7 @@ function LineChart({ points, excludedPoints, onTogglePoint, onOpenDocument, stan
       {/* Chart and Legend */}
       <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
         <div className="relative flex-1 min-w-0 w-full">
-          <svg width={width} height={height} className="w-full h-auto" style={{ maxWidth: '100%' }}>
+          <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" style={{ maxWidth: '100%' }}>
             <defs>
               <linearGradient id="normalZoneGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#10b981" stopOpacity="0.12" />

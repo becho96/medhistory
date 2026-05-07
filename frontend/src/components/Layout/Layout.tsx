@@ -6,7 +6,6 @@ import ProfileSwitcher from '../ProfileSwitcher'
 import FamilyManagementModal from '../FamilyManagementModal'
 import ProfileSettings from '../ProfileSettings'
 import { familyService } from '../../services/family'
-import BottomNav from './BottomNav'
 
 export default function Layout() {
   const location = useLocation()
@@ -68,17 +67,13 @@ export default function Layout() {
       >
         <div className="max-w-full px-4 sm:px-6 md:px-8">
           <div className="flex justify-between items-center py-3 sm:py-4">
-            {/* Logo */}
             <div className="flex items-center gap-2 sm:gap-3">
               <Heart className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500" strokeWidth={2} />
-              <div>
-                <h1 className="text-base sm:text-xl font-semibold text-gray-900 tracking-tight">
-                  MedHistory
-                </h1>
-              </div>
+              <h1 className="text-base sm:text-xl font-semibold text-gray-900 tracking-tight">
+                MedHistory
+              </h1>
             </div>
 
-            {/* Actions */}
             <div className="flex items-center gap-2 sm:gap-4">
               <div className="hidden md:block">
                 <ProfileSwitcher onManageFamily={() => setIsFamilyModalOpen(true)} />
@@ -92,10 +87,7 @@ export default function Layout() {
                   <span className="relative inline-block">
                     <Settings className="w-4 h-4" />
                     {pendingInvitesCount > 0 && (
-                      <span
-                        className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white"
-                        aria-label={`${pendingInvitesCount} приглашений`}
-                      />
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full ring-2 ring-white" />
                     )}
                   </span>
                   <span className="hidden sm:inline">Профиль</span>
@@ -113,67 +105,61 @@ export default function Layout() {
         </div>
       </header>
 
-      <div className="flex flex-1 min-h-0 relative">
-        {/* Sidebar — desktop only */}
-        <aside className="hidden lg:flex flex-col w-72 bg-white/60 backdrop-blur-sm border-r border-gray-100 overflow-y-auto">
-          <nav className="p-6 flex-1">
-            <div className="space-y-2">
-              {navigation.map((item) => {
-                const isActive = location.pathname === item.href
-                return (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={`
-                      group flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl
-                      transition-all duration-200
-                      ${
-                        isActive
-                          ? 'bg-emerald-500 text-white'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                      }
-                    `}
-                  >
-                    <div className={`
-                      w-9 h-9 rounded-lg flex items-center justify-center transition-all
-                      ${isActive ? 'bg-white/20' : 'bg-gray-100 group-hover:bg-gray-200'}
-                    `}>
-                      <item.icon
-                        className={`h-5 w-5 ${
-                          isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'
-                        }`}
-                      />
-                    </div>
-                    <span>{item.name}</span>
-                    {isActive && (
-                      <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white" />
-                    )}
-                  </Link>
-                )
-              })}
+      <div className="flex flex-1 min-h-0">
+        {/* Sidebar — icon-only on mobile, full on desktop */}
+        <aside className="flex flex-col w-14 lg:w-64 bg-white border-r border-gray-100 overflow-y-auto shrink-0">
+          <nav className="p-2 lg:p-4 flex-1 space-y-1">
+            {navigation.map((item) => {
+              const isActive = location.pathname === item.href
+              return (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  title={item.name}
+                  className={`
+                    group flex items-center gap-3 p-2.5 lg:px-3 lg:py-2.5 rounded-xl
+                    transition-all duration-150 justify-center lg:justify-start
+                    ${isActive
+                      ? 'bg-emerald-500 text-white'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }
+                  `}
+                >
+                  <div className={`
+                    w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all
+                    ${isActive ? 'bg-white/20' : 'bg-gray-100 group-hover:bg-gray-200'}
+                  `}>
+                    <item.icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                  </div>
+                  <span className="hidden lg:inline text-sm font-medium">{item.name}</span>
+                  {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white hidden lg:block" />}
+                </Link>
+              )
+            })}
 
+            <div className="pt-2 lg:pt-3">
               {navigationSoon.map((item) => (
                 <div
                   key={item.name}
-                  className="flex items-center gap-3 px-4 py-3 text-sm font-medium rounded-xl text-gray-400 cursor-default select-none"
+                  title={item.name}
+                  className="flex items-center gap-3 p-2.5 lg:px-3 lg:py-2.5 rounded-xl text-gray-400 cursor-default select-none justify-center lg:justify-start mb-1"
                 >
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center bg-gray-100">
-                    <item.icon className="h-5 w-5 text-gray-400" />
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-gray-100 shrink-0">
+                    <item.icon className="h-4 w-4 text-gray-400" />
                   </div>
-                  <span>{item.name}</span>
-                  <span className="ml-auto text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-400">
+                  <span className="hidden lg:inline text-sm font-medium">{item.name}</span>
+                  <span className="ml-auto text-[11px] font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-400 hidden lg:inline">
                     скоро
                   </span>
                 </div>
               ))}
             </div>
-
           </nav>
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 overflow-auto">
-          <div className="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto">
+        <main className="flex-1 overflow-auto min-w-0">
+          <div className="p-3 sm:p-6 md:p-8 max-w-7xl mx-auto">
             {!isViewingOwnProfile && activeProfile && (
               <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
@@ -193,9 +179,6 @@ export default function Layout() {
           </div>
         </main>
       </div>
-
-      {/* Bottom Navigation — mobile only */}
-      <BottomNav />
 
       <FamilyManagementModal
         isOpen={isFamilyModalOpen}
