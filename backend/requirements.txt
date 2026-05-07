@@ -42,12 +42,14 @@ prometheus-client==0.19.0
 prometheus-fastapi-instrumentator==6.1.0
 
 # AI Assistant — LangGraph multi-agent
-langgraph>=0.2.38
-langchain>=0.3.7
-langchain-core>=0.3.15
-langchain-anthropic>=0.3.0
-langchain-openai>=0.2.9
+# Pinned to versions tested in local dev container — loose >= constraints
+# made pip resolver backtrack indefinitely between 1.x and 0.3.x lines.
+langgraph==1.1.6
+langchain==1.2.15
+langchain-core==1.2.28
+langchain-anthropic==1.4.0
+langchain-openai==1.1.12
 
 # MCP Server (Patient Data Tools)
-mcp>=1.10.0
+mcp==1.27.0
 
