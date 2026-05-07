@@ -92,6 +92,12 @@ services:
       ENVIRONMENT: ${ENVIRONMENT:-development}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
       BOT_SECRET: ${BOT_SECRET:-}
+      MCP_ENABLED: ${MCP_ENABLED:-false}
+      MCP_BEARER_TOKEN: ${MCP_BEARER_TOKEN:-}
+      MCP_USER_ID: ${MCP_USER_ID:-}
+      MCP_OAUTH_ENABLED: ${MCP_OAUTH_ENABLED:-false}
+      MCP_PUBLIC_URL: ${MCP_PUBLIC_URL:-http://localhost:8000}
+      MCP_CONSENT_URL: ${MCP_CONSENT_URL:-http://localhost:5173/oauth/consent}
     volumes:
       - ./backend:/app
       - backend_uploads:/app/uploads

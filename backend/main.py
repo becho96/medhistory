@@ -19,6 +19,9 @@ from app.models.analyte import (
     AnalyteCategory, AnalyteStandard, AnalyteSynonym, UserAnalyteMapping
 )
 from app.models.chat import ChatSession, ChatMessage  # AI assistant chat history
+from app.models.mcp_oauth import (  # MCP OAuth 2.1 server (phase 2 multi-user)
+    McpOAuthClient, McpAuthorizationCode, McpAccessToken, McpRefreshToken,
+)
 
 # Import analyte normalization service
 from app.services.analyte_normalization_service_db import analyte_normalization_service_db
@@ -59,9 +62,16 @@ async def lifespan(app: FastAPI):
         print("   Выполните миграцию и seed: python scripts/seed_analyte_mappings.py")
     
     print("✅ Database and storage initialized")
-    
-    yield
-    
+
+    if settings.MCP_ENABLED:
+        from mcp_server.server import mcp as mcp_instance
+        async with mcp_instance.session_manager.run():
+            yield
+        from mcp_server.database import close_pg_pool
+        await close_pg_pool()
+    else:
+        yield
+
     # Shutdown
     print("🛑 Shutting down MedHistory API...")
     mongodb_client.close()
@@ -87,6 +97,21 @@ app.add_middleware(
 
 # Include API router
 app.include_router(api_router, prefix="/api/v1")
+
+# Mount MCP server (single-user remote, phase 1) — see backend/mcp_server/
+if settings.MCP_ENABLED:
+    if not settings.MCP_OAUTH_ENABLED and not settings.MCP_USER_ID:
+        raise RuntimeError("MCP_ENABLED=true requires MCP_USER_ID (single-user) or MCP_OAUTH_ENABLED")
+    from mcp_server.server import create_mcp_app
+    app.mount("/mcp", create_mcp_app(settings.MCP_BEARER_TOKEN))
+    if settings.MCP_OAUTH_ENABLED:
+        # Rewrite root-level OAuth/discovery paths into the /mcp sub-app so that
+        # strict RFC-9728 clients (claude.ai) find them at domain root in dev.
+        # Prod (nginx on mcp.medhistory.ru) makes this a no-op since the proxy
+        # already prepends /mcp before the request hits this layer.
+        from mcp_server.oauth.well_known_proxy import WellKnownProxyMiddleware
+        app.add_middleware(WellKnownProxyMiddleware, mount_prefix="/mcp")
+    print(f"🔌 MCP mounted at /mcp (oauth={settings.MCP_OAUTH_ENABLED})")
 
 # Prometheus metrics instrumentation
 Instrumentator().instrument(app).expose(app, endpoint="/metrics")

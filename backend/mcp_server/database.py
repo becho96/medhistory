@@ -1,26 +1,36 @@
 """
-Database connections for the standalone MCP server.
+Database access for the in-process MCP server.
 
-The MCP server runs as a separate process, so it creates its own connections.
-Uses asyncpg (PostgreSQL) and motor (MongoDB) — same drivers as the main app.
+PostgreSQL: shared asyncpg pool, lazy-initialized on first use, closed on app shutdown.
+MongoDB:    reuses the singleton Motor client from app.db.mongodb.
 """
-import os
+from typing import Optional
 import asyncpg
-from motor.motor_asyncio import AsyncIOMotorClient
 
-# Strip the SQLAlchemy dialect prefix so asyncpg can parse the URL directly
-_raw_db_url = os.environ.get("DATABASE_URL", "")
-PG_DSN = _raw_db_url.replace("postgresql+asyncpg://", "postgresql://")
+from app.core.config import settings
+from app.db.mongodb import mongodb
 
-MONGO_URL = os.environ.get("MONGODB_URL", "")
+_pool: Optional[asyncpg.Pool] = None
 
 
-async def get_pg_connection() -> asyncpg.Connection:
-    """Open a one-off asyncpg connection."""
-    return await asyncpg.connect(PG_DSN)
+def _asyncpg_dsn() -> str:
+    """SQLAlchemy URLs use the postgresql+asyncpg:// scheme; asyncpg wants plain postgresql://."""
+    return settings.DATABASE_URL.replace("postgresql+asyncpg://", "postgresql://")
+
+
+async def get_pg_pool() -> asyncpg.Pool:
+    global _pool
+    if _pool is None:
+        _pool = await asyncpg.create_pool(_asyncpg_dsn(), min_size=1, max_size=5)
+    return _pool
+
+
+async def close_pg_pool() -> None:
+    global _pool
+    if _pool is not None:
+        await _pool.close()
+        _pool = None
 
 
 def get_mongo_db():
-    """Return a Motor async database handle."""
-    client = AsyncIOMotorClient(MONGO_URL)
-    return client.medhistory
+    return mongodb

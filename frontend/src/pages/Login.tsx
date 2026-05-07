@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { authService } from '../services/auth'
@@ -17,10 +17,15 @@ const GoogleIcon = () => (
 
 export default function Login() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const setAuth = useAuthStore((state) => state.setAuth)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+
+  // Only allow same-origin / relative redirects to avoid open-redirect
+  const rawNext = searchParams.get('next')
+  const next = rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/'
 
   const loginMutation = useMutation({
     mutationFn: authService.login,
@@ -29,7 +34,7 @@ export default function Login() {
       const user = await authService.getCurrentUser()
       setAuth(user, data.access_token)
       toast.success('Вход выполнен успешно')
-      navigate('/')
+      navigate(next)
     },
     onError: (error: any) => {
       toast.error(error.response?.data?.detail || 'Ошибка входа')

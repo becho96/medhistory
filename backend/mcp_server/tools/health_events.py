@@ -3,12 +3,14 @@ import json
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
 
+from mcp_server.database import get_pg_pool, get_mongo_db
+from mcp_server.tools._user import resolve_user_id
+
 
 def register(mcp: FastMCP) -> None:
 
     @mcp.tool()
     async def get_health_events(
-        user_id: str,
         date_from: Optional[str] = None,
         date_to: Optional[str] = None,
         limit: int = 50,
@@ -18,17 +20,14 @@ def register(mcp: FastMCP) -> None:
         temperature, blood sugar, weight, oxygen saturation, etc.).
 
         Args:
-            user_id: UUID of the patient.
             date_from: ISO datetime or date string to filter from.
             date_to:   ISO datetime or date string to filter up to.
             limit: Maximum number of events to return.
         """
-        from mcp_server.database import get_pg_connection, get_mongo_db
-
-        conn = await get_pg_connection()
-        try:
+        pool = await get_pg_pool()
+        async with pool.acquire() as conn:
             conditions = ["user_id = $1::uuid"]
-            params: list = [user_id]
+            params: list = [resolve_user_id()]
 
             if date_from:
                 params.append(date_from)
@@ -43,8 +42,6 @@ def register(mcp: FastMCP) -> None:
                 f"WHERE {where} ORDER BY event_datetime DESC LIMIT ${len(params) + 1}",
                 *params, limit,
             )
-        finally:
-            await conn.close()
 
         if not rows:
             return json.dumps([])

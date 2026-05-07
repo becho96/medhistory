@@ -231,6 +231,23 @@ class AnalyteNormalizationServiceDB:
         
         return None
     
+    def find_canonical_unit_agnostic(self, test_name: str) -> Optional[str]:
+        """
+        Возвращает канонкое имя по синониму, игнорируя unit.
+
+        В отличие от get_canonical_name, не требует юнит. Удобно для коротких
+        пользовательских запросов («B12», «ТТГ»), где unit неизвестен.
+        Если один и тот же синоним мапится на разные канониклы для разных юнитов
+        (теоретически возможно), вернёт первый найденный.
+        """
+        if not test_name or not self._loaded:
+            return None
+        normalized = test_name.lower().strip()
+        for (syn, _unit), (canonical, _coef) in self._synonym_unit_index.items():
+            if syn == normalized:
+                return canonical
+        return None
+
     def get_analyte(self, canonical_name: str) -> Optional[CachedAnalyte]:
         """Возвращает данные анализа по каноническому названию"""
         return self._analytes.get(canonical_name)

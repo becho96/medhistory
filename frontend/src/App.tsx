@@ -13,6 +13,8 @@ import Labs from './pages/Labs'
 import Interpretations from './pages/Interpretations'
 import HealthEvents from './pages/HealthEvents'
 import AssistantPage from './pages/AssistantPage'
+import Integrations from './pages/Integrations'
+import OAuthConsent from './pages/OAuthConsent'
 
 // Layout
 import Layout from './components/Layout/Layout'
@@ -24,7 +26,10 @@ function App() {
     <Routes>
       {/* Google OAuth callback - always accessible */}
       <Route path="/auth/google/callback" element={<GoogleCallback />} />
-      
+
+      {/* MCP OAuth consent — gated by component itself; no Layout wrapper. */}
+      <Route path="/oauth/consent" element={<OAuthConsent />} />
+
       {!isAuthenticated ? (
         <>
           <Route path="/" element={<Landing />} />
@@ -41,6 +46,7 @@ function App() {
           <Route path="/reports" element={<Reports />} />
           <Route path="/labs" element={<Labs />} />
           <Route path="/assistant" element={<AssistantPage />} />
+          <Route path="/settings/integrations" element={<Integrations />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       )}

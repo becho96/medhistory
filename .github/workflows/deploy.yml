@@ -71,6 +71,7 @@ jobs:
             --exclude '*.pyc' \
             --exclude '.DS_Store' \
             --exclude 'frontend/.env' \
+            --exclude 'nginx-temp' \
             ./ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}:${{ env.DEPLOY_PATH }}/
           
           # Build and restart containers using production compose file

@@ -49,5 +49,5 @@ langchain-anthropic>=0.3.0
 langchain-openai>=0.2.9
 
 # MCP Server (Patient Data Tools)
-mcp>=1.2.0
+mcp>=1.10.0
 

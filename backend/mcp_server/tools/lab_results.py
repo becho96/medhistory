@@ -1,82 +1,117 @@
-"""Tools: get_lab_results, get_analyte_standard — lab test results and reference ranges."""
+"""Tools for lab analytes: results, reference ranges, trend, abnormal."""
 import json
-from typing import Optional
+from typing import Callable, Optional, Tuple
 from mcp.server.fastmcp import FastMCP
+
+from app.services.analyte_normalization_service_db import (
+    analyte_normalization_service_db as _norm,
+)
+from mcp_server.database import get_pg_pool, get_mongo_db
+from mcp_server.tools._user import resolve_user_id
+
+
+def _resolve_query_canonical(query: str) -> Optional[str]:
+    if not query or not _norm.is_loaded:
+        return None
+    return _norm.get_canonical_name(query) or _norm.find_canonical_unit_agnostic(query)
+
+
+def _make_matcher(query: str) -> Tuple[Optional[str], Callable[[Optional[str], Optional[str]], bool]]:
+    """Return (resolved_canonical, predicate).
+
+    If the query resolves to a canonical analyte, the predicate is *strict*:
+    only lab results that themselves resolve to the same canonical match. This
+    avoids false positives like "Свободный тестостерон" matching a query for
+    "тестостерон" (they are distinct catalog entries).
+
+    If the query does not resolve, fall back to lower-cased substring on the
+    raw test_name — best effort for analytes the catalog does not cover.
+    """
+    target = _resolve_query_canonical(query)
+    query_low = (query or "").lower().strip()
+
+    if target and _norm.is_loaded:
+        def matches_strict(test_name: Optional[str], unit: Optional[str]) -> bool:
+            cn = _norm.get_canonical_name(test_name or "", unit)
+            if cn is None:
+                cn = _norm.find_canonical_unit_agnostic(test_name or "")
+            return cn == target
+        return target, matches_strict
+
+    def matches_substring(test_name: Optional[str], unit: Optional[str]) -> bool:
+        return bool(query_low) and query_low in (test_name or "").lower()
+    return None, matches_substring
+
+
+async def _fetch_lab_docs(date_from: Optional[str], date_to: Optional[str], limit: int):
+    """Return list of (mongodb_metadata_id, document_date) for the patient's lab docs."""
+    pool = await get_pg_pool()
+    async with pool.acquire() as conn:
+        conditions = ["user_id = $1::uuid", "document_type = 'Результаты анализа'",
+                      "processing_status = 'completed'"]
+        params: list = [resolve_user_id()]
+
+        if date_from:
+            params.append(date_from)
+            conditions.append(f"document_date >= ${len(params)}::date")
+        if date_to:
+            params.append(date_to)
+            conditions.append(f"document_date <= ${len(params)}::date")
+
+        where = " AND ".join(conditions)
+        return await conn.fetch(
+            f"SELECT mongodb_metadata_id, document_date FROM documents "
+            f"WHERE {where} ORDER BY document_date DESC LIMIT ${len(params) + 1}",
+            *params, limit,
+        )
+
+
+async def _load_tests_for_doc(meta_id) -> list:
+    if not meta_id:
+        return []
+    from bson import ObjectId
+    mongo_db = get_mongo_db()
+    try:
+        meta = await mongo_db.document_metadata.find_one({"_id": ObjectId(meta_id)})
+    except Exception:
+        meta = await mongo_db.document_metadata.find_one({"document_id": meta_id})
+    if not meta:
+        return []
+    return meta.get("extracted_data", {}).get("lab_results", []) or []
 
 
 def register(mcp: FastMCP) -> None:
 
     @mcp.tool()
     async def get_lab_results(
-        user_id: str,
         analyte_name: Optional[str] = None,
         date_from: Optional[str] = None,
         date_to: Optional[str] = None,
         limit: int = 50,
     ) -> str:
         """
-        Retrieve patient lab test results extracted from clinic documents.
-        Results are stored in MongoDB document_metadata collection.
+        Retrieve patient lab test results extracted from clinic documents,
+        grouped by source document.
 
         Args:
-            user_id: UUID of the patient.
             analyte_name: Optional filter — name of the analyte (e.g. "гемоглобин", "глюкоза").
             date_from: ISO date string "YYYY-MM-DD". Filter results from this date.
             date_to:   ISO date string "YYYY-MM-DD". Filter results up to this date.
             limit: Maximum number of documents to scan (default 50).
         """
-        from mcp_server.database import get_mongo_db, get_pg_connection
-
-        # Step 1: get list of document IDs belonging to this user (lab result docs)
-        conn = await get_pg_connection()
-        try:
-            conditions = ["user_id = $1::uuid", "document_type = 'Результаты анализа'",
-                          "processing_status = 'completed'"]
-            params: list = [user_id]
-
-            if date_from:
-                params.append(date_from)
-                conditions.append(f"document_date >= ${len(params)}::date")
-            if date_to:
-                params.append(date_to)
-                conditions.append(f"document_date <= ${len(params)}::date")
-
-            where = " AND ".join(conditions)
-            rows = await conn.fetch(
-                f"SELECT mongodb_metadata_id, document_date FROM documents "
-                f"WHERE {where} ORDER BY document_date DESC LIMIT ${ len(params) + 1 }",
-                *params, limit,
-            )
-        finally:
-            await conn.close()
-
+        rows = await _fetch_lab_docs(date_from, date_to, limit)
         if not rows:
             return json.dumps([])
 
-        # Step 2: fetch rich metadata from MongoDB
-        mongo_db = get_mongo_db()
+        matches = None
+        if analyte_name:
+            _, matches = _make_matcher(analyte_name)
+
         results = []
         for row in rows:
-            meta_id = row["mongodb_metadata_id"]
-            if not meta_id:
-                continue
-            from bson import ObjectId
-            try:
-                meta = await mongo_db.document_metadata.find_one({"_id": ObjectId(meta_id)})
-            except Exception:
-                meta = await mongo_db.document_metadata.find_one({"document_id": meta_id})
-
-            if not meta:
-                continue
-
-            # Pull lab_results from extracted_data (written by LabAnalysisService)
-            extracted = meta.get("extracted_data", {})
-            tests = extracted.get("lab_results", [])
-
-            if analyte_name:
-                low = analyte_name.lower()
-                tests = [t for t in tests if low in (t.get("test_name") or "").lower()]
-
+            tests = await _load_tests_for_doc(row["mongodb_metadata_id"])
+            if matches is not None:
+                tests = [t for t in tests if matches(t.get("test_name"), t.get("unit"))]
             if tests:
                 results.append({
                     "document_date": str(row["document_date"]),
@@ -84,6 +119,79 @@ def register(mcp: FastMCP) -> None:
                 })
 
         return json.dumps(results, ensure_ascii=False)
+
+    @mcp.tool()
+    async def get_test_trend(
+        test_name: str,
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+    ) -> str:
+        """
+        Return a flat time series for a single lab analyte across all the patient's documents.
+        Use this for trend questions like "how has my hemoglobin changed over the past year".
+
+        Matching uses both lower-cased substring AND a synonym catalog (so "HGB",
+        "Гемоглобин (HGB)" and "гемоглобин" all collapse to the same canonical name
+        when the catalog covers them). The response includes canonical_name when
+        resolved — useful for citing the standard term back to the user.
+
+        Args:
+            test_name: Analyte name; can be a substring, a known synonym, or canonical.
+            date_from: ISO date "YYYY-MM-DD".
+            date_to:   ISO date "YYYY-MM-DD".
+        """
+        rows = await _fetch_lab_docs(date_from, date_to, limit=200)
+        canonical, matches = _make_matcher(test_name)
+
+        series = []
+        for row in rows:
+            tests = await _load_tests_for_doc(row["mongodb_metadata_id"])
+            for t in tests:
+                if matches(t.get("test_name"), t.get("unit")):
+                    series.append({
+                        "date": str(row["document_date"]),
+                        "test_name": t.get("test_name"),
+                        "value": t.get("value"),
+                        "unit": t.get("unit"),
+                        "flag": t.get("flag"),
+                        "reference_range": t.get("reference_range"),
+                    })
+        series.sort(key=lambda x: x["date"])
+        return json.dumps(
+            {"canonical_name": canonical, "query": test_name, "series": series},
+            ensure_ascii=False,
+        )
+
+    @mcp.tool()
+    async def list_abnormal_results(
+        date_from: Optional[str] = None,
+        date_to: Optional[str] = None,
+    ) -> str:
+        """
+        Return all lab test results flagged as out of range (Low/High/Abnormal).
+        Useful for "what is currently abnormal in my results" type questions.
+
+        Args:
+            date_from: ISO date "YYYY-MM-DD".
+            date_to:   ISO date "YYYY-MM-DD".
+        """
+        rows = await _fetch_lab_docs(date_from, date_to, limit=200)
+        flagged = []
+        for row in rows:
+            tests = await _load_tests_for_doc(row["mongodb_metadata_id"])
+            for t in tests:
+                flag = (t.get("flag") or "").upper()
+                if flag in ("L", "H", "A"):
+                    flagged.append({
+                        "date": str(row["document_date"]),
+                        "test_name": t.get("test_name"),
+                        "value": t.get("value"),
+                        "unit": t.get("unit"),
+                        "flag": flag,
+                        "reference_range": t.get("reference_range"),
+                    })
+        flagged.sort(key=lambda x: x["date"], reverse=True)
+        return json.dumps(flagged, ensure_ascii=False)
 
     @mcp.tool()
     async def get_analyte_standard(
@@ -98,11 +206,8 @@ def register(mcp: FastMCP) -> None:
             analyte_name: Name of the analyte to look up (in Russian or English).
             gender: Patient gender — "male" or "female". Affects reference range selection.
         """
-        from mcp_server.database import get_pg_connection
-
-        conn = await get_pg_connection()
-        try:
-            # Search by synonym first, then by canonical name
+        pool = await get_pg_pool()
+        async with pool.acquire() as conn:
             row = await conn.fetchrow(
                 """
                 SELECT
@@ -121,8 +226,6 @@ def register(mcp: FastMCP) -> None:
                 """,
                 analyte_name,
             )
-        finally:
-            await conn.close()
 
         if not row:
             return json.dumps({"error": f"Analyte '{analyte_name}' not found in standards"})

@@ -52,6 +52,24 @@ class Settings(BaseSettings):
     ASSISTANT_HEALTH_EVENTS_LIMIT: int = 100
     ASSISTANT_STUDIES_LIMIT: int = 100          # Инструментальные исследования + Функциональная диагностика
     
+    # MCP server
+    MCP_ENABLED: bool = False
+    # Phase 1 (single-user) — bearer token + hardcoded user_id. Kept as fallback
+    # when MCP_OAUTH_ENABLED=false; ignored otherwise.
+    MCP_BEARER_TOKEN: str = ""
+    MCP_USER_ID: str = ""
+    # Phase 2 (multi-user OAuth) — when true, MCP server runs as a real OAuth 2.1
+    # authorization server with Dynamic Client Registration. user_id is resolved
+    # from the bearer token's auth context, not from MCP_USER_ID.
+    MCP_OAUTH_ENABLED: bool = False
+    # Public URL of the MCP server (used as OAuth issuer + resource server URL).
+    # Local: http://localhost:8000   Prod: https://mcp.medhistory.ru
+    MCP_PUBLIC_URL: str = "http://localhost:8000"
+    # Frontend consent page URL (where the user reviews and approves the request).
+    # Local: http://localhost:5173/oauth/consent
+    # Prod:  https://medhistory.ru/oauth/consent
+    MCP_CONSENT_URL: str = "http://localhost:5173/oauth/consent"
+
     # CORS
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"  # Comma-separated list
     
