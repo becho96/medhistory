@@ -27,6 +27,9 @@ EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
-# Run the application (production mode without reload)
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
+# Run the application (production mode without reload).
+# --workers=1: in-memory pending-consent store in mcp_server/oauth/pending.py
+# is per-process. Multiple workers cause OAuth flow to 404 when /authorize and
+# /consent land on different workers. Move pending to Postgres to relax this.
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
 
