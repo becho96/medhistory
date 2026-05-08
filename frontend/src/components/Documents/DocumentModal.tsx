@@ -13,16 +13,15 @@ interface DocumentModalProps {
 
 export default function DocumentModal({ documentId, onClose }: DocumentModalProps) {
   const queryClient = useQueryClient()
-  const [showLabResults, setShowLabResults] = useState(false)
+  const [activeTab, setActiveTab] = useState<'info' | 'labs'>('info')
+  const [summaryExpanded, setSummaryExpanded] = useState(false)
 
-  // Query for document details
   const { data: doc, isLoading } = useQuery({
     queryKey: ['document', documentId],
     queryFn: () => documentsService.getDocument(documentId!),
     enabled: !!documentId,
   })
 
-  // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: documentsService.deleteDocument,
     onSuccess: () => {
@@ -53,7 +52,7 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
     if (!doc) return
     try {
       await documentsService.openDocument(doc.id)
-    } catch (error) {
+    } catch {
       toast.error('Не удалось открыть документ')
     }
   }
@@ -65,214 +64,180 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
     }
   }
 
-  // Auto-show lab results if document is a lab result
   useEffect(() => {
-    if (doc?.document_type === 'Результаты анализа') {
-      setShowLabResults(true)
-    } else {
-      setShowLabResults(false)
-    }
-  }, [doc])
+    setActiveTab('info')
+    setSummaryExpanded(false)
+  }, [documentId])
 
-  // Close on Escape key
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose()
-      }
-    }
+    const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
   }, [onClose])
 
   if (!documentId) return null
 
+  const isLabResult = doc?.document_type === 'Результаты анализа'
+
+  const statusLabel = (s: string) => ({
+    completed: { text: '✓ Обработан', color: 'text-green-600' },
+    processing: { text: '⏳ Обработка', color: 'text-yellow-600' },
+    failed:     { text: '✗ Ошибка',    color: 'text-red-600' },
+  }[s] ?? { text: '⋯ Ожидание', color: 'text-gray-500' })
+
   return (
-    <div 
-      className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+    <div
+      className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm sm:p-4"
       onClick={onClose}
     >
-      <div 
-        className="bg-white rounded-xl sm:rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden max-h-[90vh] flex flex-col"
+      <div
+        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden max-h-[92vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100 flex items-center justify-between bg-white">
-          <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
-              <FileText className="h-5 w-5 sm:h-6 sm:w-6 text-emerald-500" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-base sm:text-xl font-semibold text-gray-900 truncate">
-                {isLoading ? 'Загрузка...' : doc?.original_filename || 'Документ'}
-              </h3>
-              {doc?.document_type && (
-                <p className="text-xs sm:text-sm text-gray-500 mt-0.5">
-                  {doc.document_type}
-                </p>
-              )}
-            </div>
+        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+            <FileText className="h-4 w-4 text-emerald-500" />
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors flex-shrink-0 ml-2"
-          >
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">
+              {isLoading ? 'Загрузка...' : doc?.original_filename || 'Документ'}
+            </h3>
+            {doc?.document_type && (
+              <p className="text-xs text-gray-500">{doc.document_type}</p>
+            )}
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 shrink-0">
             <X className="h-5 w-5" />
           </button>
         </div>
 
+        {/* Tabs — only for lab results */}
+        {isLabResult && (
+          <div className="flex border-b border-gray-100 px-4 bg-white shrink-0">
+            <button
+              onClick={() => setActiveTab('info')}
+              className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'info' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-500'
+              }`}
+            >
+              Информация
+            </button>
+            <button
+              onClick={() => setActiveTab('labs')}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'labs' ? 'border-emerald-500 text-emerald-600' : 'border-transparent text-gray-500'
+              }`}
+            >
+              <FlaskConical className="w-3.5 h-3.5" />
+              Анализы
+            </button>
+          </div>
+        )}
+
         {/* Content */}
-        <div className="p-4 sm:p-6 overflow-y-auto flex-1">
+        <div className="overflow-y-auto flex-1">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500"></div>
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-500" />
             </div>
           ) : doc ? (
-            <div className="space-y-6">
-              {/* Document Info Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Document Date */}
-                {doc.document_date && (
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center gap-2 text-gray-500 mb-1">
-                      <Calendar className="h-4 w-4" />
-                      <span className="text-xs font-medium uppercase tracking-wide">Дата документа</span>
+            <>
+              {/* Info tab */}
+              {(!isLabResult || activeTab === 'info') && (
+                <div className="p-4 sm:p-6 space-y-4">
+                  {/* Compact metadata rows */}
+                  <div className="bg-gray-50 rounded-xl overflow-hidden divide-y divide-gray-100">
+                    {doc.document_date && (
+                      <div className="flex items-center gap-3 px-3 py-2.5">
+                        <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
+                        <span className="text-xs text-gray-500 w-28 shrink-0">Дата документа</span>
+                        <span className="text-sm font-medium text-gray-900 flex-1 text-right">
+                          {format(new Date(doc.document_date), 'dd.MM.yyyy')}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3 px-3 py-2.5">
+                      <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
+                      <span className="text-xs text-gray-500 w-28 shrink-0">Загружен</span>
+                      <span className="text-sm font-medium text-gray-900 flex-1 text-right">
+                        {format(new Date(doc.created_at), 'dd.MM.yyyy HH:mm')}
+                      </span>
                     </div>
-                    <p className="text-sm sm:text-base font-semibold text-gray-900">
-                      {format(new Date(doc.document_date), 'dd.MM.yyyy')}
-                    </p>
-                  </div>
-                )}
-
-                {/* Upload Date */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center gap-2 text-gray-500 mb-1">
-                    <Calendar className="h-4 w-4" />
-                    <span className="text-xs font-medium uppercase tracking-wide">Дата загрузки</span>
-                  </div>
-                  <p className="text-sm sm:text-base font-semibold text-gray-900">
-                    {format(new Date(doc.created_at), 'dd.MM.yyyy HH:mm')}
-                  </p>
-                </div>
-
-                {/* Patient Name */}
-                {doc.patient_name && (
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center gap-2 text-gray-500 mb-1">
-                      <User className="h-4 w-4" />
-                      <span className="text-xs font-medium uppercase tracking-wide">Пациент</span>
+                    {doc.patient_name && (
+                      <div className="flex items-center gap-3 px-3 py-2.5">
+                        <User className="w-4 h-4 text-gray-400 shrink-0" />
+                        <span className="text-xs text-gray-500 w-28 shrink-0">Пациент</span>
+                        <span className="text-sm font-medium text-gray-900 flex-1 text-right truncate">
+                          {doc.patient_name}
+                        </span>
+                      </div>
+                    )}
+                    {doc.medical_facility && (
+                      <div className="flex items-center gap-3 px-3 py-2.5">
+                        <Building2 className="w-4 h-4 text-gray-400 shrink-0" />
+                        <span className="text-xs text-gray-500 w-28 shrink-0">Учреждение</span>
+                        <span className="text-sm font-medium text-gray-900 flex-1 text-right truncate">
+                          {doc.medical_facility}
+                        </span>
+                      </div>
+                    )}
+                    {doc.specialty && (
+                      <div className="flex items-center gap-3 px-3 py-2.5">
+                        <Stethoscope className="w-4 h-4 text-gray-400 shrink-0" />
+                        <span className="text-xs text-gray-500 w-28 shrink-0">Специализация</span>
+                        <span className="text-sm font-medium text-gray-900 flex-1 text-right truncate">
+                          {doc.specialty}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-3 px-3 py-2.5">
+                      <FileText className="w-4 h-4 text-gray-400 shrink-0" />
+                      <span className="text-xs text-gray-500 w-28 shrink-0">Статус</span>
+                      <span className={`text-sm font-medium flex-1 text-right ${statusLabel(doc.processing_status).color}`}>
+                        {statusLabel(doc.processing_status).text}
+                      </span>
                     </div>
-                    <p className="text-sm sm:text-base font-semibold text-gray-900">
-                      {doc.patient_name}
-                    </p>
-                  </div>
-                )}
-
-                {/* Medical Facility */}
-                {doc.medical_facility && (
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center gap-2 text-gray-500 mb-1">
-                      <Building2 className="h-4 w-4" />
-                      <span className="text-xs font-medium uppercase tracking-wide">Мед. учреждение</span>
+                    <div className="flex items-center gap-3 px-3 py-2.5">
+                      <FileText className="w-4 h-4 text-gray-400 shrink-0" />
+                      <span className="text-xs text-gray-500 w-28 shrink-0">Размер</span>
+                      <span className="text-sm font-medium text-gray-900 flex-1 text-right">
+                        {(doc.file_size / 1024 / 1024).toFixed(2)} МБ
+                      </span>
                     </div>
-                    <p className="text-sm sm:text-base font-semibold text-gray-900">
-                      {doc.medical_facility}
-                    </p>
                   </div>
-                )}
 
-                {/* Specialty */}
-                {doc.specialty && (
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center gap-2 text-gray-500 mb-1">
-                      <Stethoscope className="h-4 w-4" />
-                      <span className="text-xs font-medium uppercase tracking-wide">Специализация</span>
-                    </div>
-                    <p className="text-sm sm:text-base font-semibold text-gray-900">
-                      {doc.specialty}
-                    </p>
-                  </div>
-                )}
-
-                {/* Processing Status */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center gap-2 text-gray-500 mb-1">
-                    <FileText className="h-4 w-4" />
-                    <span className="text-xs font-medium uppercase tracking-wide">Статус обработки</span>
-                  </div>
-                  <span
-                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
-                      doc.processing_status === 'completed'
-                        ? 'bg-green-100 text-green-700'
-                        : doc.processing_status === 'processing'
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : doc.processing_status === 'failed'
-                        ? 'bg-red-100 text-red-700'
-                        : 'bg-gray-100 text-gray-700'
-                    }`}
-                  >
-                    {doc.processing_status === 'completed'
-                      ? '✓ Обработан'
-                      : doc.processing_status === 'processing'
-                      ? '⏳ Обработка'
-                      : doc.processing_status === 'failed'
-                      ? '✗ Ошибка'
-                      : '⋯ Ожидание'}
-                  </span>
-                </div>
-
-                {/* File Info */}
-                <div className="bg-gray-50 rounded-lg p-4">
-                  <div className="flex items-center gap-2 text-gray-500 mb-1">
-                    <FileText className="h-4 w-4" />
-                    <span className="text-xs font-medium uppercase tracking-wide">Размер файла</span>
-                  </div>
-                  <p className="text-sm sm:text-base font-semibold text-gray-900">
-                    {(doc.file_size / 1024 / 1024).toFixed(2)} МБ
-                  </p>
-                </div>
-              </div>
-
-              {/* Summary Section */}
-              {doc.summary && (
-                <div className="border-t border-gray-100 pt-6">
-                  <h4 className="text-base sm:text-lg font-semibold text-gray-900 mb-3">
-                    📝 Краткое содержание (AI-анализ)
-                  </h4>
-                  <div className="bg-emerald-50 rounded-xl p-4 sm:p-5">
-                    <p className="text-sm sm:text-base text-gray-800 leading-relaxed whitespace-pre-wrap">
-                      {doc.summary}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {/* Lab Results Section */}
-              {doc.document_type === 'Результаты анализа' && (
-                <div className="border-t border-gray-100 pt-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <FlaskConical className="h-5 w-5 text-purple-600" />
-                      <h4 className="text-base sm:text-lg font-semibold text-gray-900">
-                        Извлеченные результаты анализов
+                  {/* Summary */}
+                  {doc.summary && (
+                    <div>
+                      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                        📝 AI-анализ
                       </h4>
+                      <div className="bg-emerald-50 rounded-xl p-3 sm:p-4">
+                        <p className={`text-sm text-gray-800 leading-relaxed whitespace-pre-wrap ${!summaryExpanded ? 'line-clamp-4' : ''}`}>
+                          {doc.summary}
+                        </p>
+                        {doc.summary.length > 200 && (
+                          <button
+                            onClick={() => setSummaryExpanded(v => !v)}
+                            className="mt-2 text-xs font-medium text-emerald-600"
+                          >
+                            {summaryExpanded ? 'Свернуть' : 'Читать полностью →'}
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <button
-                      onClick={() => setShowLabResults(!showLabResults)}
-                      className="text-xs sm:text-sm font-medium text-emerald-600 hover:text-emerald-700 transition-colors"
-                    >
-                      {showLabResults ? 'Скрыть' : 'Показать'}
-                    </button>
-                  </div>
-                  {showLabResults && (
-                    <LabResultsTable
-                      documentId={doc.id}
-                      documentType={doc.document_type}
-                    />
                   )}
                 </div>
               )}
-            </div>
+
+              {/* Labs tab */}
+              {isLabResult && activeTab === 'labs' && (
+                <div className="p-3 sm:p-6">
+                  <LabResultsTable documentId={doc.id} documentType={doc.document_type} />
+                </div>
+              )}
+            </>
           ) : (
             <div className="text-center py-12">
               <p className="text-gray-500">Документ не найден</p>
@@ -282,43 +247,35 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
 
         {/* Footer */}
         {doc && (
-          <div className="px-4 sm:px-6 py-3 sm:py-4 border-t border-gray-100 bg-gray-50 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-3">
-            <div className="flex items-center gap-2 flex-1">
-              <button
-                onClick={handleOpenFile}
-                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-xl hover:bg-emerald-600 transition-colors font-medium text-[14px]"
-              >
-                <Eye className="h-4 w-4" />
-                Открыть
-              </button>
-              <button
-                onClick={handleDownload}
-                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm"
-              >
-                <Download className="h-4 w-4" />
-                Скачать
-              </button>
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleDelete}
-                disabled={deleteMutation.isPending}
-                className="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Trash2 className="h-4 w-4" />
-                Удалить
-              </button>
-              <button
-                onClick={onClose}
-                className="flex-1 sm:flex-initial px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-medium text-sm"
-              >
-                Закрыть
-              </button>
-            </div>
+          <div
+            className="px-4 py-3 border-t border-gray-100 bg-white flex items-center gap-2 shrink-0"
+            style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
+          >
+            <button
+              onClick={handleOpenFile}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-emerald-500 text-white rounded-xl font-medium text-sm"
+            >
+              <Eye className="h-4 w-4" />
+              Открыть
+            </button>
+            <button
+              onClick={handleDownload}
+              className="flex-1 inline-flex items-center justify-center gap-2 px-3 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium text-sm"
+            >
+              <Download className="h-4 w-4" />
+              Скачать
+            </button>
+            <button
+              onClick={handleDelete}
+              disabled={deleteMutation.isPending}
+              className="inline-flex items-center justify-center p-2.5 bg-red-50 text-red-500 rounded-xl disabled:opacity-50"
+              title="Удалить"
+            >
+              <Trash2 className="h-4 w-4" />
+            </button>
           </div>
         )}
       </div>
     </div>
   )
 }
-
