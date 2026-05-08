@@ -80,9 +80,11 @@ body {
   transition: all 0.2s ease;
 }
 
-.timeline-item:hover {
-  transform: scale(1.15);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+@media (hover: hover) {
+  .timeline-item:hover {
+    transform: scale(1.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
 }
 
 /* Medical Card Styles - Design System */
@@ -91,12 +93,16 @@ body {
   border-radius: 16px;
   padding: 24px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.medical-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
+@media (hover: hover) {
+  .medical-card {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .medical-card:hover {
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+  }
 }
 
 .medical-card-gradient {
@@ -131,14 +137,16 @@ body {
   gap: 8px;
 }
 
-.btn-primary:hover {
-  background: var(--primary-blue-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
-}
+@media (hover: hover) {
+  .btn-primary:hover {
+    background: var(--primary-blue-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+  }
 
-.btn-primary:active {
-  transform: translateY(0);
+  .btn-primary:active {
+    transform: translateY(0);
+  }
 }
 
 /* Progress Bar Animation */
@@ -193,20 +201,6 @@ input, select, textarea {
   font-size: max(16px, 1em);
 }
 
-/* Native-like press state for cards on touch devices */
-@media (hover: none) {
-  .medical-card {
-    transition: transform 0.1s ease, box-shadow 0.1s ease;
-  }
-  .medical-card:hover {
-    transform: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
-  }
-  .medical-card:active {
-    transform: scale(0.97);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  }
-}
 
 /* Focus States - Accessibility */
 *:focus-visible {
