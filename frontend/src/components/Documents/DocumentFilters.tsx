@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { X, ChevronDown } from 'lucide-react'
+import { X, ChevronDown, SlidersHorizontal } from 'lucide-react'
 import { format, subDays, subMonths, startOfMonth } from 'date-fns'
 import MultiSelect from './MultiSelect'
 import DateRangePicker from './DateRangePicker'
@@ -71,6 +71,7 @@ const ADVANCED_FIELDS: (keyof DocumentFilterValues)[] = [
 
 export default function DocumentFilters({ filters, onChange, onReset }: DocumentFiltersProps) {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
+  const [isMobileExpanded, setIsMobileExpanded] = useState(false)
   const [selectedDatePresets, setSelectedDatePresets] = useState<DatePresetId[]>([])
 
   const [specialtiesValues, setSpecialtiesValues] = useState<string[]>([])
@@ -176,8 +177,41 @@ export default function DocumentFilters({ filters, onChange, onReset }: Document
     }).length
   }, [filters])
 
+  const activeTotalCount = useMemo(() => {
+    let n = (filters.document_type ?? []).length > 0 ? 1 : 0
+    if (selectedDatePresets.length > 0) n++
+    return n + activeAdvancedCount
+  }, [filters.document_type, selectedDatePresets, activeAdvancedCount])
+
   return (
     <div className="bg-white rounded-2xl border border-gray-100 px-4 py-3 space-y-3">
+      {/* Mobile toggle row */}
+      <div className="flex items-center justify-between lg:hidden">
+        <button
+          type="button"
+          onClick={() => setIsMobileExpanded(v => !v)}
+          className="flex items-center gap-2 text-sm font-medium text-gray-600"
+        >
+          <SlidersHorizontal className="w-4 h-4" />
+          Фильтры
+          {activeTotalCount > 0 && (
+            <span className="px-1.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+              {activeTotalCount}
+            </span>
+          )}
+          <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isMobileExpanded ? 'rotate-180' : ''}`} />
+        </button>
+        {hasActiveFilters && (
+          <button type="button" onClick={handleReset} className="flex items-center gap-1 text-xs text-gray-400">
+            <X className="w-3.5 h-3.5" />
+            Сбросить
+          </button>
+        )}
+      </div>
+
+      {/* Filter content: hidden on mobile when collapsed, always visible on desktop */}
+      <div className={`${isMobileExpanded ? 'block' : 'hidden'} lg:block space-y-3`}>
+
       {/* Tier 1: chip groups */}
       <div className="space-y-2">
         {/* Document type */}
@@ -312,6 +346,8 @@ export default function DocumentFilters({ filters, onChange, onReset }: Document
           />
         </div>
       )}
+
+      </div>{/* end collapsible */}
     </div>
   )
 }
