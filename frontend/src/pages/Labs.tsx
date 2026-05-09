@@ -58,22 +58,6 @@ function LineChart({ points, excludedPoints, onTogglePoint, onOpenDocument, stan
 
   const statusColors = { normal: '#10b981', warning: '#f59e0b', danger: '#ef4444' }
 
-  // Latest value for hero display
-  const sortedDesc = [...data].sort((a, b) => new Date(b.date!).getTime() - new Date(a.date!).getTime())
-  const latestPoint = sortedDesc[0]
-  const prevPoint = sortedDesc[1]
-  const latestStatus = latestPoint ? getValueStatus(latestPoint.value_num) : 'normal'
-  const trend = latestPoint && prevPoint
-    ? (latestPoint.value_num > prevPoint.value_num ? 'up' : latestPoint.value_num < prevPoint.value_num ? 'down' : 'stable')
-    : null
-
-  const statusStyles = {
-    normal: { bg: 'bg-emerald-50', border: 'border-emerald-200', text: 'text-emerald-700', badge: 'bg-emerald-100 text-emerald-700', label: 'В норме' },
-    warning: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', badge: 'bg-amber-100 text-amber-700', label: 'Близко к границе' },
-    danger: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', badge: 'bg-red-100 text-red-700', label: 'Вне нормы' },
-  }
-  const currentStyle = statusStyles[latestStatus]
-
   const dates = data.map((p) => new Date(p.date!).getTime())
   const minX = Math.min(...dates)
   const maxX = Math.max(...dates)
@@ -125,47 +109,6 @@ function LineChart({ points, excludedPoints, onTogglePoint, onOpenDocument, stan
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Latest value hero + min/max */}
-      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-        {latestPoint && (
-          <div className={`flex-1 rounded-xl p-3 sm:p-4 border ${currentStyle.border} ${currentStyle.bg}`}>
-            <div className="flex items-start justify-between gap-2 mb-1">
-              <p className="text-xs font-medium text-gray-500">Последнее измерение</p>
-              <span className={`text-[10px] sm:text-xs font-semibold px-1.5 py-0.5 rounded-full ${currentStyle.badge}`}>
-                {currentStyle.label}
-              </span>
-            </div>
-            <div className={`text-2xl sm:text-3xl font-bold ${currentStyle.text}`}>
-              {formatValue(latestPoint.value_num)}
-              <span className="text-base font-medium ml-1 opacity-70">{displayUnit}</span>
-              {trend && (
-                <span className="text-sm ml-1 opacity-80">
-                  {trend === 'up' ? '↑' : trend === 'down' ? '↓' : '→'}
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-gray-400 mt-0.5">{formatDate(new Date(latestPoint.date!).getTime())}</p>
-            {referenceMin !== null && referenceMax !== null && (
-              <p className="text-xs text-gray-500 mt-1.5 pt-1.5 border-t border-black/5">
-                Норма: {formatValue(referenceMin)} — {formatValue(referenceMax)} {displayUnit}
-              </p>
-            )}
-          </div>
-        )}
-        <div className="flex sm:flex-col gap-2">
-          <div className="flex-1 bg-gradient-to-br from-blue-50 to-blue-100/50 rounded-xl p-2 sm:p-3 border border-blue-200 min-w-[80px]">
-            <div className="text-xs font-medium text-blue-600 mb-0.5">Минимум</div>
-            <div className="text-base sm:text-xl font-bold text-blue-900">{formatValue(minValue)}</div>
-            <div className="text-xs text-blue-600">{displayUnit}</div>
-          </div>
-          <div className="flex-1 bg-gradient-to-br from-purple-50 to-purple-100/50 rounded-xl p-2 sm:p-3 border border-purple-200 min-w-[80px]">
-            <div className="text-xs font-medium text-purple-600 mb-0.5">Максимум</div>
-            <div className="text-base sm:text-xl font-bold text-purple-900">{formatValue(maxValue)}</div>
-            <div className="text-xs text-purple-600">{displayUnit}</div>
-          </div>
-        </div>
-      </div>
-
       {/* Chart and Legend */}
       <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
         <div className="relative flex-1 min-w-0 w-full">
@@ -207,20 +150,21 @@ function LineChart({ points, excludedPoints, onTogglePoint, onOpenDocument, stan
               <rect x={padding.left} y={yScale(referenceMax)} width={chartWidth} height={yScale(referenceMin) - yScale(referenceMax)} fill="url(#normalZoneGradient)" />
             )}
 
-            {referenceMin !== null && (
+            {data.length >= 2 && (
               <>
-                <line x1={padding.left} y1={yScale(referenceMin)} x2={width - padding.right} y2={yScale(referenceMin)} stroke="#ef4444" strokeWidth="2" strokeDasharray="6,3" opacity="0.6" />
-                <text x={width - padding.right - 5} y={yScale(referenceMin) - 8} textAnchor="end" fontSize="11" fill="#ef4444" fontWeight="600">
-                  Мин: {formatValue(referenceMin)} {displayUnit}
+                <line x1={padding.left} y1={yScale(minValue)} x2={width - padding.right} y2={yScale(minValue)} stroke="#9ca3af" strokeWidth="1" opacity="0.7" />
+                <text x={width - padding.right - 5} y={yScale(minValue) - 5} textAnchor="end" fontSize="11" fill="#6b7280" fontWeight="500">
+                  Мин: {formatValue(minValue)} {displayUnit}
                 </text>
-              </>
-            )}
 
-            {referenceMax !== null && (
-              <>
-                <line x1={padding.left} y1={yScale(referenceMax)} x2={width - padding.right} y2={yScale(referenceMax)} stroke="#ef4444" strokeWidth="2" strokeDasharray="6,3" opacity="0.6" />
-                <text x={width - padding.right - 5} y={yScale(referenceMax) - 8} textAnchor="end" fontSize="11" fill="#ef4444" fontWeight="600">
-                  Макс: {formatValue(referenceMax)} {displayUnit}
+                <line x1={padding.left} y1={yScale(maxValue)} x2={width - padding.right} y2={yScale(maxValue)} stroke="#9ca3af" strokeWidth="1" opacity="0.7" />
+                <text x={width - padding.right - 5} y={yScale(maxValue) - 5} textAnchor="end" fontSize="11" fill="#6b7280" fontWeight="500">
+                  Макс: {formatValue(maxValue)} {displayUnit}
+                </text>
+
+                <line x1={padding.left} y1={yScale(avgValue)} x2={width - padding.right} y2={yScale(avgValue)} stroke="#4b5563" strokeWidth="1" strokeDasharray="4,4" opacity="0.7" />
+                <text x={width - padding.right - 5} y={yScale(avgValue) - 5} textAnchor="end" fontSize="11" fill="#4b5563" fontWeight="500">
+                  Сред: {formatValue(avgValue)} {displayUnit}
                 </text>
               </>
             )}
@@ -319,14 +263,20 @@ function LineChart({ points, excludedPoints, onTogglePoint, onOpenDocument, stan
             <span className="text-gray-700">Вне нормы</span>
           </div>
           {(referenceMin !== null && referenceMax !== null) && (
+            <div className="flex items-center gap-2">
+              <div className="w-4 h-3 rounded-sm shrink-0" style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)' }}></div>
+              <span className="text-gray-700">Зона нормы</span>
+            </div>
+          )}
+          {data.length >= 2 && (
             <>
               <div className="flex items-center gap-2">
-                <div className="w-4 h-3 rounded-sm shrink-0" style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)' }}></div>
-                <span className="text-gray-700">Зона нормы</span>
+                <div className="w-8 h-px shrink-0 bg-gray-400"></div>
+                <span className="text-gray-700">Мин/Макс по измерениям</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-0.5 shrink-0 bg-red-500" style={{ backgroundImage: 'repeating-linear-gradient(to right, #ef4444 0, #ef4444 6px, transparent 6px, transparent 9px)' }}></div>
-                <span className="text-gray-700">Границы нормы</span>
+                <div className="w-8 h-px shrink-0" style={{ backgroundImage: 'repeating-linear-gradient(to right, #4b5563 0, #4b5563 4px, transparent 4px, transparent 8px)' }}></div>
+                <span className="text-gray-700">Среднее</span>
               </div>
             </>
           )}
@@ -494,17 +444,6 @@ function AnalyteSelector({ categories, selectedAnalyte, onSelect }: AnalyteSelec
     }
   }, [searchQuery, filteredCategories])
 
-  useEffect(() => {
-    if (selectedAnalyte) {
-      for (const category of categories) {
-        if (category.analytes.some(a => a.canonical_name === selectedAnalyte)) {
-          setExpandedCategories(prev => new Set([...prev, category.name]))
-          break
-        }
-      }
-    }
-  }, [selectedAnalyte, categories])
-
   const toggleCategory = (categoryName: string) => {
     setExpandedCategories(prev => {
       const newSet = new Set(prev)
@@ -591,7 +530,6 @@ export default function Labs() {
   const [selected, setSelected] = useState<string>('')
   const [excludedPoints, setExcludedPoints] = useState<Set<string>>(new Set())
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null)
-  const [isSelectorExpanded, setIsSelectorExpanded] = useState(false)
 
   const { data: analytesData, isLoading: loadingAnalytes } = useQuery({
     queryKey: ['labs_analytes'],
@@ -624,15 +562,6 @@ export default function Labs() {
     setExcludedPoints(new Set())
   }, [selected])
 
-  useEffect(() => {
-    if (!selected && categories.length > 0) {
-      const firstCategory = categories[0]
-      if (firstCategory.analytes.length > 0) {
-        setSelected(firstCategory.analytes[0].canonical_name)
-      }
-    }
-  }, [categories, selected])
-
   const togglePoint = (pointId: string) => {
     setExcludedPoints(prev => {
       const newSet = new Set(prev)
@@ -659,40 +588,16 @@ export default function Labs() {
         </p>
       </div>
 
-      {/* Analyte selector — collapsible on mobile */}
+      {/* Analyte selector */}
       <div className="medical-card">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-lg shrink-0">🧪</span>
-            <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">
-              {isSelectorExpanded || !selected ? 'Выберите анализ' : selected}
-            </h3>
-          </div>
-          <button
-            onClick={() => setIsSelectorExpanded(prev => !prev)}
-            className="lg:hidden ml-2 shrink-0 text-xs font-medium px-2.5 py-1 rounded-lg border border-blue-100 bg-blue-50 text-blue-600 active:bg-blue-100 transition-colors"
-          >
-            {isSelectorExpanded ? 'Свернуть' : (selected ? 'Сменить' : 'Выбрать')}
-          </button>
+        <div className="flex items-center gap-2 min-w-0 mb-3">
+          <span className="text-lg shrink-0">🧪</span>
+          <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">
+            Выберите анализ
+          </h3>
         </div>
 
-        {/* Compact meta when collapsed on mobile */}
-        {!isSelectorExpanded && selected && seriesData && (
-          <div className="lg:hidden flex flex-wrap gap-1.5 mb-1">
-            {seriesData.standard_unit && (
-              <span className="text-xs px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md border border-blue-100">
-                {seriesData.standard_unit}
-              </span>
-            )}
-            {seriesData.category && (
-              <span className="text-xs px-2 py-0.5 bg-purple-50 text-purple-600 rounded-md border border-purple-100">
-                {seriesData.category}
-              </span>
-            )}
-          </div>
-        )}
-
-        <div className={isSelectorExpanded ? 'block' : 'hidden lg:block'}>
+        <div>
           {loadingAnalytes ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4A90E2]"></div>
@@ -701,10 +606,7 @@ export default function Labs() {
             <AnalyteSelector
               categories={categories}
               selectedAnalyte={selected}
-              onSelect={(name) => {
-                setSelected(name)
-                setIsSelectorExpanded(false)
-              }}
+              onSelect={setSelected}
             />
           ) : (
             <div className="text-center py-8 text-sm text-gray-500">Нет доступных анализов</div>
