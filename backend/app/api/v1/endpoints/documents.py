@@ -765,18 +765,21 @@ async def get_lab_timeseries(
         analyte_standard = analyte_standard_result.scalar_one_or_none()
         
         if analyte_standard:
-            # Выбираем референсные значения в зависимости от пола
-            if profile_user and profile_user.gender:
-                if profile_user.gender.value == "male":
-                    reference_min = float(analyte_standard.reference_male_min) if analyte_standard.reference_male_min else None
-                    reference_max = float(analyte_standard.reference_male_max) if analyte_standard.reference_male_max else None
-                elif profile_user.gender.value == "female":
-                    reference_min = float(analyte_standard.reference_female_min) if analyte_standard.reference_female_min else None
-                    reference_max = float(analyte_standard.reference_female_max) if analyte_standard.reference_female_max else None
+            # Выбираем референсные значения в зависимости от пола.
+            # Для гендер-нейтральных анализов референсы хранятся только в male_*-колонках,
+            # female_*-колонки оставлены NULL — для female-пользователя fallback'имся на male.
+            male_min = float(analyte_standard.reference_male_min) if analyte_standard.reference_male_min is not None else None
+            male_max = float(analyte_standard.reference_male_max) if analyte_standard.reference_male_max is not None else None
+            female_min = float(analyte_standard.reference_female_min) if analyte_standard.reference_female_min is not None else None
+            female_max = float(analyte_standard.reference_female_max) if analyte_standard.reference_female_max is not None else None
+
+            if profile_user and profile_user.gender and profile_user.gender.value == "female":
+                reference_min = female_min if female_min is not None else male_min
+                reference_max = female_max if female_max is not None else male_max
             else:
-                # Если пол не указан, используем усредненные значения или мужские по умолчанию
-                reference_min = float(analyte_standard.reference_male_min) if analyte_standard.reference_male_min else None
-                reference_max = float(analyte_standard.reference_male_max) if analyte_standard.reference_male_max else None
+                # male или пол не указан → берём male; если male пуст, fallback на female
+                reference_min = male_min if male_min is not None else female_min
+                reference_max = male_max if male_max is not None else female_max
 
     return {
         "analyte": analyte,
