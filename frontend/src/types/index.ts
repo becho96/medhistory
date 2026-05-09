@@ -103,6 +103,7 @@ export interface Document {
   file_type: string
   file_url: string
   document_type?: string
+  document_subtype?: string
   specialty?: string
   document_date?: string
   patient_name?: string

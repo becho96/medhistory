@@ -9,6 +9,7 @@ import DocumentFilters, { DocumentFilterValues } from '../components/Documents/D
 import InterpretationConfirmModal from '../components/Documents/InterpretationConfirmModal'
 import DocumentModal from '../components/Documents/DocumentModal'
 import DocumentListItem from '../components/Documents/DocumentListItem'
+import DocumentDisplaySettings, { DocumentDisplaySettingsValues } from '../components/Documents/DocumentDisplaySettings'
 
 import type { TimelineEvent } from '../types'
 import 'vis-timeline/styles/vis-timeline-graph2d.min.css'
@@ -42,6 +43,23 @@ const timelineStyles = `
 `
 
 type ViewMode = 'list' | 'timeline'
+
+const DISPLAY_SETTINGS_STORAGE_KEY = 'documents.displaySettings'
+
+const DEFAULT_DISPLAY_SETTINGS: DocumentDisplaySettingsValues = {
+  showSubtypeTag: false,
+}
+
+const loadDisplaySettings = (): DocumentDisplaySettingsValues => {
+  try {
+    const raw = localStorage.getItem(DISPLAY_SETTINGS_STORAGE_KEY)
+    if (!raw) return DEFAULT_DISPLAY_SETTINGS
+    const parsed = JSON.parse(raw)
+    return { ...DEFAULT_DISPLAY_SETTINGS, ...parsed }
+  } catch {
+    return DEFAULT_DISPLAY_SETTINGS
+  }
+}
 
 // Transform documents to timeline events (unified data transformation)
 const transformDocumentsToTimelineEvents = (docs: any[]): TimelineEvent[] => {
@@ -84,6 +102,7 @@ export default function Documents() {
   const queryClient = useQueryClient()
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [filters, setFilters] = useState<DocumentFilterValues>({})
+  const [displaySettings, setDisplaySettings] = useState<DocumentDisplaySettingsValues>(loadDisplaySettings)
   const [currentPage, setCurrentPage] = useState(1)
   const [sortBy, setSortBy] = useState<'document_date' | 'created_at'>('document_date')
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
@@ -177,6 +196,15 @@ export default function Documents() {
   useEffect(() => {
     setCurrentPage(1)
   }, [filters, sortBy])
+
+  // Persist display settings
+  useEffect(() => {
+    try {
+      localStorage.setItem(DISPLAY_SETTINGS_STORAGE_KEY, JSON.stringify(displaySettings))
+    } catch {
+      // ignore quota / privacy-mode errors
+    }
+  }, [displaySettings])
 
   // Calculate total pages
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
@@ -981,6 +1009,10 @@ export default function Documents() {
         {/* List View */}
         {viewMode === 'list' && (
           <>
+            <DocumentDisplaySettings
+              settings={displaySettings}
+              onChange={setDisplaySettings}
+            />
             <div className="px-3 sm:px-6 py-3 border-b border-gray-100">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-[13px] font-medium text-gray-500">
@@ -1060,6 +1092,7 @@ export default function Documents() {
                 key={doc.id}
                 doc={doc}
                 labsSummary={labsSummary}
+                showSubtypeTag={displaySettings.showSubtypeTag}
                 onClick={(id) => setSelectedDocumentId(id)}
                 onOpenLabs={(id) => openLabsModal(id)}
                 onDownload={(id, filename) => handleDownload(id, filename)}
