@@ -14,13 +14,20 @@ from app.db.mongodb import document_metadata_collection
 from app.services.ai_service import ai_service
 from app.core.config import settings
 
+
+class DuplicateDocumentError(ValueError):
+    """Raised when a semantic duplicate (same filename + document_date) is detected
+    after AI extraction. Subclasses ValueError so existing endpoint handlers map it
+    to HTTP 400."""
+
+
 class DocumentService:
-    
+
     @staticmethod
     def _calculate_file_hash(file_content: bytes) -> str:
         """Calculate SHA256 hash of file content"""
         return hashlib.sha256(file_content).hexdigest()
-    
+
     @staticmethod
     async def _check_duplicate(
         file_hash: str,
@@ -36,6 +43,48 @@ class DocumentService:
         )
         result = await db.execute(query)
         return result.scalar_one_or_none()
+
+    @staticmethod
+    async def _check_semantic_duplicate(
+        user_id: uuid.UUID,
+        filename: str,
+        document_date,
+        exclude_id: uuid.UUID,
+        db: AsyncSession,
+    ) -> Optional[Document]:
+        """Detect a semantic duplicate: another doc with the same filename + date
+        for this user. Catches re-downloads of the same lab report whose PDF
+        bytes differ (timestamps in PDF metadata) but content is identical."""
+        if not document_date or not filename:
+            return None
+        query = select(Document).where(
+            and_(
+                Document.user_id == user_id,
+                Document.original_filename == filename,
+                Document.document_date == document_date,
+                Document.id != exclude_id,
+            )
+        )
+        result = await db.execute(query)
+        return result.scalar_one_or_none()
+
+    @staticmethod
+    async def _rollback_document(document: Document, db: AsyncSession):
+        """Undo a partially-processed upload: MinIO file + Mongo metadata + Postgres row."""
+        try:
+            object_name = document.file_url.replace(f"s3://{settings.MINIO_BUCKET}/", "")
+            minio_client.remove_object(settings.MINIO_BUCKET, object_name)
+        except Exception as e:
+            print(f"Warning: rollback MinIO delete failed for {document.id}: {e}")
+        try:
+            await document_metadata_collection.delete_one({"document_id": str(document.id)})
+        except Exception as e:
+            print(f"Warning: rollback Mongo delete failed for {document.id}: {e}")
+        try:
+            await db.delete(document)
+            await db.commit()
+        except Exception as e:
+            print(f"Warning: rollback Postgres delete failed for {document.id}: {e}")
     
     @staticmethod
     async def upload_document(
@@ -104,11 +153,15 @@ class DocumentService:
         # For MVP, we'll process it synchronously but mark as processing
         try:
             await DocumentService._process_document_ai(document, file_content, file_ext, db)
+        except DuplicateDocumentError:
+            # Document was already rolled back by _process_document_ai — propagate
+            # so the endpoint returns 400 with the duplicate message.
+            raise
         except Exception as e:
             print(f"❌ AI processing failed for document {document.id}: {str(e)}")
             document.processing_status = "failed"
             await db.commit()
-        
+
         return document
     
     @staticmethod
@@ -136,8 +189,35 @@ class DocumentService:
         document.document_date = metadata.document_date
         document.patient_name = metadata.patient_name
         document.medical_facility = metadata.medical_facility
+
+        # Semantic dedup: another doc with same filename + date already exists.
+        # Catches re-downloads of the same lab report whose PDF bytes differ
+        # (so the file_hash check above let it through).
+        semantic_dup = await DocumentService._check_semantic_duplicate(
+            user_id=document.user_id,
+            filename=document.original_filename,
+            document_date=document.document_date,
+            exclude_id=document.id,
+            db=db,
+        )
+        if semantic_dup:
+            doc_id_for_log = document.id
+            filename_for_log = document.original_filename
+            date_for_log = (
+                document.document_date.strftime('%d.%m.%Y')
+                if document.document_date else "эту дату"
+            )
+            await DocumentService._rollback_document(document, db)
+            print(
+                f"🚫 Duplicate rejected: {filename_for_log} ({date_for_log}) "
+                f"for doc {doc_id_for_log} — original is {semantic_dup.id}"
+            )
+            raise DuplicateDocumentError(
+                f"Документ '{filename_for_log}' за {date_for_log} уже был загружен ранее"
+            )
+
         document.processing_status = "completed"
-        
+
         # Save extended metadata to MongoDB (classification + extracted_data)
         mongo_doc = {
             "document_id": str(document.id),
