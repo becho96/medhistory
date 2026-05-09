@@ -8,6 +8,7 @@ interface LabResult {
   unit?: string | null
   reference_range?: string | null
   flag?: string | null
+  canonical_name?: string | null
 }
 
 interface LabResultsTableProps {
@@ -94,6 +95,13 @@ export default function LabResultsTable({ documentId, documentType }: LabResults
                 <tr key={idx} className="hover:bg-gray-50 transition-colors">
                   <td className="px-4 py-3 text-sm font-medium text-gray-900">
                     {result.test_name}
+                    {result.canonical_name &&
+                      result.canonical_name.trim().toLowerCase() !==
+                        result.test_name.trim().toLowerCase() && (
+                        <span className="ml-1 text-xs font-normal text-gray-500">
+                          ({result.canonical_name})
+                        </span>
+                      )}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900 font-semibold">
                     {result.value}

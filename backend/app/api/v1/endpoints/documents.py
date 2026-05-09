@@ -381,9 +381,26 @@ async def get_document_labs(
 
     lab_results = (mongo_doc or {}).get("extracted_data", {}).get("lab_results", [])
 
+    if not analyte_normalization_service_db.is_loaded:
+        try:
+            await analyte_normalization_service_db.load_from_db(db, force=True)
+        except Exception as e:
+            logger.error(f"❌ Не удалось загрузить справочник анализов: {e}")
+
+    enriched_results = [
+        {
+            **result,
+            "canonical_name": analyte_normalization_service_db.get_canonical_name(
+                result.get("test_name", ""),
+                result.get("unit"),
+            ),
+        }
+        for result in (lab_results or [])
+    ]
+
     return {
         "document_id": str(document_id),
-        "lab_results": lab_results,
+        "lab_results": enriched_results,
     }
 
 
