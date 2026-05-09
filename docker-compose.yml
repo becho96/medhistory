@@ -190,8 +190,8 @@ services:
       MONGO_PASSWORD: ${MONGO_PASSWORD}
       MONGO_DB: ${MONGO_INITDB_DATABASE:-medhistory}
       BACKEND_URL: http://backend:8000
-      # Production SSH: /root/.ssh/id_rsa или /root/.ssh/id_ed25519 (override через PROD_SSH_KEY)
-      PROD_SSH_KEY: ${PROD_SSH_KEY:-/root/.ssh/id_rsa}
+      # Production SSH: ключ medhistory_deploy для Timeweb (override через PROD_SSH_KEY)
+      PROD_SSH_KEY: ${PROD_SSH_KEY:-/root/.ssh/medhistory_deploy}
       # PROD_PG_PASSWORD, PROD_MONGO_PASSWORD — из .env.production
     volumes:
       # SSH ключи для Production (id_rsa или id_ed25519)

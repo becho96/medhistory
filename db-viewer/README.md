@@ -4,7 +4,7 @@
 
 ## Возможности
 
-- 🔄 **Переключение окружений** — Local / Production (Yandex Cloud)
+- 🔄 **Переключение окружений** — Local / Production (Timeweb Cloud)
 - 🐘 **PostgreSQL** — просмотр таблиц, колонок, данных
 - 🍃 **MongoDB** — просмотр коллекций и документов
 - 📊 Количество записей в каждой таблице/коллекции
@@ -62,16 +62,16 @@ MONGO_PASSWORD=mongodb_secure_pass
 MONGO_DB=medhistory
 ```
 
-#### Production окружение (Yandex Cloud)
+#### Production окружение (Timeweb Cloud)
 
 Для подключения к production серверу требуется SSH туннель:
 
 ```bash
 # SSH доступ
-PROD_SSH_HOST=93.77.182.26
+PROD_SSH_HOST=194.87.140.190
 PROD_SSH_PORT=22
-PROD_SSH_USER=yc-user
-PROD_SSH_KEY=~/.ssh/id_rsa
+PROD_SSH_USER=root
+PROD_SSH_KEY=~/.ssh/medhistory_deploy
 
 # PostgreSQL (пароли с сервера)
 PROD_PG_DB=medhistory
@@ -85,7 +85,7 @@ PROD_MONGO_PASSWORD=<production_password>
 
 # Backend API (для сброса кэша маппинга анализов после добавления синонима)
 # Если не задано — используется http://PROD_SSH_HOST
-PROD_BACKEND_URL=http://93.77.182.26
+PROD_BACKEND_URL=http://194.87.140.190
 ```
 
 ### Запуск с переменными окружения
@@ -104,10 +104,10 @@ python app.py
 
 ```
 ┌──────────────┐     SSH Tunnel      ┌─────────────────────────────┐
-│              │ ═══════════════════►│   Yandex Cloud Server       │
+│              │ ═══════════════════►│   Timeweb Cloud Server      │
 │  DB Viewer   │     Port 15432 ────►│   PostgreSQL (5432)         │
 │  (localhost) │     Port 17017 ────►│   MongoDB (27017)           │
-│              │                     │   93.77.182.26            │
+│              │                     │   194.87.140.190            │
 └──────────────┘                     └─────────────────────────────┘
 ```
 
@@ -136,10 +136,10 @@ Docker Compose загружает их из `.env.production` (файл долж
 
 При запуске в Docker монтируется директория `~/.ssh` с хоста. Варианты:
 
-1. **Стандартный ключ** — проверьте, что `~/.ssh/id_rsa` существует
-2. **Ключ id_ed25519** — добавьте в `.env.local`:
+1. **Стандартный ключ** — проверьте, что `~/.ssh/medhistory_deploy` существует
+2. **Альтернативный ключ** — переопределите через `.env.local`:
    ```bash
-   PROD_SSH_KEY=/root/.ssh/id_ed25519
+   PROD_SSH_KEY=/root/.ssh/id_rsa
    ```
 3. **Папка ~/.ssh не существует** — при первом `ssh` обычно создаётся автоматически
 4. **Локальный запуск** (без Docker):
@@ -150,7 +150,7 @@ Docker Compose загружает их из `.env.production` (файл долж
 ### Ошибка подключения к Production
 
 1. Проверьте, что SSH ключ добавлен к серверу
-2. Проверьте, что сервер доступен: `ssh yc-user@93.77.182.26`
+2. Проверьте, что сервер доступен: `ssh -i ~/.ssh/medhistory_deploy root@194.87.140.190`
 3. Проверьте пароли от баз данных
 
 ### Библиотека sshtunnel не установлена
@@ -163,7 +163,7 @@ pip install sshtunnel
 
 ### Переключение окружений
 - **Local** — подключение к локальным Docker контейнерам
-- **Production** — подключение через SSH туннель к Yandex Cloud
+- **Production** — подключение через SSH туннель к Timeweb Cloud
 
 ### Просмотр данных
 - Список таблиц PostgreSQL и коллекций MongoDB

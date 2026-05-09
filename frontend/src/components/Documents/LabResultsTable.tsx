@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
+import { TrendingUp } from 'lucide-react'
 import { documentsService } from '../../services/documents'
 import { toast } from 'sonner'
+import LabTrendModal from '../Labs/LabTrendModal'
 
 interface LabResult {
   test_name: string
@@ -20,6 +22,7 @@ export default function LabResultsTable({ documentId, documentType }: LabResults
   const [labResults, setLabResults] = useState<LabResult[]>([])
   const [loading, setLoading] = useState(false)
   const [hasLabs, setHasLabs] = useState<boolean | null>(null)
+  const [trendAnalyte, setTrendAnalyte] = useState<string | null>(null)
 
   useEffect(() => {
     // Only load for lab result documents
@@ -88,6 +91,9 @@ export default function LabResultsTable({ documentId, documentType }: LabResults
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Флаг
                 </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Динамика
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -127,6 +133,19 @@ export default function LabResultsTable({ documentId, documentType }: LabResults
                       {result.flag || 'N'}
                     </span>
                   </td>
+                  <td className="px-4 py-3 text-sm">
+                    {result.canonical_name ? (
+                      <button
+                        onClick={() => setTrendAnalyte(result.canonical_name!)}
+                        className="inline-flex items-center gap-1 text-[#4A90E2] hover:text-blue-700 transition-colors"
+                        title="Открыть график динамики"
+                      >
+                        <TrendingUp className="w-4 h-4" />
+                      </button>
+                    ) : (
+                      <span className="text-xs text-gray-300" title="Нет канонического имени для этого анализа">—</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -164,6 +183,11 @@ export default function LabResultsTable({ documentId, documentType }: LabResults
           </div>
         </div>
       ) : null}
+
+      <LabTrendModal
+        analyte={trendAnalyte}
+        onClose={() => setTrendAnalyte(null)}
+      />
     </div>
   )
 }
