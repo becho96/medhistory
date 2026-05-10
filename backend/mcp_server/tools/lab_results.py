@@ -43,8 +43,15 @@ def _make_matcher(query: str) -> Tuple[Optional[str], Callable[[Optional[str], O
     return None, matches_substring
 
 
-async def _fetch_lab_docs(date_from: Optional[str], date_to: Optional[str], limit: int):
-    """Return list of (mongodb_metadata_id, document_date) for the patient's lab docs."""
+# Hard cap on docs fetched from Postgres in a single call. Caller decides how
+# many to actually return after Mongo-side filtering. Set well above any
+# realistic per-patient lab-doc count so we don't silently drop history.
+_LAB_DOCS_HARD_CAP = 500
+
+
+async def _fetch_lab_docs(date_from: Optional[str], date_to: Optional[str]):
+    """Return list of (mongodb_metadata_id, document_date) for the patient's lab docs,
+    newest first, up to _LAB_DOCS_HARD_CAP rows."""
     pool = await get_pg_pool()
     async with pool.acquire() as conn:
         conditions = ["user_id = $1::uuid", "document_type = 'Результаты анализа'",
@@ -62,7 +69,7 @@ async def _fetch_lab_docs(date_from: Optional[str], date_to: Optional[str], limi
         return await conn.fetch(
             f"SELECT mongodb_metadata_id, document_date FROM documents "
             f"WHERE {where} ORDER BY document_date DESC LIMIT ${len(params) + 1}",
-            *params, limit,
+            *params, _LAB_DOCS_HARD_CAP,
         )
 
 
@@ -91,15 +98,16 @@ def register(mcp: FastMCP) -> None:
     ) -> str:
         """
         Retrieve patient lab test results extracted from clinic documents,
-        grouped by source document.
+        grouped by source document. Returns up to `limit` documents that
+        actually contain lab results (newest first).
 
         Args:
             analyte_name: Optional filter — name of the analyte (e.g. "гемоглобин", "глюкоза").
             date_from: ISO date string "YYYY-MM-DD". Filter results from this date.
             date_to:   ISO date string "YYYY-MM-DD". Filter results up to this date.
-            limit: Maximum number of documents to scan (default 50).
+            limit: Maximum number of documents WITH RESULTS to return (default 50).
         """
-        rows = await _fetch_lab_docs(date_from, date_to, limit)
+        rows = await _fetch_lab_docs(date_from, date_to)
         if not rows:
             return json.dumps([])
 
@@ -109,6 +117,8 @@ def register(mcp: FastMCP) -> None:
 
         results = []
         for row in rows:
+            if len(results) >= limit:
+                break
             tests = await _load_tests_for_doc(row["mongodb_metadata_id"])
             if matches is not None:
                 tests = [t for t in tests if matches(t.get("test_name"), t.get("unit"))]
@@ -140,7 +150,7 @@ def register(mcp: FastMCP) -> None:
             date_from: ISO date "YYYY-MM-DD".
             date_to:   ISO date "YYYY-MM-DD".
         """
-        rows = await _fetch_lab_docs(date_from, date_to, limit=200)
+        rows = await _fetch_lab_docs(date_from, date_to)
         canonical, matches = _make_matcher(test_name)
 
         series = []
@@ -175,7 +185,7 @@ def register(mcp: FastMCP) -> None:
             date_from: ISO date "YYYY-MM-DD".
             date_to:   ISO date "YYYY-MM-DD".
         """
-        rows = await _fetch_lab_docs(date_from, date_to, limit=200)
+        rows = await _fetch_lab_docs(date_from, date_to)
         flagged = []
         for row in rows:
             tests = await _load_tests_for_doc(row["mongodb_metadata_id"])
@@ -230,18 +240,31 @@ def register(mcp: FastMCP) -> None:
         if not row:
             return json.dumps({"error": f"Analyte '{analyte_name}' not found in standards"})
 
-        if gender == "male":
-            ref_min = float(row["reference_male_min"]) if row["reference_male_min"] else None
-            ref_max = float(row["reference_male_max"]) if row["reference_male_max"] else None
-        else:
-            ref_min = float(row["reference_female_min"]) if row["reference_female_min"] else None
-            ref_max = float(row["reference_female_max"]) if row["reference_female_max"] else None
+        def _f(v):
+            return float(v) if v is not None else None
 
-        return json.dumps({
+        male = (_f(row["reference_male_min"]), _f(row["reference_male_max"]))
+        female = (_f(row["reference_female_min"]), _f(row["reference_female_max"]))
+
+        response = {
             "canonical_name": row["canonical_name"],
             "standard_unit": row["standard_unit"],
             "description": row["description"],
-            "reference_min": ref_min,
-            "reference_max": ref_max,
             "gender_used": gender,
-        }, ensure_ascii=False)
+        }
+
+        if gender == "male":
+            response["reference_min"], response["reference_max"] = male
+        elif gender == "female":
+            response["reference_min"], response["reference_max"] = female
+        else:
+            # No gender — return both ranges so the caller can pick correctly.
+            # Silently defaulting to one sex causes wrong-norm interpretations.
+            response["reference_male_min"], response["reference_male_max"] = male
+            response["reference_female_min"], response["reference_female_max"] = female
+            response["warning"] = (
+                "Gender not specified — both male and female reference ranges returned. "
+                "Pass gender='male' or 'female' to get a single range."
+            )
+
+        return json.dumps(response, ensure_ascii=False)

@@ -47,7 +47,7 @@ cd frontend && npm run lint        # ESLint, max-warnings 0
 ## 5. Базы данных
 
 - **PostgreSQL** — реляционные данные (users, documents, interpretations, chat_*).
-- **MongoDB** — `document_metadata`, значения анализов в `extracted_fields.test_results`.
+- **MongoDB** — `document_metadata`. Значения анализов: `extracted_data.lab_results`. Summary: `extracted_data.summary`. Классификация: `classification.specialties` (массив).
 - **MinIO** — сырые файлы.
 
 **Миграции:** сырой SQL в [backend/migrations/](backend/migrations/) как `00N_*.sql` (на текущий момент последняя — `010`). Применять через:

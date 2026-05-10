@@ -63,7 +63,7 @@ def register(mcp: FastMCP) -> None:
             visits.append({
                 "date": str(row["document_date"]),
                 "facility": row["medical_facility"],
-                "specialty": meta.get("classification", {}).get("specialty"),
+                "specialties": meta.get("classification", {}).get("specialties") or [],
                 "summary": extracted.get("summary"),
             })
 
