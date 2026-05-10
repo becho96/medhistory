@@ -65,9 +65,12 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
   }
 
   useEffect(() => {
-    setActiveTab('info')
     setSummaryExpanded(false)
   }, [documentId])
+
+  useEffect(() => {
+    if (doc) setActiveTab(doc.document_type === 'Результаты анализа' ? 'labs' : 'info')
+  }, [doc?.id, doc?.document_type])
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
