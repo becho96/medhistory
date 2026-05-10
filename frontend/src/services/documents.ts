@@ -92,13 +92,20 @@ export const documentsService = {
     return URL.createObjectURL(blob)
   },
 
-  async openDocument(id: string): Promise<void> {
+  // targetWindow must be opened SYNCHRONOUSLY in the user-gesture handler
+  // (Safari/iOS blocks window.open after an await).
+  async openDocument(id: string, targetWindow?: Window | null): Promise<void> {
     try {
       const blobUrl = await this.getDocumentBlobUrl(id)
-      window.open(blobUrl, '_blank')
-      // Clean up blob URL after a delay
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 100)
+      if (targetWindow && !targetWindow.closed) {
+        targetWindow.location.href = blobUrl
+      } else {
+        const opened = window.open(blobUrl, '_blank')
+        if (!opened) window.location.href = blobUrl
+      }
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000)
     } catch (error) {
+      targetWindow?.close()
       console.error('Error opening document:', error)
       throw error
     }

@@ -50,8 +50,9 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
 
   const handleOpenFile = async () => {
     if (!doc) return
+    const targetWindow = window.open('', '_blank')
     try {
-      await documentsService.openDocument(doc.id)
+      await documentsService.openDocument(doc.id, targetWindow)
     } catch {
       toast.error('Не удалось открыть документ')
     }
