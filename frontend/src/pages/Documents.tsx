@@ -47,7 +47,7 @@ type ViewMode = 'list' | 'timeline'
 const DISPLAY_SETTINGS_STORAGE_KEY = 'documents.displaySettings'
 
 const DEFAULT_DISPLAY_SETTINGS: DocumentDisplaySettingsValues = {
-  showSubtypeTag: false,
+  showTags: false,
 }
 
 const loadDisplaySettings = (): DocumentDisplaySettingsValues => {
@@ -1092,7 +1092,7 @@ export default function Documents() {
                 key={doc.id}
                 doc={doc}
                 labsSummary={labsSummary}
-                showSubtypeTag={displaySettings.showSubtypeTag}
+                showTags={displaySettings.showTags}
                 onClick={(id) => setSelectedDocumentId(id)}
                 onOpenLabs={(id) => openLabsModal(id)}
                 onDownload={(id, filename) => handleDownload(id, filename)}

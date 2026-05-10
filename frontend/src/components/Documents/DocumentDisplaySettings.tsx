@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ChevronDown, SlidersHorizontal } from 'lucide-react'
 
 export interface DocumentDisplaySettingsValues {
-  showSubtypeTag: boolean
+  showTags: boolean
 }
 
 interface DocumentDisplaySettingsProps {
@@ -73,10 +73,10 @@ export default function DocumentDisplaySettings({
         <div className="px-3 sm:px-6 pb-4 pt-1 bg-gray-50/50">
           <div className="space-y-3">
             <Toggle
-              checked={settings.showSubtypeTag}
-              onChange={(checked) => onChange({ ...settings, showSubtypeTag: checked })}
-              label="Показывать подтип документа"
-              description="В строке документа отображается тэг с подтипом (например, «Анализ крови», «УЗИ»)"
+              checked={settings.showTags}
+              onChange={(checked) => onChange({ ...settings, showTags: checked })}
+              label="Показывать тэги документа"
+              description="Подтип («Анализ крови», «УЗИ»), специализация врача и область исследования"
             />
           </div>
         </div>

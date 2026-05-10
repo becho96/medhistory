@@ -105,6 +105,7 @@ export interface Document {
   document_type?: string
   document_subtype?: string
   specialty?: string
+  research_area?: string
   document_date?: string
   patient_name?: string
   medical_facility?: string

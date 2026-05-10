@@ -14,9 +14,10 @@ interface DocumentListItemProps {
     document_subtype?: string | null
     document_date?: string | null
     specialty?: string | null
+    research_area?: string | null
   }
   labsSummary?: Record<string, LabsSummaryEntry>
-  showSubtypeTag?: boolean
+  showTags?: boolean
   onClick?: (id: string) => void
   onOpenLabs?: (id: string) => void
   onDownload?: (id: string, filename: string) => void
@@ -26,7 +27,7 @@ interface DocumentListItemProps {
 export default function DocumentListItem({
   doc,
   labsSummary,
-  showSubtypeTag,
+  showTags,
   onClick,
   onOpenLabs,
   onDownload,
@@ -44,20 +45,29 @@ export default function DocumentListItem({
 
       {/* Main content */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
           <p className="text-[14px] font-medium text-gray-900 truncate">
             {doc.original_filename}
           </p>
-          {showSubtypeTag && doc.document_subtype && (
+          {showTags && doc.document_subtype && (
             <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-100 flex-shrink-0">
               {doc.document_subtype}
+            </span>
+          )}
+          {showTags && doc.specialty && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-sky-50 text-sky-700 border border-sky-100 flex-shrink-0">
+              {doc.specialty}
+            </span>
+          )}
+          {showTags && doc.research_area && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-50 text-amber-700 border border-amber-100 flex-shrink-0">
+              {doc.research_area}
             </span>
           )}
         </div>
         <p className="text-[12px] text-gray-400 truncate mt-0.5">
           {doc.document_type || '—'}
           {doc.document_date && ` · ${format(new Date(doc.document_date), 'dd.MM.yy')}`}
-          {doc.specialty && ` · ${doc.specialty}`}
         </p>
       </div>
 
