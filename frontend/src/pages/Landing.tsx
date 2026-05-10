@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import {
   FileSearch, BarChart3, FileCheck,
-  HeartPulse, Bot, Sparkles, Users,
+  HeartPulse, Sparkles, Users,
   Shield, ChevronRight, FileText, ImageIcon, Zap, UserRound, User2, Baby, CheckCircle2,
   X,
 } from 'lucide-react';
@@ -288,14 +288,16 @@ const Landing = () => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {[
-              { text: 'Загружаю PDF, фото и сканы — всё автоматически распознаётся и складывается в единую медкарту. Больше не ищу анализы по почте и старым папкам.', name: 'Анна М.', role: 'Пользователь' },
-              { text: 'Веду истории всей семьи в одном аккаунте. Перед приёмом за минуту получаю PDF-отчёт с динамикой — не приходится таскать пачку документов.', name: 'Дмитрий К.', role: 'Пользователь' },
-              { text: 'Подключила ChatGPT к своей истории через MedHistory. Теперь спрашиваю про здоровье, и он отвечает с учётом всех моих анализов за годы, а не одного документа.', name: 'Елена С.', role: 'Пользователь' },
+              { text: 'Загружаю PDF, фото и сканы — всё автоматически распознаётся и складывается в единую медкарту. Больше не ищу анализы по почте и старым папкам.', name: 'Анна М.', role: 'Пользователь', bg: 'bg-emerald-50', text_color: 'text-emerald-600', border: 'border-emerald-100' },
+              { text: 'Веду истории всей семьи в одном аккаунте. Перед приёмом за минуту получаю PDF-отчёт с динамикой — не приходится таскать пачку документов.', name: 'Дмитрий К.', role: 'Пользователь', bg: 'bg-blue-50', text_color: 'text-blue-600', border: 'border-blue-100' },
+              { text: 'Подключила ChatGPT к своей истории через MedHistory. Теперь спрашиваю про здоровье, и он отвечает с учётом всех моих анализов за годы, а не одного документа.', name: 'Елена С.', role: 'Пользователь', bg: 'bg-amber-50', text_color: 'text-amber-600', border: 'border-amber-100' },
             ].map((review) => (
               <div key={review.name} className="bg-white rounded-2xl border border-gray-200 p-6 text-left">
                 <p className="text-[15px] text-gray-600 leading-relaxed mb-6">"{review.text}"</p>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gray-100" />
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center border ${review.bg} ${review.border}`}>
+                    <span className={`text-[14px] font-semibold ${review.text_color}`}>{review.name.charAt(0)}</span>
+                  </div>
                   <div>
                     <p className="text-[14px] font-medium text-gray-900">{review.name}</p>
                     <p className="text-[12px] text-gray-500">{review.role}</p>
@@ -338,28 +340,23 @@ const Landing = () => {
       {/* CTA */}
       <section className="px-4 sm:px-10 py-16 sm:py-20">
         <div className="max-w-[1400px] mx-auto">
-          <div className="bg-gray-900 rounded-3xl p-8 sm:p-16 flex flex-col lg:flex-row items-center gap-8 sm:gap-16">
-            <div className="flex-1 text-center lg:text-left">
-              <h2 className="text-[30px] sm:text-[40px] lg:text-[48px] font-semibold text-white leading-[1.1] tracking-tight mb-6">
-                Начните управлять медицинской историей уже сегодня
-              </h2>
-              <div className="flex gap-3 justify-center lg:justify-start">
-                <Link
-                  to="/register"
-                  className="bg-emerald-500 text-white px-6 sm:px-7 py-3 sm:py-3.5 rounded-full text-[14px] sm:text-[15px] font-medium hover:bg-emerald-600 transition-colors"
-                >
-                  Создать аккаунт
-                </Link>
-                <Link
-                  to="/login"
-                  className="border border-gray-600 text-white px-6 sm:px-7 py-3 sm:py-3.5 rounded-full text-[14px] sm:text-[15px] font-medium hover:bg-gray-800 transition-colors"
-                >
-                  Войти
-                </Link>
-              </div>
-            </div>
-            <div className="hidden lg:flex w-[400px] h-[300px] bg-gray-800 rounded-2xl overflow-hidden items-center justify-center">
-              <Bot className="w-16 h-16 text-gray-600" />
+          <div className="bg-gray-900 rounded-3xl p-10 sm:p-16 text-center">
+            <h2 className="text-[30px] sm:text-[40px] lg:text-[48px] font-semibold text-white leading-[1.1] tracking-tight mb-8 max-w-[820px] mx-auto">
+              Начните управлять медицинской историей уже сегодня
+            </h2>
+            <div className="flex gap-3 justify-center">
+              <Link
+                to="/register"
+                className="bg-emerald-500 text-white px-6 sm:px-7 py-3 sm:py-3.5 rounded-full text-[14px] sm:text-[15px] font-medium hover:bg-emerald-600 transition-colors"
+              >
+                Создать аккаунт
+              </Link>
+              <Link
+                to="/login"
+                className="border border-gray-600 text-white px-6 sm:px-7 py-3 sm:py-3.5 rounded-full text-[14px] sm:text-[15px] font-medium hover:bg-gray-800 transition-colors"
+              >
+                Войти
+              </Link>
             </div>
           </div>
         </div>
