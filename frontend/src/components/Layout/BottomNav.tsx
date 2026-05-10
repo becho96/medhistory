@@ -1,11 +1,10 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Home, FileText, FlaskConical, Bot } from 'lucide-react'
+import { Home, FileText, FlaskConical } from 'lucide-react'
 
 const tabs = [
   { name: 'Главная',  href: '/',          icon: Home },
   { name: 'Медкарта', href: '/documents', icon: FileText },
   { name: 'Анализы',  href: '/labs',      icon: FlaskConical },
-  { name: 'ИИ',       href: '/assistant', icon: Bot },
 ]
 
 export default function BottomNav() {
