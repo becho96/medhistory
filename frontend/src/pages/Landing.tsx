@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
 import {
   FileSearch, BarChart3, FileCheck,
-  HeartPulse, Bot,
+  HeartPulse, Bot, Sparkles, Users,
   Shield, ChevronRight, FileText, ImageIcon, Zap, UserRound, User2, Baby, CheckCircle2,
+  X,
 } from 'lucide-react';
 import GraphVisualization from '../components/Landing/GraphVisualization';
 
@@ -48,145 +49,230 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Bento Grid Features */}
-      <section className="px-4 sm:px-10 pb-16 sm:pb-20 bg-gray-50">
-        <div className="max-w-[1400px] mx-auto pt-16 sm:pt-20">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-            {/* Left card */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 flex flex-col">
-              <div className="flex items-center gap-2 mb-3">
-                <FileSearch className="w-5 h-5 text-emerald-500" />
-                <h3 className="text-[16px] font-semibold text-gray-900">Умная обработка медицинских документов</h3>
+      {/* Vertical Features */}
+      <section className="px-4 sm:px-10 pb-16 sm:pb-24 bg-gray-50">
+        <div className="max-w-[1100px] mx-auto pt-16 sm:pt-24 space-y-20 sm:space-y-32">
+
+          {/* Feature 1 — Smart document processing */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 rounded-full px-3 py-1 mb-4">
+                <FileSearch className="w-4 h-4" />
+                <span className="text-[12px] font-medium uppercase tracking-wide">Документы</span>
               </div>
-              <p className="text-[15px] text-gray-500 leading-relaxed mb-6">
-                Загрузите PDF, фото или скан — тип документа, дата и параметры определятся автоматически.
+              <h3 className="text-[26px] sm:text-[34px] font-semibold text-gray-900 tracking-tight leading-[1.15] mb-4">
+                Умная обработка медицинских документов
+              </h3>
+              <p className="text-[16px] sm:text-[17px] text-gray-500 leading-relaxed">
+                Загрузите PDF, фото или скан — тип документа, дата и параметры определятся автоматически. Результаты анализов попадают в общую структурированную историю.
               </p>
-              <div className="mt-auto space-y-3">
-                {/* Input formats → AI pipeline */}
-                <div className="flex items-center gap-2">
-                  <div className="flex gap-2 flex-1">
-                    {[
-                      { Icon: FileText, label: 'PDF', bg: 'bg-red-50', color: 'text-red-400' },
-                      { Icon: ImageIcon, label: 'Фото', bg: 'bg-blue-50', color: 'text-blue-400' },
-                      { Icon: FileSearch, label: 'Скан', bg: 'bg-purple-50', color: 'text-purple-400' },
-                    ].map(({ Icon, label, bg, color }) => (
-                      <div key={label} className={`flex flex-col items-center gap-1 flex-1 rounded-xl p-2.5 ${bg}`}>
-                        <Icon className={`w-4 h-4 ${color}`} />
-                        <span className="text-[10px] text-gray-500 font-medium">{label}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
-                  <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-emerald-200">
-                    <Zap className="w-5 h-5 text-white" />
-                  </div>
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="flex gap-2 flex-1">
+                  {[
+                    { Icon: FileText, label: 'PDF', bg: 'bg-red-50', color: 'text-red-400' },
+                    { Icon: ImageIcon, label: 'Фото', bg: 'bg-blue-50', color: 'text-blue-400' },
+                    { Icon: FileSearch, label: 'Скан', bg: 'bg-purple-50', color: 'text-purple-400' },
+                  ].map(({ Icon, label, bg, color }) => (
+                    <div key={label} className={`flex flex-col items-center gap-1 flex-1 rounded-xl p-2.5 ${bg}`}>
+                      <Icon className={`w-4 h-4 ${color}`} />
+                      <span className="text-[10px] text-gray-500 font-medium">{label}</span>
+                    </div>
+                  ))}
                 </div>
-                {/* Extracted result */}
-                <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
-                  <div className="flex items-center gap-2 mb-2.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                    <span className="text-[11px] font-medium text-gray-700">Анализ крови.pdf — распознан</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {[
-                      { label: 'Тип', value: 'Общий АК' },
-                      { label: 'Дата', value: '12.03.2024' },
-                      { label: 'Гемоглобин', value: '135 г/л' },
-                      { label: 'Показателей', value: '18' },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="bg-white rounded-lg px-2.5 py-1.5 border border-gray-100">
-                        <p className="text-[9px] text-gray-400 uppercase tracking-wide leading-none mb-0.5">{label}</p>
-                        <p className="text-[11px] font-medium text-gray-800">{value}</p>
-                      </div>
-                    ))}
-                  </div>
+                <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
+                <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shrink-0 shadow-sm shadow-emerald-200">
+                  <Zap className="w-5 h-5 text-white" />
                 </div>
               </div>
-            </div>
-
-            {/* Center card */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 flex flex-col lg:order-3">
-              <div className="mb-6">
-                <h3 className="text-[22px] sm:text-[26px] font-semibold text-gray-900 tracking-tight mb-2">
-                  Добавляйте профили членов вашей семьи
-                </h3>
-                <p className="text-[15px] text-gray-500 leading-relaxed">
-                  Ведите медицинскую историю всей семьи в одном месте с отдельными профилями.
-                </p>
-              </div>
-              <div className="mt-auto space-y-2.5">
-                {familyMembers.map(({ name, docs, bg, text, border, Icon }) => (
-                  <div key={name} className={`flex items-center gap-3 rounded-xl p-3 border ${border} ${bg}`}>
-                    <div className={`w-10 h-10 rounded-full ${bg} border-2 ${border} flex items-center justify-center shrink-0`}>
-                      <Icon className={`w-5 h-5 ${text}`} />
+              <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                <div className="flex items-center gap-2 mb-2.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <span className="text-[11px] font-medium text-gray-700">Анализ крови.pdf — распознан</span>
+                </div>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {[
+                    { label: 'Тип', value: 'Общий АК' },
+                    { label: 'Дата', value: '12.03.2024' },
+                    { label: 'Гемоглобин', value: '135 г/л' },
+                    { label: 'Показателей', value: '18' },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="bg-white rounded-lg px-2.5 py-1.5 border border-gray-100">
+                      <p className="text-[9px] text-gray-400 uppercase tracking-wide leading-none mb-0.5">{label}</p>
+                      <p className="text-[11px] font-medium text-gray-800">{value}</p>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-gray-900">{name}</p>
-                      <p className="text-[11px] text-gray-500">{docs} документов</p>
-                    </div>
-                    <div className={`text-[11px] font-medium ${text} px-2 py-0.5 rounded-full bg-white border ${border}`}>
-                      {docs}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Right card */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 flex flex-col sm:col-span-2 lg:col-span-2 lg:order-2">
-              <div className="flex items-center gap-2 mb-3">
-                <BarChart3 className="w-5 h-5 text-emerald-500" />
-                <h3 className="text-[16px] font-semibold text-gray-900">Динамика показателей</h3>
-              </div>
-              <p className="text-[15px] text-gray-500 leading-relaxed mb-4">
-                Графики по всем анализам с зоной нормы — сразу видно тренды за любой период.
-              </p>
-              <div className="mt-auto">
-                <GraphVisualization />
-              </div>
-            </div>
-
-            {/* Bottom left - wide */}
-            <div className="col-span-1 sm:col-span-2 lg:col-span-1 bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 flex flex-col gap-6 lg:order-4">
-              <div className="flex-1">
-                <h3 className="text-[22px] sm:text-[28px] font-semibold text-gray-900 tracking-tight mb-3">
-                  Отчёт для врача за одну минуту
-                </h3>
-                <p className="text-[15px] text-gray-500 leading-relaxed mb-6">
-                  Структурированная история, ключевые анализы и динамика — готовый PDF перед любым приёмом.
-                </p>
-                <div className="flex gap-3">
-                  <Link to="/register" className="bg-emerald-500 text-white px-5 py-2.5 rounded-full text-[14px] font-medium hover:bg-emerald-600 transition-colors">
-                    Попробовать
-                  </Link>
-                  <Link to="/login" className="border border-gray-200 text-gray-700 px-5 py-2.5 rounded-full text-[14px] font-medium hover:bg-gray-50 transition-colors">
-                    Подробнее
-                  </Link>
+                  ))}
                 </div>
               </div>
-              <div className="w-full bg-gray-50 rounded-xl border border-gray-100 p-4 space-y-3">
-                {['Анализ крови — 12.03.2024', 'ЭКГ — 15.01.2024', 'УЗИ — 08.11.2023'].map((item) => (
-                  <div key={item} className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center shrink-0">
-                      <FileCheck className="w-4 h-4 text-emerald-500" />
-                    </div>
-                    <p className="text-[13px] text-gray-700">{item}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Bottom right */}
-            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 flex flex-col items-center justify-center text-center lg:order-5">
-              <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center mb-4">
-                <Shield className="w-6 h-6 text-emerald-500" />
-              </div>
-              <h3 className="text-[16px] font-semibold text-gray-900 mb-2">Данные под защитой</h3>
-              <p className="text-[14px] text-gray-500 leading-relaxed">
-                Шифрование, GDPR, доступ только у вас. Регулярные аудиты безопасности 24/7.
-              </p>
             </div>
           </div>
+
+          {/* Feature 2 — AI assistants with full context (NEW) */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16 items-center">
+            <div className="lg:order-2">
+              <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 rounded-full px-3 py-1 mb-4">
+                <Sparkles className="w-4 h-4" />
+                <span className="text-[12px] font-medium uppercase tracking-wide">AI с контекстом</span>
+              </div>
+              <h3 className="text-[26px] sm:text-[34px] font-semibold text-gray-900 tracking-tight leading-[1.15] mb-4">
+                Подключите ChatGPT, Claude или другого AI к полной медицинской истории
+              </h3>
+              <p className="text-[16px] sm:text-[17px] text-gray-500 leading-relaxed mb-4">
+                Обычно в ChatGPT приходится загружать один документ — и ассистент видит только его. MedHistory отдаёт AI всю структурированную историю: анализы за годы, визиты, диагнозы, динамику показателей.
+              </p>
+              <p className="text-[16px] sm:text-[17px] text-gray-500 leading-relaxed">
+                Любой вопрос про здоровье получает ответ с учётом полного контекста, а не одного листочка.
+              </p>
+            </div>
+            <div className="lg:order-1 grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="bg-white rounded-2xl border border-gray-200 p-5 flex flex-col">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <FileText className="w-3.5 h-3.5 text-gray-400" />
+                  </div>
+                  <span className="text-[12px] font-medium text-gray-500">ChatGPT без MedHistory</span>
+                </div>
+                <p className="text-[12px] text-gray-400 leading-relaxed mb-4">AI видит ровно то, что вы прислали в чат</p>
+                <div className="space-y-2 mt-auto">
+                  <div className="flex items-center gap-2 text-[12px] text-gray-700 bg-gray-50 rounded-lg px-2.5 py-1.5 border border-gray-100">
+                    <CheckCircle2 className="w-3 h-3 text-gray-400 shrink-0" />
+                    <span className="truncate">Анализ от 12.03</span>
+                  </div>
+                  {['Прошлые результаты', 'Визиты к врачам', 'Динамика за годы'].map((label) => (
+                    <div key={label} className="flex items-center gap-2 text-[12px] text-gray-400 px-2.5 py-1.5">
+                      <X className="w-3 h-3 text-gray-300 shrink-0" />
+                      <span className="truncate">{label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="bg-white rounded-2xl border-2 border-emerald-200 p-5 flex flex-col shadow-sm shadow-emerald-100">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-7 h-7 rounded-lg bg-emerald-500 flex items-center justify-center">
+                    <Sparkles className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <span className="text-[12px] font-semibold text-gray-900">AI + MedHistory</span>
+                </div>
+                <p className="text-[12px] text-gray-500 leading-relaxed mb-4">AI видит всю вашу медисторию целиком</p>
+                <div className="space-y-2 mt-auto">
+                  {[
+                    { label: '47 документов', value: '5 лет' },
+                    { label: '156 показателей', value: 'тренды' },
+                    { label: '12 визитов', value: 'история' },
+                    { label: 'Диагнозы', value: 'хроники' },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="flex items-center justify-between gap-2 text-[12px] bg-emerald-50 rounded-lg px-2.5 py-1.5 border border-emerald-100">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                        <span className="text-gray-700 font-medium truncate">{label}</span>
+                      </div>
+                      <span className="text-[10px] text-emerald-600 shrink-0">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Feature 3 — Indicator dynamics */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 rounded-full px-3 py-1 mb-4">
+                <BarChart3 className="w-4 h-4" />
+                <span className="text-[12px] font-medium uppercase tracking-wide">Динамика</span>
+              </div>
+              <h3 className="text-[26px] sm:text-[34px] font-semibold text-gray-900 tracking-tight leading-[1.15] mb-4">
+                Видеть тренды показателей за любой период
+              </h3>
+              <p className="text-[16px] sm:text-[17px] text-gray-500 leading-relaxed">
+                Графики по всем анализам с зоной нормы — изменения и отклонения видны сразу, без перелистывания PDF и сравнения цифр вручную.
+              </p>
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8">
+              <GraphVisualization />
+            </div>
+          </div>
+
+          {/* Feature 4 — Family profiles */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16 items-center">
+            <div className="lg:order-2">
+              <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 rounded-full px-3 py-1 mb-4">
+                <Users className="w-4 h-4" />
+                <span className="text-[12px] font-medium uppercase tracking-wide">Семья</span>
+              </div>
+              <h3 className="text-[26px] sm:text-[34px] font-semibold text-gray-900 tracking-tight leading-[1.15] mb-4">
+                Профили членов семьи в одном аккаунте
+              </h3>
+              <p className="text-[16px] sm:text-[17px] text-gray-500 leading-relaxed">
+                Ведите медицинскую историю детей, родителей и близких отдельными профилями — со своими документами, анализами и динамикой.
+              </p>
+            </div>
+            <div className="lg:order-1 bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 space-y-2.5">
+              {familyMembers.map(({ name, docs, bg, text, border, Icon }) => (
+                <div key={name} className={`flex items-center gap-3 rounded-xl p-3 border ${border} ${bg}`}>
+                  <div className={`w-10 h-10 rounded-full ${bg} border-2 ${border} flex items-center justify-center shrink-0`}>
+                    <Icon className={`w-5 h-5 ${text}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-semibold text-gray-900">{name}</p>
+                    <p className="text-[11px] text-gray-500">{docs} документов</p>
+                  </div>
+                  <div className={`text-[11px] font-medium ${text} px-2 py-0.5 rounded-full bg-white border ${border}`}>
+                    {docs}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Feature 5 — Doctor report */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16 items-center">
+            <div>
+              <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 rounded-full px-3 py-1 mb-4">
+                <FileCheck className="w-4 h-4" />
+                <span className="text-[12px] font-medium uppercase tracking-wide">Отчёт</span>
+              </div>
+              <h3 className="text-[26px] sm:text-[34px] font-semibold text-gray-900 tracking-tight leading-[1.15] mb-4">
+                Отчёт для врача за одну минуту
+              </h3>
+              <p className="text-[16px] sm:text-[17px] text-gray-500 leading-relaxed">
+                Структурированная история, ключевые анализы и динамика — готовый PDF перед любым приёмом, без сборки документов вручную.
+              </p>
+            </div>
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 sm:p-8 space-y-3">
+              {['Анализ крови — 12.03.2024', 'ЭКГ — 15.01.2024', 'УЗИ — 08.11.2023'].map((item) => (
+                <div key={item} className="flex items-center gap-3 bg-gray-50 rounded-xl px-3 py-2.5 border border-gray-100">
+                  <div className="w-8 h-8 bg-emerald-50 rounded-lg flex items-center justify-center shrink-0">
+                    <FileCheck className="w-4 h-4 text-emerald-500" />
+                  </div>
+                  <p className="text-[13px] text-gray-700">{item}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Feature 6 — Security */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16 items-center">
+            <div className="lg:order-2">
+              <div className="inline-flex items-center gap-2 bg-emerald-50 text-emerald-600 rounded-full px-3 py-1 mb-4">
+                <Shield className="w-4 h-4" />
+                <span className="text-[12px] font-medium uppercase tracking-wide">Безопасность</span>
+              </div>
+              <h3 className="text-[26px] sm:text-[34px] font-semibold text-gray-900 tracking-tight leading-[1.15] mb-4">
+                Данные под защитой
+              </h3>
+              <p className="text-[16px] sm:text-[17px] text-gray-500 leading-relaxed">
+                Шифрование, соответствие GDPR, доступ только у вас. Регулярные аудиты безопасности 24/7.
+              </p>
+            </div>
+            <div className="lg:order-1 bg-white rounded-2xl border border-gray-200 p-8 sm:p-10 flex items-center justify-center">
+              <div className="w-20 h-20 bg-emerald-50 rounded-2xl flex items-center justify-center">
+                <Shield className="w-10 h-10 text-emerald-500" />
+              </div>
+            </div>
+          </div>
+
         </div>
       </section>
 
