@@ -366,37 +366,17 @@ const Landing = () => {
       </section>
 
       {/* Footer */}
-      <footer className="px-4 sm:px-10 py-10 sm:py-12 border-t border-gray-100">
-        <div className="max-w-[1400px] mx-auto">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 mb-10 sm:mb-12">
-            <div className="col-span-2 sm:col-span-1">
-              <div className="flex items-center gap-2 mb-4">
-                <HeartPulse className="w-[18px] h-[18px] text-emerald-500" />
-                <span className="text-[16px] font-semibold text-gray-900">MedHistory</span>
-              </div>
-              <p className="text-[14px] text-gray-500 leading-relaxed">
-                Персональная система управления медицинской историей
-              </p>
-            </div>
-            {[
-              { title: 'Продукт', links: ['Возможности', 'Тарифы', 'Обновления'] },
-              { title: 'Ресурсы', links: ['Документация', 'Блог', 'FAQ'] },
-              { title: 'Компания', links: ['О нас', 'Контакты', 'Конфиденциальность'] },
-            ].map((col) => (
-              <div key={col.title}>
-                <p className="text-[14px] font-semibold text-gray-900 mb-4">{col.title}</p>
-                <div className="space-y-3">
-                  {col.links.map((link) => (
-                    <a key={link} href="#" className="block text-[14px] text-gray-500 hover:text-gray-900 transition-colors">
-                      {link}
-                    </a>
-                  ))}
-                </div>
-              </div>
-            ))}
+      <footer className="px-4 sm:px-10 py-8 sm:py-10 border-t border-gray-100">
+        <div className="max-w-[1400px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <HeartPulse className="w-[18px] h-[18px] text-emerald-500" />
+            <span className="text-[15px] font-semibold text-gray-900">MedHistory</span>
+            <span className="text-[13px] text-gray-400 hidden sm:inline ml-2">— персональная медицинская история</span>
           </div>
-          <div className="border-t border-gray-100 pt-6 text-center">
-            <p className="text-[13px] text-gray-400">&copy; 2024 MedHistory. Все права защищены.</p>
+          <div className="flex items-center gap-5">
+            <Link to="/login" className="text-[13px] text-gray-500 hover:text-gray-900 transition-colors">Войти</Link>
+            <Link to="/register" className="text-[13px] text-gray-500 hover:text-gray-900 transition-colors">Регистрация</Link>
+            <span className="text-[13px] text-gray-400">&copy; {new Date().getFullYear()}</span>
           </div>
         </div>
       </footer>
