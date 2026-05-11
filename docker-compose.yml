@@ -232,5 +232,6 @@ volumes:
 
 networks:
   medhistory_network:
+    name: medhistory_network
     driver: bridge
 
