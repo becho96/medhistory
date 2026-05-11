@@ -17,6 +17,7 @@ on:
           - all
           - backend
           - frontend
+          - monitoring
 
 env:
   SERVER_IP: ${{ secrets.SERVER_IP }}
@@ -79,13 +80,17 @@ jobs:
           SSH="ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=20 ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }}"
           BUILD="docker compose -f docker-compose.prod.yml --env-file .env.production build --no-cache --progress=plain"
           UP="docker compose -f docker-compose.prod.yml --env-file .env.production up -d"
+          MON_BUILD="docker compose -f monitoring/docker-compose.monitoring.yml --env-file .env.production build --no-cache --progress=plain"
+          MON_UP="docker compose -f monitoring/docker-compose.monitoring.yml --env-file .env.production up -d"
 
           if [ "${{ inputs.service }}" = "all" ]; then
-            $SSH "cd ${{ env.DEPLOY_PATH }} && $BUILD && $UP"
+            $SSH "cd ${{ env.DEPLOY_PATH }} && $BUILD && $UP && $MON_BUILD && $MON_UP"
           elif [ "${{ inputs.service }}" = "backend" ]; then
             $SSH "cd ${{ env.DEPLOY_PATH }} && $BUILD backend && $UP backend"
           elif [ "${{ inputs.service }}" = "frontend" ]; then
             $SSH "cd ${{ env.DEPLOY_PATH }} && $BUILD frontend && $UP frontend"
+          elif [ "${{ inputs.service }}" = "monitoring" ]; then
+            $SSH "cd ${{ env.DEPLOY_PATH }} && $MON_BUILD && $MON_UP"
           fi
 
       - name: Health check
@@ -102,6 +107,11 @@ jobs:
           echo "🔍 Checking health endpoint..."
           curl -sf --max-time 10 http://${{ secrets.SERVER_IP }}/health > /dev/null && echo "✅ Health check passed" || echo "⚠️ Health check failed"
 
+          if [ "${{ inputs.service }}" = "all" ] || [ "${{ inputs.service }}" = "monitoring" ]; then
+            echo "🔍 Checking Grafana..."
+            curl -sf --max-time 15 http://${{ secrets.SERVER_IP }}/grafana/api/health > /dev/null && echo "✅ Grafana is healthy" || echo "⚠️ Grafana check failed (may need a minute to start)"
+          fi
+
       - name: Deployment summary
         run: |
           echo "## 🎉 Deployment Complete!" >> $GITHUB_STEP_SUMMARY
@@ -116,4 +126,5 @@ jobs:
           echo "- [Frontend](http://${{ secrets.SERVER_IP }}/)" >> $GITHUB_STEP_SUMMARY
           echo "- [API Documentation](http://${{ secrets.SERVER_IP }}/docs)" >> $GITHUB_STEP_SUMMARY
           echo "- [API Endpoint](http://${{ secrets.SERVER_IP }}/api/v1/)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Grafana](http://${{ secrets.SERVER_IP }}/grafana/)" >> $GITHUB_STEP_SUMMARY
 
