@@ -263,7 +263,7 @@ const Landing = () => {
                 Данные под защитой
               </h3>
               <p className="text-[16px] sm:text-[17px] text-gray-500 leading-relaxed">
-                Шифрование, соответствие GDPR, доступ только у вас. Регулярные аудиты безопасности 24/7.
+                Шифрование, соответствие 152-ФЗ, хранение данных на серверах в РФ. Доступ — только у вас.
               </p>
             </div>
             <div className="lg:order-1 bg-white rounded-2xl border border-gray-200 p-8 sm:p-10 flex items-center justify-center">
@@ -370,7 +370,9 @@ const Landing = () => {
             <span className="text-[15px] font-semibold text-gray-900">MedHistory</span>
             <span className="text-[13px] text-gray-400 hidden sm:inline ml-2">— персональная медицинская история</span>
           </div>
-          <div className="flex items-center gap-5">
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+            <Link to="/legal/privacy" className="text-[13px] text-gray-500 hover:text-gray-900 transition-colors">Политика</Link>
+            <Link to="/legal/terms" className="text-[13px] text-gray-500 hover:text-gray-900 transition-colors">Соглашение</Link>
             <Link to="/login" className="text-[13px] text-gray-500 hover:text-gray-900 transition-colors">Войти</Link>
             <Link to="/register" className="text-[13px] text-gray-500 hover:text-gray-900 transition-colors">Регистрация</Link>
             <span className="text-[13px] text-gray-400">&copy; {new Date().getFullYear()}</span>

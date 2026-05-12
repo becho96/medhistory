@@ -1,5 +1,5 @@
-from pydantic import BaseModel, EmailStr
-from typing import Optional, Literal
+from pydantic import BaseModel, EmailStr, Field
+from typing import Optional, Literal, Dict
 from datetime import datetime, date
 import uuid
 
@@ -7,11 +7,21 @@ class UserBase(BaseModel):
     email: Optional[EmailStr] = None
     full_name: Optional[str] = None
 
+
+# Required consent types at registration (152-ФЗ).
+# Keys are consent_type, values are sha256 of the legal markdown the user saw.
+REQUIRED_CONSENTS = ("terms_and_privacy", "special_category")
+
+
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
     full_name: Optional[str] = None
     gender: Optional[Literal["male", "female", "other"]] = None
+    consents: Dict[str, str] = Field(
+        ...,
+        description="Required: {'terms_and_privacy': '<sha256>', 'special_category': '<sha256>'}",
+    )
 
 class UserLogin(BaseModel):
     email: EmailStr

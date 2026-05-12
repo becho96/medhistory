@@ -32,8 +32,7 @@ class AIService:
                     raise ValueError("PDF содержит слишком мало текста или это отсканированное изображение. Требуется OCR.")
                 
                 print(f"  ✅ Извлечено {len(text_content)} символов текста")
-                print(f"  📝 Первые 200 символов: {text_content[:200]}...")
-                
+
                 # Prepare text-only message
                 messages = [
                     {
@@ -214,13 +213,9 @@ class AIService:
             "X-Title": "MedHistory"
         }
         
-        # Debug logging
-        print(f"🔍 OpenRouter Request:")
-        print(f"  URL: {self.base_url}")
-        print(f"  Model: {self.model}")
-        print(f"  API Key: {self.api_key[:10]}...{self.api_key[-10:]}")
-        print(f"  Message content types: {[type(m['content']) for m in messages]}")
-        
+        # PII-safe logging: model + payload shape only, no content
+        print(f"🔍 OpenRouter Request: model={self.model}, messages={len(messages)}")
+
         async with httpx.AsyncClient(timeout=60.0) as client:
             try:
                 response = await client.post(
@@ -228,20 +223,15 @@ class AIService:
                     headers=headers,
                     json=payload
                 )
-                
-                # Log response details
-                print(f"📥 OpenRouter Response:")
-                print(f"  Status: {response.status_code}")
-                print(f"  Response: {response.text[:500]}")
-                
+
+                print(f"📥 OpenRouter Response: status={response.status_code}")
                 response.raise_for_status()
                 return response.json()
             except httpx.HTTPStatusError as e:
-                print(f"❌ HTTP Error: {e.response.status_code}")
-                print(f"   Response body: {e.response.text}")
+                print(f"❌ OpenRouter HTTP Error: status={e.response.status_code}")
                 raise
             except Exception as e:
-                print(f"❌ Request Error: {str(e)}")
+                print(f"❌ OpenRouter Request Error: {type(e).__name__}")
                 raise
     
     def _extract_usage(self, response_data: dict) -> Optional[dict]:
@@ -293,10 +283,9 @@ class AIService:
             return metadata
             
         except Exception as e:
-            print(f"❌ Error parsing AI response: {str(e)}")
-            print(f"Response content: {response_data}")
+            print(f"❌ Error parsing AI response: {type(e).__name__}")
             raise
-    
+
     async def generate_report_content(self, documents: list, filters: dict) -> str:
         """Generate report content using AI"""
         
@@ -444,8 +433,7 @@ class AIService:
                 "usage": self._extract_usage(response_data),
             }
         except Exception as e:
-            print(f"❌ Error parsing labs response: {e}")
-            print(f"Response content: {response_data}")
+            print(f"❌ Error parsing labs response: {type(e).__name__}")
             return {"lab_results": [], "usage": None}
 
 # Create global instance

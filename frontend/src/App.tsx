@@ -5,7 +5,6 @@ import { useAuthStore } from './stores/authStore'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
-import GoogleCallback from './pages/GoogleCallback'
 import Dashboard from './pages/Dashboard'
 import Documents from './pages/Documents'
 import Reports from './pages/Reports'
@@ -15,6 +14,7 @@ import HealthEvents from './pages/HealthEvents'
 import AssistantPage from './pages/AssistantPage'
 import Integrations from './pages/Integrations'
 import OAuthConsent from './pages/OAuthConsent'
+import LegalPage from './pages/LegalPage'
 
 // Layout
 import Layout from './components/Layout/Layout'
@@ -24,11 +24,11 @@ function App() {
 
   return (
     <Routes>
-      {/* Google OAuth callback - always accessible */}
-      <Route path="/auth/google/callback" element={<GoogleCallback />} />
-
       {/* MCP OAuth consent — gated by component itself; no Layout wrapper. */}
       <Route path="/oauth/consent" element={<OAuthConsent />} />
+
+      {/* Legal documents — always accessible, no auth required */}
+      <Route path="/legal/:slug" element={<LegalPage />} />
 
       {!isAuthenticated ? (
         <>

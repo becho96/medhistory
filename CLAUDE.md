@@ -76,7 +76,7 @@ psql -U medhistory_user medhistory -f backend/migrations/XXX_*.sql
 
 SSH: `ssh -i ~/.ssh/medhistory_deploy root@194.87.140.190`. Паролевая авторизация отключена.
 
-Миграция с Yandex Cloud ещё не завершена — DNS `medhistory.ru` пока указывает на старый IP, SSL на Timeweb не выпущен (nginx работает через временный HTTP-only конфиг). Чек-лист завершения — в разделе "TODO" [DEPLOYMENT.md](docs/timeweb/DEPLOYMENT.md).
+Миграция с Yandex Cloud завершена: DNS указывает на Timeweb, Let's Encrypt сертификат выпущен (auto-renew через certbot контейнер), nginx работает по HTTPS. Поддомен `www.medhistory.ru` пока не настроен (нужна A-запись + перевыпуск сертификата с двумя `-d`).
 
 Никогда не редактируй `.env.production` без явной просьбы — там prod-секреты.
 
@@ -86,7 +86,7 @@ SSH: `ssh -i ~/.ssh/medhistory_deploy root@194.87.140.190`. Паролевая �
 - Запросы с фронта: TanStack Query хуки через [frontend/src/services/](frontend/src/services/), а не разбросанные `fetch`/`axios` в компонентах.
 - Состояние: Zustand-сторы в [frontend/src/stores/](frontend/src/stores/).
 - Не логируй значения PII (содержимое документов, числовые значения анализов) — только ID.
-- Логика Telegram-бота живёт в n8n-воркфлоу ([n8n/workflows/](n8n/)), не в backend Python.
+- Регистрация требует двух согласий 152-ФЗ — `terms_and_privacy` и `special_category` — хранятся в таблице `user_consents` с sha256 текста. Юр. документы лежат в [frontend/public/legal/](frontend/public/legal/).
 
 ## 9. При работе с этим репозиторием
 

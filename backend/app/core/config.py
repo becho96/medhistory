@@ -27,14 +27,6 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
     
-    # Google OAuth
-    GOOGLE_CLIENT_ID: str = ""
-    GOOGLE_CLIENT_SECRET: str = ""
-    GOOGLE_REDIRECT_URI: str = "http://localhost:5173/auth/google/callback"
-    
-    # Telegram Bot
-    BOT_SECRET: str = ""  # Shared secret between n8n and backend for bot API auth
-
     # AI Assistant — Anthropic (primary provider for assistant)
     ANTHROPIC_API_KEY: str = ""
 

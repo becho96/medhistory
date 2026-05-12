@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from app.api.v1.endpoints import (
     auth, documents, timeline, reports, interpretations,
-    metrics, family, bot, health_events, internal, assistant,
+    metrics, family, health_events, internal, assistant,
     oauth_consent, mcp_connections,
 )
 
@@ -16,7 +16,6 @@ api_router.include_router(timeline.router,        prefix="/timeline",        tag
 api_router.include_router(reports.router,         prefix="/reports",         tags=["Reports"])
 api_router.include_router(interpretations.router, prefix="/interpretations", tags=["Interpretations"])
 api_router.include_router(metrics.router,         prefix="/metrics",         tags=["Metrics"])
-api_router.include_router(bot.router,             prefix="/bot",             tags=["Telegram Bot"])
 api_router.include_router(health_events.router,   prefix="/health-events",   tags=["Health Events"])
 api_router.include_router(assistant.router,       prefix="/assistant",       tags=["AI Assistant"])
 api_router.include_router(oauth_consent.router,   prefix="/oauth",           tags=["MCP OAuth"])

@@ -21,16 +21,5 @@ export const authService = {
     const response = await api.patch<User>('/auth/me', data)
     return response.data
   },
-
-  // Google OAuth
-  async getGoogleAuthUrl(): Promise<{ auth_url: string; state: string }> {
-    const response = await api.get<{ auth_url: string; state: string }>('/auth/google')
-    return response.data
-  },
-
-  async googleCallback(code: string, state?: string): Promise<AuthToken> {
-    const response = await api.post<AuthToken>('/auth/google/callback', { code, state })
-    return response.data
-  },
 }
 

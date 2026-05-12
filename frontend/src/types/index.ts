@@ -169,6 +169,10 @@ export interface RegisterData {
   email: string
   password: string
   full_name?: string
+  consents: {
+    terms_and_privacy: string
+    special_category: string
+  }
 }
 
 export interface AuthToken {

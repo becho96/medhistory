@@ -9,8 +9,8 @@ from app.models.analyte import (
     AnalyteSynonym,
     UserAnalyteMapping,
 )
-from app.models.bot_state import TelegramBotState
 from app.models.health_event import HealthEvent
+from app.models.consent import UserConsent
 
 __all__ = [
     "User",
@@ -32,9 +32,9 @@ __all__ = [
     "AnalyteStandard",
     "AnalyteSynonym",
     "UserAnalyteMapping",
-    # Telegram bot
-    "TelegramBotState",
     # Health events
     "HealthEvent",
+    # 152-ФЗ consent records
+    "UserConsent",
 ]
 
