@@ -125,6 +125,7 @@ services:
       dockerfile: Dockerfile.prod
       args:
         VITE_API_URL: ""
+        VITE_MCP_PUBLIC_URL: ${MCP_PUBLIC_URL:-https://mcp.medhistory.ru}
     expose:
       - "80"
     depends_on:
