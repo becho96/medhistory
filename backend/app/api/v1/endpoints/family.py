@@ -8,6 +8,7 @@ from app.models.user import User
 from app.models.family import RelationType
 from app.api.deps import get_current_user
 from app.services.family_service import family_service
+from app.services.subscription_service import SubscriptionService
 from app.schemas.family import (
     FamilyMemberCreate,
     FamilyMemberUpdate,
@@ -26,6 +27,21 @@ from app.schemas.family import (
 )
 
 router = APIRouter()
+
+
+async def require_pro_for_family(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> User:
+    """Gate family mutations behind Pro tier. GET endpoints stay open so users
+    whose Pro has expired can still see and manage already-added members."""
+    tier = await SubscriptionService.get_effective_tier(current_user.id, db)
+    if tier != "pro":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": "pro_required", "feature": "family"},
+        )
+    return current_user
 
 
 @router.get("/profiles", response_model=List[FamilyMemberWithAccess])
@@ -88,7 +104,7 @@ async def get_relation_types():
 @router.post("/members", response_model=FamilyMemberResponse, status_code=status.HTTP_201_CREATED)
 async def create_family_member(
     data: FamilyMemberCreate,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_pro_for_family),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -233,7 +249,7 @@ async def remove_family_member(
 @router.post("/invite", response_model=InviteSentResponse)
 async def invite_existing_user(
     data: InviteExistingUser,
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_pro_for_family),
     db: AsyncSession = Depends(get_db)
 ):
     """

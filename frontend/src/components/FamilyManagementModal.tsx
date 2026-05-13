@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
-import { X, UserPlus, Users, User, Mail, Lock, Calendar, Trash2, Key, AlertCircle, CheckCircle, ChevronDown } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { X, UserPlus, Users, User, Mail, Lock, Calendar, Trash2, Key, AlertCircle, CheckCircle, ChevronDown, Crown } from 'lucide-react'
 import { familyService } from '../services/family'
+import { subscriptionService } from '../services/subscription'
 import { useAuthStore } from '../stores/authStore'
-import type { FamilyMember, FamilyMemberCreate, RelationType, FamilyOwnerInfo } from '../types'
+import type { FamilyMember, FamilyMemberCreate, RelationType, FamilyOwnerInfo, SubscriptionInfo } from '../types'
 import { RELATION_TYPE_LABELS } from '../types'
 
 interface FamilyManagementModalProps {
@@ -43,6 +46,13 @@ export default function FamilyManagementModal({ isOpen, onClose, onProfilesUpdat
       loadFamilyInfo()
     }
   }, [isOpen])
+
+  const { data: subscription } = useQuery<SubscriptionInfo>({
+    queryKey: ['subscription', 'me'],
+    queryFn: subscriptionService.getMe,
+    enabled: isOpen,
+  })
+  const isPro = subscription?.tier === 'pro'
 
   const loadFamilyInfo = async () => {
     try {
@@ -241,23 +251,27 @@ export default function FamilyManagementModal({ isOpen, onClose, onProfilesUpdat
             Члены семьи
           </button>
           <button
-            onClick={() => setActiveTab('add')}
+            onClick={() => isPro && setActiveTab('add')}
+            disabled={!isPro}
+            title={!isPro ? 'Доступно в Pro' : undefined}
             className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'add' 
-                ? 'text-blue-600 border-b-2 border-blue-600' 
+              activeTab === 'add'
+                ? 'text-blue-600 border-b-2 border-blue-600'
                 : 'text-gray-500 hover:text-gray-700'
-            }`}
+            } disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-gray-500`}
           >
             <UserPlus className="w-4 h-4 inline-block mr-2" />
             Добавить
           </button>
           <button
-            onClick={() => setActiveTab('invite')}
+            onClick={() => isPro && setActiveTab('invite')}
+            disabled={!isPro}
+            title={!isPro ? 'Доступно в Pro' : undefined}
             className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'invite' 
-                ? 'text-blue-600 border-b-2 border-blue-600' 
+              activeTab === 'invite'
+                ? 'text-blue-600 border-b-2 border-blue-600'
                 : 'text-gray-500 hover:text-gray-700'
-            }`}
+            } disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-gray-500`}
           >
             <Mail className="w-4 h-4 inline-block mr-2" />
             Пригласить
@@ -266,6 +280,26 @@ export default function FamilyManagementModal({ isOpen, onClose, onProfilesUpdat
 
         {/* Content */}
         <div className="p-6 overflow-y-auto max-h-[60vh]">
+          {/* Pro banner */}
+          {subscription && !isPro && (
+            <div className="mb-4 p-4 rounded-xl border border-amber-200 bg-amber-50 flex items-start gap-3">
+              <Crown className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" />
+              <div className="flex-1 text-sm text-amber-900">
+                <div className="font-medium mb-1">Семейный аккаунт доступен в Pro</div>
+                <div className="text-amber-800">
+                  Подключите Pro, чтобы добавлять членов семьи и приглашать их в свой кабинет.
+                </div>
+              </div>
+              <Link
+                to="/subscription"
+                onClick={onClose}
+                className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium whitespace-nowrap"
+              >
+                К подписке
+              </Link>
+            </div>
+          )}
+
           {/* Messages */}
           {error && (
             <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 flex items-center gap-2 text-sm text-red-700">
@@ -289,12 +323,22 @@ export default function FamilyManagementModal({ isOpen, onClose, onProfilesUpdat
                 <div className="text-center py-8">
                   <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
                   <p className="text-gray-500">У вас пока нет добавленных членов семьи</p>
-                  <button
-                    onClick={() => setActiveTab('add')}
-                    className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
-                  >
-                    Добавить члена семьи
-                  </button>
+                  {isPro ? (
+                    <button
+                      onClick={() => setActiveTab('add')}
+                      className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
+                    >
+                      Добавить члена семьи
+                    </button>
+                  ) : (
+                    <Link
+                      to="/subscription"
+                      onClick={onClose}
+                      className="inline-block mt-4 px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm"
+                    >
+                      Подключить Pro
+                    </Link>
+                  )}
                 </div>
               ) : (
                 <>
@@ -396,7 +440,28 @@ export default function FamilyManagementModal({ isOpen, onClose, onProfilesUpdat
           )}
 
           {/* Add Member Tab */}
-          {activeTab === 'add' && (
+          {activeTab === 'add' && !isPro && (
+            <div className="text-center py-10 px-6">
+              <div className="w-14 h-14 rounded-2xl bg-amber-50 mx-auto mb-4 flex items-center justify-center">
+                <Crown className="w-7 h-7 text-amber-500" />
+              </div>
+              <h4 className="text-base font-semibold text-gray-900 mb-1">
+                Добавление членов семьи доступно в Pro
+              </h4>
+              <p className="text-sm text-gray-500 max-w-sm mx-auto">
+                Подключите Pro, чтобы создавать профили для родственников и вести их медицинскую
+                историю в одном кабинете.
+              </p>
+              <Link
+                to="/subscription"
+                onClick={onClose}
+                className="inline-block mt-5 px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium"
+              >
+                Перейти к подписке
+              </Link>
+            </div>
+          )}
+          {activeTab === 'add' && isPro && (
             <form onSubmit={handleAddMember} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -468,7 +533,28 @@ export default function FamilyManagementModal({ isOpen, onClose, onProfilesUpdat
           )}
 
           {/* Invite Tab */}
-          {activeTab === 'invite' && (
+          {activeTab === 'invite' && !isPro && (
+            <div className="text-center py-10 px-6">
+              <div className="w-14 h-14 rounded-2xl bg-amber-50 mx-auto mb-4 flex items-center justify-center">
+                <Crown className="w-7 h-7 text-amber-500" />
+              </div>
+              <h4 className="text-base font-semibold text-gray-900 mb-1">
+                Приглашения доступны в Pro
+              </h4>
+              <p className="text-sm text-gray-500 max-w-sm mx-auto">
+                Подключите Pro, чтобы приглашать существующих пользователей MedHistory в свой
+                семейный кабинет.
+              </p>
+              <Link
+                to="/subscription"
+                onClick={onClose}
+                className="inline-block mt-5 px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium"
+              >
+                Перейти к подписке
+              </Link>
+            </div>
+          )}
+          {activeTab === 'invite' && isPro && (
             <form onSubmit={handleInviteUser} className="space-y-4">
               <div className="p-4 rounded-lg bg-blue-50 border border-blue-100">
                 <p className="text-sm text-blue-700">

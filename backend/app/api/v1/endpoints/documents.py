@@ -19,6 +19,7 @@ from app.schemas.document import (
 from app.services.document_service import DocumentService
 from app.services.unit_normalization_service import unit_normalization_service
 from app.services.analyte_normalization_service_db import analyte_normalization_service_db
+from app.services.subscription_service import SubscriptionService, QuotaExceededError
 from app.api.deps import get_current_user, get_profile_user_id
 from app.db.mongodb import document_metadata_collection
 
@@ -32,10 +33,24 @@ async def upload_document(
     db: AsyncSession = Depends(get_db)
 ):
     """Upload a new document
-    
+
     Use X-Profile-Id header to upload to a family member's profile.
     """
-    
+
+    try:
+        await SubscriptionService.assert_can_upload(profile_user_id, db)
+    except QuotaExceededError as e:
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            detail={
+                "code": "quota_exceeded",
+                "used": e.used,
+                "limit": e.limit,
+                "tier": e.tier,
+                "reset_at": e.reset_at.isoformat(),
+            },
+        )
+
     try:
         document = await DocumentService.upload_document(
             file=file,

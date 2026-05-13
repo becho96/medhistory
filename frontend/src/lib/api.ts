@@ -95,6 +95,17 @@ api.interceptors.response.use(
       // Unauthorized - clear auth state fully (store + localStorage) to break reload loop
       useAuthStore.getState().logout()
     }
+
+    const status = error.response?.status
+    const detail = error.response?.data?.detail
+    const code = typeof detail === 'object' && detail !== null ? (detail as Record<string, unknown>).code : null
+
+    if (status === 402 && code === 'quota_exceeded') {
+      window.dispatchEvent(new CustomEvent('subscription:quota-exceeded', { detail }))
+    } else if (status === 403 && code === 'pro_required') {
+      window.dispatchEvent(new CustomEvent('subscription:pro-required', { detail }))
+    }
+
     return Promise.reject(error)
   }
 )

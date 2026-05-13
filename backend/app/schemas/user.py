@@ -39,8 +39,11 @@ class User(UserBase):
     birth_date: Optional[date] = None
     gender: Optional[Literal["male", "female", "other"]] = None
     has_credentials: bool = True
+    subscription_tier: Literal["free", "pro"] = "free"
+    pro_expires_at: Optional[datetime] = None
+    is_admin: bool = False
     created_at: datetime
-    
+
     class Config:
         from_attributes = True
 

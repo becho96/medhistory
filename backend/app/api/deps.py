@@ -96,6 +96,18 @@ async def get_profile_user_id(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have access to this profile"
         )
-    
+
     return profile_id
+
+
+async def get_current_admin_user(
+    current_user: User = Depends(get_current_user),
+) -> User:
+    """Authorize an admin user. Use as a dependency on admin-only routes."""
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required",
+        )
+    return current_user
 

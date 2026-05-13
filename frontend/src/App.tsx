@@ -15,9 +15,14 @@ import AssistantPage from './pages/AssistantPage'
 import Integrations from './pages/Integrations'
 import OAuthConsent from './pages/OAuthConsent'
 import LegalPage from './pages/LegalPage'
+import Subscription from './pages/Subscription'
+import AdminDashboard from './pages/admin/AdminDashboard'
+import AdminPromocodes from './pages/admin/Promocodes'
+import AdminUsers from './pages/admin/Users'
 
 // Layout
 import Layout from './components/Layout/Layout'
+import AdminRoute from './components/AdminRoute'
 
 function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
@@ -47,6 +52,12 @@ function App() {
           <Route path="/labs" element={<Labs />} />
           <Route path="/assistant" element={<AssistantPage />} />
           <Route path="/settings/integrations" element={<Integrations />} />
+          <Route path="/subscription" element={<Subscription />} />
+          <Route element={<AdminRoute />}>
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/promocodes" element={<AdminPromocodes />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+          </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       )}

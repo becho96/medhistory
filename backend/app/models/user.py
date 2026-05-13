@@ -15,7 +15,7 @@ class GenderEnum(str, enum.Enum):
 
 class User(Base):
     __tablename__ = "users"
-    
+
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String(255), unique=True, nullable=True, index=True)  # Nullable for family members
     password_hash = Column(String(255), nullable=True)  # Nullable for family members without credentials
@@ -23,6 +23,13 @@ class User(Base):
     birth_date = Column(Date, nullable=True)  # Дата рождения
     gender = Column(Enum(GenderEnum), nullable=True)  # Пол пользователя
     is_active = Column(Boolean, default=True)
+
+    # Subscription
+    subscription_tier = Column(String(16), nullable=False, default="free")
+    pro_expires_at = Column(DateTime(timezone=True), nullable=True)
+    pro_source = Column(String(32), nullable=True)  # 'promo' | 'admin'
+    is_admin = Column(Boolean, nullable=False, default=False)
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     

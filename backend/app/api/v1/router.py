@@ -3,7 +3,7 @@ from fastapi import APIRouter
 from app.api.v1.endpoints import (
     auth, documents, timeline, reports, interpretations,
     metrics, family, health_events, internal, assistant,
-    oauth_consent, mcp_connections,
+    oauth_consent, mcp_connections, subscription, admin,
 )
 
 api_router = APIRouter()
@@ -20,4 +20,6 @@ api_router.include_router(health_events.router,   prefix="/health-events",   tag
 api_router.include_router(assistant.router,       prefix="/assistant",       tags=["AI Assistant"])
 api_router.include_router(oauth_consent.router,   prefix="/oauth",           tags=["MCP OAuth"])
 api_router.include_router(mcp_connections.router, prefix="/mcp",             tags=["MCP Connections"])
+api_router.include_router(subscription.router,    prefix="/subscription",    tags=["Subscription"])
+api_router.include_router(admin.router,           prefix="/admin",           tags=["Admin"])
 

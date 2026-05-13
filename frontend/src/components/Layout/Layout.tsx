@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { Home, FileText, BarChart3, LogOut, FlaskConical, Brain, Heart, AlertCircle, Settings, Activity, Plug } from 'lucide-react'
+import { Home, FileText, BarChart3, LogOut, FlaskConical, Brain, Heart, AlertCircle, Settings, Activity, Plug, CreditCard, Shield, Ticket, Users as UsersIcon } from 'lucide-react'
 import { useAuthStore } from '../../stores/authStore'
 import { useState, useEffect } from 'react'
 import ProfileSwitcher from '../ProfileSwitcher'
@@ -50,6 +50,7 @@ export default function Layout() {
     { name: 'Медкарта', href: '/documents', icon: FileText },
     { name: 'Анализы', href: '/labs', icon: FlaskConical },
     { name: 'Интеграции', href: '/settings/integrations', icon: Plug },
+    { name: 'Подписка', href: '/subscription', icon: CreditCard },
   ]
 
   const navigationSoon = [
@@ -57,6 +58,14 @@ export default function Layout() {
     { name: 'Интерпретации', href: '/interpretations', icon: Brain },
     { name: 'Отчёты', href: '/reports', icon: BarChart3 },
   ]
+
+  const adminNavigation = user?.is_admin
+    ? [
+        { name: 'Админка', href: '/admin', icon: Shield },
+        { name: 'Промокоды', href: '/admin/promocodes', icon: Ticket },
+        { name: 'Пользователи', href: '/admin/users', icon: UsersIcon },
+      ]
+    : []
 
   return (
     <div className="h-[100dvh] flex flex-col bg-gray-50">
@@ -153,6 +162,40 @@ export default function Layout() {
                 </div>
               ))}
             </div>
+
+            {adminNavigation.length > 0 && (
+              <div className="pt-3 lg:pt-4 mt-3 border-t border-gray-100">
+                <div className="hidden lg:block text-[11px] uppercase font-semibold tracking-wide text-gray-400 px-3 mb-2">
+                  Администрирование
+                </div>
+                {adminNavigation.map((item) => {
+                  const isActive = location.pathname === item.href
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      title={item.name}
+                      className={`
+                        group flex items-center gap-3 p-2.5 lg:px-3 lg:py-2.5 rounded-xl
+                        transition-all duration-150 justify-center lg:justify-start mb-1
+                        ${isActive
+                          ? 'bg-blue-500 text-white'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                        }
+                      `}
+                    >
+                      <div className={`
+                        w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-all
+                        ${isActive ? 'bg-white/20' : 'bg-gray-100 group-hover:bg-gray-200'}
+                      `}>
+                        <item.icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-500 group-hover:text-gray-700'}`} />
+                      </div>
+                      <span className="hidden lg:inline text-sm font-medium">{item.name}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
           </nav>
         </aside>
 

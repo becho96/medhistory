@@ -22,6 +22,7 @@ from app.models.chat import ChatSession, ChatMessage  # AI assistant chat histor
 from app.models.mcp_oauth import (  # MCP OAuth 2.1 server (phase 2 multi-user)
     McpOAuthClient, McpAuthorizationCode, McpAccessToken, McpRefreshToken,
 )
+from app.models.subscription import PromoCode, PromoCodeActivation
 
 # Import analyte normalization service
 from app.services.analyte_normalization_service_db import analyte_normalization_service_db

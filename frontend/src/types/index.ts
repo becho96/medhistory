@@ -1,5 +1,7 @@
 export type Gender = 'male' | 'female' | 'other'
 
+export type SubscriptionTier = 'free' | 'pro'
+
 export interface User {
   id: string
   email?: string
@@ -8,7 +10,65 @@ export interface User {
   gender?: Gender
   is_active: boolean
   has_credentials?: boolean
+  subscription_tier: SubscriptionTier
+  pro_expires_at?: string | null
+  is_admin: boolean
   created_at: string
+}
+
+export interface SubscriptionInfo {
+  tier: SubscriptionTier
+  limit: number
+  used: number
+  remaining: number
+  pro_expires_at?: string | null
+  billing_owner_id: string
+  is_billing_owner: boolean
+}
+
+export interface ActivatePromoCodeResponse {
+  subscription: SubscriptionInfo
+  duration_days: number
+  activated_until: string
+}
+
+export interface PromoCode {
+  id: string
+  code: string
+  duration_days: number
+  max_activations: number
+  activations_count: number
+  expires_at?: string | null
+  is_active: boolean
+  comment?: string | null
+  created_at: string
+}
+
+export interface PromoCodeCreate {
+  code?: string
+  duration_days: number
+  max_activations: number
+  expires_at?: string | null
+  comment?: string | null
+}
+
+export interface AdminUserListItem {
+  id: string
+  email?: string | null
+  full_name?: string | null
+  subscription_tier: SubscriptionTier
+  pro_expires_at?: string | null
+  is_admin: boolean
+  is_active: boolean
+  created_at: string
+  documents_count: number
+}
+
+export interface AdminStats {
+  total_users: number
+  pro_users: number
+  active_promocodes: number
+  activations_this_month: number
 }
 
 export interface UserUpdate {
