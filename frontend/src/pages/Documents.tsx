@@ -47,7 +47,7 @@ type ViewMode = 'list' | 'timeline'
 const DISPLAY_SETTINGS_STORAGE_KEY = 'documents.displaySettings'
 
 const DEFAULT_DISPLAY_SETTINGS: DocumentDisplaySettingsValues = {
-  showTags: false,
+  showTags: true,
 }
 
 const loadDisplaySettings = (): DocumentDisplaySettingsValues => {

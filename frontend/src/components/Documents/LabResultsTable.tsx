@@ -119,19 +119,28 @@ export default function LabResultsTable({ documentId, documentType }: LabResults
                     {result.reference_range || '-'}
                   </td>
                   <td className="px-4 py-3 text-sm">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        result.flag === 'H'
-                          ? 'bg-red-100 text-red-800'
-                          : result.flag === 'L'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : result.flag === 'A'
-                          ? 'bg-purple-100 text-purple-800'
-                          : 'bg-green-100 text-green-800'
-                      }`}
-                    >
-                      {result.flag || 'N'}
-                    </span>
+                    {result.flag ? (
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          result.flag === 'H'
+                            ? 'bg-red-100 text-red-800'
+                            : result.flag === 'L'
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : result.flag === 'A'
+                            ? 'bg-purple-100 text-purple-800'
+                            : 'bg-green-100 text-green-800'
+                        }`}
+                      >
+                        {result.flag}
+                      </span>
+                    ) : (
+                      <span
+                        className="text-xs text-gray-400"
+                        title="Норма не указана в документе"
+                      >
+                        —
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-sm">
                     {result.canonical_name ? (
@@ -178,6 +187,10 @@ export default function LabResultsTable({ documentId, documentType }: LabResults
                   A
                 </span>
                 <span className="text-xs text-gray-600">Аномальное</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-400">—</span>
+                <span className="text-xs text-gray-600">Норма не указана</span>
               </div>
             </div>
           </div>
