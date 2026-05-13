@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { User as UserIcon, Save, X, Users, Check, XCircle } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { User as UserIcon, Save, X, Users, Check, XCircle, CreditCard, Crown, ChevronRight } from 'lucide-react'
 import { authService } from '../services/auth'
 import { familyService } from '../services/family'
-import type { User, Gender, FamilyInvite } from '../types'
+import { subscriptionService } from '../services/subscription'
+import type { User, Gender, FamilyInvite, SubscriptionInfo } from '../types'
 
 interface ProfileSettingsProps {
   user: User
@@ -24,6 +26,11 @@ export default function ProfileSettings({ user, onClose, onPendingInvitesUpdated
       .then(setPendingInvites)
       .catch(() => setPendingInvites([]))
   }, [])
+
+  const { data: subscription } = useQuery<SubscriptionInfo>({
+    queryKey: ['subscription', 'me'],
+    queryFn: subscriptionService.getMe,
+  })
 
   const updateMutation = useMutation({
     mutationFn: (data: { full_name?: string; birth_date?: string; gender?: Gender }) =>
@@ -149,6 +156,44 @@ export default function ProfileSettings({ user, onClose, onPendingInvitesUpdated
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Subscription summary */}
+        {subscription && (
+          <div className="px-6 pt-4 pb-4 border-b border-gray-200">
+            <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+              <CreditCard className="w-4 h-4" />
+              Подписка
+            </h3>
+            <Link
+              to="/subscription"
+              onClick={onClose}
+              className="block p-3 rounded-xl border border-gray-200 hover:border-emerald-300 hover:bg-emerald-50/30 transition-colors group"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  {subscription.tier === 'pro' ? (
+                    <div className="w-9 h-9 rounded-lg bg-amber-50 flex items-center justify-center shrink-0">
+                      <Crown className="w-4 h-4 text-amber-500" />
+                    </div>
+                  ) : (
+                    <div className="w-9 h-9 rounded-lg bg-gray-100 flex items-center justify-center shrink-0">
+                      <CreditCard className="w-4 h-4 text-gray-500" />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <div className="text-sm font-medium text-gray-900">
+                      {subscription.tier === 'pro' ? 'Pro' : 'Free'}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {subscription.used} из {subscription.limit} документов в этом месяце
+                    </div>
+                  </div>
+                </div>
+                <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-gray-600 shrink-0" />
+              </div>
+            </Link>
           </div>
         )}
 
