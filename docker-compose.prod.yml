@@ -139,26 +139,8 @@ services:
     image: nginx:alpine
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/conf.d/:/etc/nginx/conf.d-source/:ro
       - certbot_certs:/etc/letsencrypt:ro
       - certbot_www:/var/www/certbot
-    # Conditionally enable mcp-ssl.conf only when the mcp.medhistory.ru
-    # certificate exists. Without this guard nginx refuses to start whenever
-    # the cert hasn't been issued yet, taking medhistory.ru down with it.
-    command: >
-      /bin/sh -c "
-        set -e;
-        mkdir -p /etc/nginx/conf.d;
-        rm -f /etc/nginx/conf.d/*.conf;
-        cp /etc/nginx/conf.d-source/mcp-http.conf /etc/nginx/conf.d/;
-        if [ -f /etc/letsencrypt/live/mcp.medhistory.ru/fullchain.pem ]; then
-          cp /etc/nginx/conf.d-source/mcp-ssl.conf /etc/nginx/conf.d/;
-          echo 'nginx: mcp.medhistory.ru cert found, HTTPS block enabled';
-        else
-          echo 'nginx: mcp.medhistory.ru cert missing, HTTPS block disabled';
-        fi;
-        exec nginx -g 'daemon off;'
-      "
     ports:
       - "${NGINX_PORT:-80}:80"
       - "443:443"
