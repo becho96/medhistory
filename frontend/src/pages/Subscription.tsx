@@ -148,11 +148,29 @@ export default function Subscription() {
               Активировать
             </button>
           </div>
+          <p className="text-xs text-gray-500 pt-1">
+            Стоимость Pro — 200 ₽ / мес. Чтобы получить промокод, напишите{' '}
+            <a
+              href="https://t.me/ironbor15"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-emerald-600 hover:text-emerald-700 font-medium"
+            >
+              @ironbor15
+            </a>{' '}
+            в Telegram.
+          </p>
         </form>
       )}
 
       <div className="rounded-2xl border border-gray-200 bg-white p-6">
-        <h2 className="text-base font-semibold text-gray-900 mb-4">Что даёт Pro</h2>
+        <div className="flex items-baseline justify-between mb-4 gap-3 flex-wrap">
+          <h2 className="text-base font-semibold text-gray-900">Что даёт Pro</h2>
+          <div className="text-sm text-gray-600">
+            <span className="text-lg font-semibold text-gray-900">200 ₽</span>
+            <span className="text-gray-500"> / мес</span>
+          </div>
+        </div>
         <ul className="space-y-3">
           <li className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center shrink-0">
