@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { HeartPulse, ArrowLeft } from 'lucide-react'
 
 const SLUG_TO_FILE: Record<string, { file: string; title: string }> = {
@@ -107,7 +108,7 @@ export default function LegalPage() {
           {error ? (
             <p className="text-red-600 text-[15px]">{error}</p>
           ) : content ? (
-            <ReactMarkdown components={mdComponents}>{content}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>{content}</ReactMarkdown>
           ) : (
             <p className="text-gray-400 text-[15px]">Загрузка…</p>
           )}

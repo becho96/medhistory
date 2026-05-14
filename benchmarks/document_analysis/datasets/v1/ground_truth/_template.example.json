@@ -1,0 +1,51 @@
+{
+  "doc_id": "doc_example",
+  "source_file": "doc_example_cbc.pdf",
+  "source_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "tags": {
+    "document_type": "Результаты анализа",
+    "format": "pdf_text",
+    "specialty": "Терапия",
+    "difficulty": "easy"
+  },
+  "metadata": {
+    "document_type": "Результаты анализа",
+    "document_subtype": "Общий анализ крови",
+    "research_area": "Гематология",
+    "specialties": ["Терапия", "Гематология"],
+    "document_date": "2026-04-12",
+    "patient_name": "Иванов И. И.",
+    "medical_facility": "ООО Хеликс",
+    "document_language": "ru",
+    "confidence": null
+  },
+  "summary_reference": "Общий анализ крови от 12.04.2026, пациент Иванов И. И. Все основные показатели в пределах нормы, кроме незначительно сниженного гемоглобина (128 г/л при норме 130-160).",
+  "summary_key_facts": [
+    "Это общий анализ крови",
+    "Дата анализа — 12 апреля 2026",
+    "Пациент — Иванов И. И.",
+    "Гемоглобин 128 г/л — ниже нормы",
+    "Остальные показатели в норме"
+  ],
+  "lab_results": [
+    {
+      "test_name": "Гемоглобин",
+      "analyte_canonical": "Гемоглобин",
+      "aliases": ["HGB", "Hb"],
+      "value": "128",
+      "unit": "г/л",
+      "reference_range": "130-160",
+      "flag": "L"
+    },
+    {
+      "test_name": "Эритроциты",
+      "analyte_canonical": "Эритроциты",
+      "aliases": ["RBC", "Эр."],
+      "value": "4.5",
+      "unit": "10^12/л",
+      "reference_range": "4.0-5.5",
+      "flag": "N"
+    }
+  ],
+  "notes": "Шаблон ground-truth разметки. Не используется в прогонах: runner итерирует только по documents[] из manifest.yaml."
+}
