@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Boolean, DateTime, Date, Enum
+from sqlalchemy import Column, String, Boolean, DateTime, Date, Enum, BigInteger
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
@@ -29,6 +29,9 @@ class User(Base):
     pro_expires_at = Column(DateTime(timezone=True), nullable=True)
     pro_source = Column(String(32), nullable=True)  # 'promo' | 'admin'
     is_admin = Column(Boolean, nullable=False, default=False)
+
+    # Telegram bot — links this account to a Telegram user (re-added 2026-05-15)
+    telegram_id = Column(BigInteger, unique=True, nullable=True, index=True)
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

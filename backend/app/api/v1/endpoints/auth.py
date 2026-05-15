@@ -4,11 +4,11 @@ from sqlalchemy import select
 
 from app.db.postgres import get_db
 from app.models.user import User
-from app.models.consent import UserConsent
 from app.schemas.user import (
     UserCreate, UserLogin, User as UserSchema, Token, UserUpdate, REQUIRED_CONSENTS,
 )
 from app.core.security import get_password_hash, verify_password, create_access_token
+from app.services.consent_service import record_consents
 from app.api.deps import get_current_user
 
 router = APIRouter()
@@ -55,16 +55,11 @@ async def register(
     client_ip = request.client.host if request.client else None
     user_agent = request.headers.get("user-agent")
 
-    for consent_type, document_version in user_data.consents.items():
-        if consent_type not in REQUIRED_CONSENTS:
-            continue
-        db.add(UserConsent(
-            user_id=user.id,
-            consent_type=consent_type,
-            document_version=document_version,
-            ip_address=client_ip,
-            user_agent=user_agent,
-        ))
+    record_consents(
+        db, user, user_data.consents,
+        ip_address=client_ip, user_agent=user_agent,
+        only_types=REQUIRED_CONSENTS,
+    )
 
     await db.commit()
     await db.refresh(user)

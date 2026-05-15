@@ -92,6 +92,7 @@ services:
       ENVIRONMENT: ${ENVIRONMENT:-development}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
       BOT_SECRET: ${BOT_SECRET:-}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       MCP_ENABLED: ${MCP_ENABLED:-false}
       MCP_BEARER_TOKEN: ${MCP_BEARER_TOKEN:-}
       MCP_USER_ID: ${MCP_USER_ID:-}
@@ -184,6 +185,29 @@ services:
         condition: service_started
     networks:
       - medhistory_network
+
+  # Telegram Bot — long-polling aiogram service (no inbound ports)
+  bot:
+    build:
+      context: ./bot
+      dockerfile: Dockerfile
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    environment:
+      BOT_TOKEN: ${TELEGRAM_BOT_TOKEN}
+      BOT_SECRET: ${BOT_SECRET}
+      BACKEND_INTERNAL_URL: http://backend:8000
+      MINIAPP_URL: ${MINIAPP_URL:-https://medhistory.ru}
+      LEGAL_BASE_URL: ${LEGAL_BASE_URL:-https://medhistory.ru}
+    volumes:
+      - ./bot:/app
+    depends_on:
+      backend:
+        condition: service_started
+    networks:
+      - medhistory_network
+    restart: unless-stopped
 
 volumes:
   postgres_data:

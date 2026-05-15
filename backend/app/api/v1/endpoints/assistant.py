@@ -19,7 +19,8 @@ import uuid
 from typing import Optional
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, HTTPException, Query
-from langchain_core.messages import HumanMessage
+from pydantic import BaseModel
+from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 
@@ -393,3 +394,80 @@ async def get_session_messages(
 async def get_available_models():
     """Return all supported providers and model IDs for the frontend ModelSelector."""
     return AVAILABLE_MODELS
+
+
+# ─── Non-streaming REST ─────────────────────────────────────────────────────────
+
+class AssistantAskRequest(BaseModel):
+    message: str
+    session_id: Optional[str] = None
+
+
+class AssistantAskResponse(BaseModel):
+    answer: str
+    session_id: str
+    tools_used: list[str] = []
+
+
+@router.post("/ask", response_model=AssistantAskResponse)
+async def assistant_ask(
+    payload: AssistantAskRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Single-shot, non-streaming assistant call.
+
+    Runs the same LangGraph graph as the WebSocket endpoint but returns the
+    full answer in one response — for clients that can't consume the stream
+    (e.g. the Telegram bot). Persists the exchange so chat history carries
+    over between the bot and the web UI.
+    """
+    user_text = payload.message.strip()
+    if not user_text:
+        raise HTTPException(status_code=400, detail="Empty message")
+
+    provider = settings.ASSISTANT_PROVIDER
+    model_id = settings.ASSISTANT_MODEL
+
+    session = await _get_or_create_session(
+        db, current_user.id, payload.session_id, provider, model_id
+    )
+    is_new = not payload.session_id or str(session.id) != payload.session_id
+
+    history = await _load_history(db, session.id, settings.CHAT_HISTORY_LIMIT)
+    graph = build_graph(db, mongodb)
+
+    initial_state: dict = {
+        "messages":        history + [HumanMessage(content=user_text)],
+        "user_id":         str(current_user.id),
+        "session_id":      str(session.id),
+        "model_config":    {"provider": provider, "model_id": model_id},
+        "patient_profile": {},
+    }
+
+    try:
+        final_state = await graph.ainvoke(initial_state)
+    except Exception as exc:
+        logger.exception("[ASSISTANT] /ask graph error: %s", exc)
+        raise HTTPException(status_code=502, detail="Ассистент временно недоступен")
+
+    answer = ""
+    tools_used: list[str] = []
+    for msg in final_state.get("messages", []):
+        if isinstance(msg, ToolMessage):
+            if msg.name and msg.name not in tools_used:
+                tools_used.append(msg.name)
+        elif isinstance(msg, AIMessage):
+            if msg.content and not getattr(msg, "tool_calls", None):
+                answer = msg.content if isinstance(msg.content, str) else str(msg.content)
+
+    if not answer:
+        logger.warning("[ASSISTANT] /ask пустой ответ | user_id=%s", current_user.id)
+        raise HTTPException(status_code=502, detail="Не удалось получить ответ ассистента")
+
+    if is_new:
+        await _auto_title(session, user_text, db)
+    await _save_messages(db, session.id, user_text, answer, tools_used, provider, model_id)
+    await db.commit()
+
+    return AssistantAskResponse(answer=answer, session_id=str(session.id), tools_used=tools_used)

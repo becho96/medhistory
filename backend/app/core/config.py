@@ -26,6 +26,10 @@ class Settings(BaseSettings):
     JWT_SECRET: str
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 24 hours
+
+    # Telegram bot
+    BOT_SECRET: str = ""           # shared secret for trusted bot↔backend calls (X-Bot-Secret)
+    TELEGRAM_BOT_TOKEN: str = ""   # used to validate Mini App initData HMAC signature
     
     # AI Assistant — Anthropic (primary provider for assistant)
     ANTHROPIC_API_KEY: str = ""

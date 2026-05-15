@@ -17,6 +17,7 @@ on:
           - all
           - backend
           - frontend
+          - bot
           - monitoring
 
 env:
@@ -89,6 +90,8 @@ jobs:
             $SSH "cd ${{ env.DEPLOY_PATH }} && $BUILD backend && $UP backend"
           elif [ "${{ inputs.service }}" = "frontend" ]; then
             $SSH "cd ${{ env.DEPLOY_PATH }} && $BUILD frontend && $UP frontend"
+          elif [ "${{ inputs.service }}" = "bot" ]; then
+            $SSH "cd ${{ env.DEPLOY_PATH }} && $BUILD bot && $UP bot"
           elif [ "${{ inputs.service }}" = "monitoring" ]; then
             $SSH "cd ${{ env.DEPLOY_PATH }} && $MON_BUILD && $MON_UP"
           fi
