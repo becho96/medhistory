@@ -83,11 +83,14 @@ jobs:
           UP="docker compose -f docker-compose.prod.yml --env-file .env.production up -d"
           MON_BUILD="docker compose -f monitoring/docker-compose.monitoring.yml --env-file .env.production build --no-cache --progress=plain"
           MON_UP="docker compose -f monitoring/docker-compose.monitoring.yml --env-file .env.production up -d"
+          # Применяет новые SQL-миграции через таблицу schema_migrations.
+          # Выполняется до `up -d`, чтобы новый backend стартовал на актуальной схеме.
+          MIGRATE="PSQL='docker compose -f docker-compose.prod.yml --env-file .env.production exec -T postgres psql -U medhistory_user medhistory' bash backend/migrations/apply.sh"
 
           if [ "${{ inputs.service }}" = "all" ]; then
-            $SSH "cd ${{ env.DEPLOY_PATH }} && $BUILD && $UP && $MON_BUILD && $MON_UP"
+            $SSH "cd ${{ env.DEPLOY_PATH }} && $BUILD && $MIGRATE && $UP && $MON_BUILD && $MON_UP"
           elif [ "${{ inputs.service }}" = "backend" ]; then
-            $SSH "cd ${{ env.DEPLOY_PATH }} && $BUILD backend && $UP backend"
+            $SSH "cd ${{ env.DEPLOY_PATH }} && $BUILD backend && $MIGRATE && $UP backend"
           elif [ "${{ inputs.service }}" = "frontend" ]; then
             $SSH "cd ${{ env.DEPLOY_PATH }} && $BUILD frontend && $UP frontend"
           elif [ "${{ inputs.service }}" = "bot" ]; then
@@ -95,6 +98,17 @@ jobs:
           elif [ "${{ inputs.service }}" = "monitoring" ]; then
             $SSH "cd ${{ env.DEPLOY_PATH }} && $MON_BUILD && $MON_UP"
           fi
+
+      - name: Reload nginx
+        # Контейнеры backend/frontend пересоздаются с новыми IP при `up -d`,
+        # а nginx кеширует адреса upstream'ов с момента своего старта → 502.
+        # Reload заставляет nginx пере-резолвить DNS (без даунтайма).
+        if: inputs.service == 'all' || inputs.service == 'backend' || inputs.service == 'frontend'
+        run: |
+          echo "🔄 Reloading nginx to refresh upstream DNS..."
+          ssh -o ServerAliveInterval=30 -o ServerAliveCountMax=20 \
+            ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} \
+            "cd ${{ env.DEPLOY_PATH }} && docker compose -f docker-compose.prod.yml --env-file .env.production exec -T nginx nginx -s reload"
 
       - name: Health check
         run: |
