@@ -1,8 +1,9 @@
 // Yandex Metrika integration.
 //
-// The counter ID comes from the VITE_YM_ID env var (set in .env.production),
-// so analytics stays off in local dev and the dev traffic never pollutes the
-// counter. Every function no-ops gracefully when the ID is absent.
+// The counter ID comes from the VITE_YM_ID env var, injected at build time as
+// a Docker build arg (see docker-compose.prod.yml). It is unset in local dev,
+// so analytics stays off there and dev traffic never pollutes the counter.
+// Every function no-ops gracefully when the ID is absent.
 
 const YM_ID = import.meta.env.VITE_YM_ID
 

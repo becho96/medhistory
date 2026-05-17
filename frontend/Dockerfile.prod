@@ -18,6 +18,10 @@ ENV VITE_API_URL=${VITE_API_URL}
 ARG VITE_MCP_PUBLIC_URL
 ENV VITE_MCP_PUBLIC_URL=${VITE_MCP_PUBLIC_URL}
 
+# Yandex Metrika counter ID (public value)
+ARG VITE_YM_ID
+ENV VITE_YM_ID=${VITE_YM_ID}
+
 # Build the application
 RUN npm run build
 

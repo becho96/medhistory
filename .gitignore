@@ -4,8 +4,6 @@
 .env.staging
 .env.production
 .env.*.local
-# Public Vite build config (Yandex Metrika ID — not a secret), must ship to prod
-!frontend/.env.production
 
 # Logs
 logs/
