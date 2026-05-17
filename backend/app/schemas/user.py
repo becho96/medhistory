@@ -22,6 +22,11 @@ class UserCreate(BaseModel):
         ...,
         description="Required: {'terms_and_privacy': '<sha256>', 'special_category': '<sha256>'}",
     )
+    signup_utm: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="Marketing attribution captured on first landing (utm_* + referrer).",
+    )
+    interview_opt_in: bool = False
 
 class UserLogin(BaseModel):
     email: EmailStr

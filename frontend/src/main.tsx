@@ -5,7 +5,13 @@ import { BrowserRouter } from 'react-router-dom'
 import { Toaster } from 'sonner'
 import App from './App.tsx'
 import { TelegramAuthGate } from './components/TelegramAuthGate'
+import { captureAttribution } from './lib/attribution'
+import { initAnalytics } from './lib/analytics'
 import './index.css'
+
+// Capture marketing attribution and start analytics before the app mounts.
+captureAttribution()
+initAnalytics()
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -44,10 +44,21 @@ async def register(
             detail="Email already registered"
         )
 
+    signup_utm = user_data.signup_utm or None
+    if signup_utm and signup_utm.get("utm_source"):
+        signup_source = signup_utm["utm_source"][:64]
+    elif signup_utm and signup_utm.get("referrer"):
+        signup_source = "referral"
+    else:
+        signup_source = "direct"
+
     user = User(
         email=user_data.email,
         password_hash=get_password_hash(user_data.password),
         full_name=user_data.full_name,
+        signup_source=signup_source,
+        signup_utm=signup_utm,
+        interview_opt_in=user_data.interview_opt_in,
     )
     db.add(user)
     await db.flush()  # populate user.id before consent rows

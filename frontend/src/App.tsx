@@ -3,6 +3,7 @@ import { useAuthStore } from './stores/authStore'
 
 // Pages
 import Landing from './pages/Landing'
+import LandingMoms from './pages/LandingMoms'
 import Login from './pages/Login'
 import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
@@ -38,6 +39,7 @@ function App() {
       {!isAuthenticated ? (
         <>
           <Route path="/" element={<Landing />} />
+          <Route path="/deti" element={<LandingMoms />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="*" element={<Navigate to="/" replace />} />

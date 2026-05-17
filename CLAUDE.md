@@ -24,6 +24,7 @@
 - Frontend entry: [frontend/src/App.tsx](frontend/src/App.tsx)
 - JWT хранится в `localStorage` под ключом `auth_token`.
 - Benchmark качества анализа документов: [benchmarks/document_analysis/](benchmarks/document_analysis/) — версионируемая выборка + CLI для прогона prod-pipeline с подменяемой LLM (`run`/`score`/`compare`). README в папке.
+- Telegram-бот: отдельный сервис [bot/](bot/) — aiogram, long-polling, свой контейнер; backend-роутер `/api/v1/bot/*`.
 
 ## 4. Сборка и запуск
 
@@ -51,7 +52,7 @@ cd frontend && npm run lint        # ESLint, max-warnings 0
 - **MongoDB** — `document_metadata`. Значения анализов: `extracted_data.lab_results`. Summary: `extracted_data.summary`. Классификация: `classification.specialties` (массив).
 - **MinIO** — сырые файлы.
 
-**Миграции:** сырой SQL в [backend/migrations/](backend/migrations/) как `00N_*.sql` (на текущий момент последняя — `010`). Применять через:
+**Миграции:** сырой SQL в [backend/migrations/](backend/migrations/) как `00N_*.sql` (на текущий момент последняя — `022`). Применять через:
 ```bash
 psql -U medhistory_user medhistory -f backend/migrations/XXX_*.sql
 ```

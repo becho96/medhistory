@@ -233,6 +233,8 @@ export interface RegisterData {
     terms_and_privacy: string
     special_category: string
   }
+  signup_utm?: Record<string, string>
+  interview_opt_in?: boolean
 }
 
 export interface AuthToken {

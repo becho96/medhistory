@@ -6,6 +6,8 @@ import { authService } from '../services/auth'
 import { useAuthStore } from '../stores/authStore'
 import { HeartPulse } from 'lucide-react'
 import { sha256 } from '../lib/sha256'
+import { getAttribution } from '../lib/attribution'
+import { trackGoal } from '../lib/analytics'
 
 interface ConsentVersions {
   terms_and_privacy: string
@@ -33,6 +35,7 @@ export default function Register() {
   const [fullName, setFullName] = useState('')
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [consentAccepted, setConsentAccepted] = useState(false)
+  const [interviewOptIn, setInterviewOptIn] = useState(false)
   const [versions, setVersions] = useState<ConsentVersions | null>(null)
   const [versionsError, setVersionsError] = useState<string | null>(null)
 
@@ -52,6 +55,8 @@ export default function Register() {
       password: string
       full_name: string
       consents: ConsentVersions
+      signup_utm?: Record<string, string>
+      interview_opt_in: boolean
     }) => {
       await authService.register(data)
       const token = await authService.login({ email: data.email, password: data.password })
@@ -61,6 +66,7 @@ export default function Register() {
     },
     onSuccess: ({ user, token }) => {
       setAuth(user, token)
+      trackGoal('signup')
       toast.success('Добро пожаловать!')
       navigate('/')
     },
@@ -83,7 +89,14 @@ export default function Register() {
       return
     }
     if (!termsAccepted || !consentAccepted) return
-    registerMutation.mutate({ email, password, full_name: fullName, consents: versions })
+    registerMutation.mutate({
+      email,
+      password,
+      full_name: fullName,
+      consents: versions,
+      signup_utm: getAttribution() ?? undefined,
+      interview_opt_in: interviewOptIn,
+    })
   }
 
   const canSubmit = termsAccepted && consentAccepted && !!versions && !registerMutation.isPending
@@ -194,6 +207,19 @@ export default function Register() {
               </p>
             )}
           </div>
+
+          <label className="flex items-start gap-2.5 cursor-pointer bg-emerald-50 border border-emerald-100 rounded-xl p-3">
+            <input
+              type="checkbox"
+              checked={interviewOptIn}
+              onChange={(e) => setInterviewOptIn(e.target.checked)}
+              className="mt-0.5 w-4 h-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0"
+            />
+            <span className="text-[13px] text-gray-700 leading-relaxed">
+              Готов(а) поделиться опытом в коротком интервью (~30 минут).
+              Участникам дарим Pro-доступ.
+            </span>
+          </label>
 
           <button
             type="submit"

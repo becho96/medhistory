@@ -6,6 +6,7 @@ import { Upload, CheckCircle2, XCircle, Loader2, FileText, X, Crown } from 'luci
 import { toast } from 'sonner'
 import { documentsService } from '../../services/documents'
 import { subscriptionService } from '../../services/subscription'
+import { trackGoal } from '../../lib/analytics'
 import type { SubscriptionInfo } from '../../types'
 
 interface UploadingFile {
@@ -60,8 +61,9 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
       }, 200)
 
       await documentsService.uploadDocument(file)
-      
+
       clearInterval(progressInterval)
+      trackGoal('document_uploaded')
 
       // Обновляем статус на успешный
       setUploadingFiles((prev) =>
