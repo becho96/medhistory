@@ -1,5 +1,7 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from './stores/authStore'
+import { trackPageview } from './lib/analytics'
 
 // Pages
 import Landing from './pages/Landing'
@@ -27,6 +29,18 @@ import AdminRoute from './components/AdminRoute'
 
 function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const location = useLocation()
+  const isInitialRender = useRef(true)
+
+  // Report SPA route changes to Yandex Metrika. The 'init' call already
+  // counted the first load, so the initial render is skipped here.
+  useEffect(() => {
+    if (isInitialRender.current) {
+      isInitialRender.current = false
+      return
+    }
+    trackPageview()
+  }, [location.pathname, location.search])
 
   return (
     <Routes>

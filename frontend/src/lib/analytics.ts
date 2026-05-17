@@ -48,3 +48,13 @@ export function trackGoal(goal: string, params?: Record<string, unknown>): void 
   if (!YM_ID || typeof window === 'undefined' || !window.ym) return
   window.ym(Number(YM_ID), 'reachGoal', goal, params)
 }
+
+/**
+ * Records an SPA pageview. The Metrika 'init' call already counts the first
+ * page load, so callers must skip the initial render and only fire this on
+ * subsequent client-side route changes.
+ */
+export function trackPageview(): void {
+  if (!YM_ID || typeof window === 'undefined' || !window.ym) return
+  window.ym(Number(YM_ID), 'hit', window.location.href)
+}
