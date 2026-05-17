@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Literal
+from typing import List, Optional, Literal
 from datetime import datetime
 import uuid
 
@@ -42,6 +42,7 @@ class AdminUserListItem(BaseModel):
     is_active: bool
     created_at: datetime
     documents_count: int = 0
+    signup_source: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -55,8 +56,14 @@ class SetAdminRequest(BaseModel):
     is_admin: bool
 
 
+class SignupSourceCount(BaseModel):
+    source: str
+    count: int
+
+
 class AdminStats(BaseModel):
     total_users: int
     pro_users: int
     active_promocodes: int
     activations_this_month: int
+    signups_by_source: List[SignupSourceCount] = []

@@ -62,6 +62,12 @@ export interface AdminUserListItem {
   is_active: boolean
   created_at: string
   documents_count: number
+  signup_source?: string | null
+}
+
+export interface SignupSourceCount {
+  source: string
+  count: number
 }
 
 export interface AdminStats {
@@ -69,6 +75,7 @@ export interface AdminStats {
   pro_users: number
   active_promocodes: number
   activations_this_month: number
+  signups_by_source: SignupSourceCount[]
 }
 
 export interface UserUpdate {

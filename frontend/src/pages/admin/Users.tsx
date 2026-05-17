@@ -103,6 +103,7 @@ export default function AdminUsers() {
               <th className="text-left px-4 py-3 font-medium">Тариф</th>
               <th className="text-left px-4 py-3 font-medium">Pro до</th>
               <th className="text-left px-4 py-3 font-medium">Документов</th>
+              <th className="text-left px-4 py-3 font-medium">Источник</th>
               <th className="text-left px-4 py-3 font-medium">Создан</th>
               <th className="px-4 py-3"></th>
             </tr>
@@ -110,14 +111,14 @@ export default function AdminUsers() {
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={6} className="text-center py-8 text-gray-400">
+                <td colSpan={7} className="text-center py-8 text-gray-400">
                   <Loader2 className="w-5 h-5 animate-spin inline" />
                 </td>
               </tr>
             )}
             {!isLoading && users && users.length === 0 && (
               <tr>
-                <td colSpan={6} className="text-center py-8 text-gray-400">Ничего не найдено</td>
+                <td colSpan={7} className="text-center py-8 text-gray-400">Ничего не найдено</td>
               </tr>
             )}
             {users?.map((u) => (
@@ -144,6 +145,15 @@ export default function AdminUsers() {
                 </td>
                 <td className="px-4 py-3 text-gray-700">{formatDate(u.pro_expires_at)}</td>
                 <td className="px-4 py-3 text-gray-700">{u.documents_count}</td>
+                <td className="px-4 py-3 text-gray-600">
+                  {u.signup_source ? (
+                    <span className="px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 text-xs">
+                      {u.signup_source}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400">—</span>
+                  )}
+                </td>
                 <td className="px-4 py-3 text-gray-500">{formatDate(u.created_at)}</td>
                 <td className="px-4 py-3 text-right">
                   <div className="inline-flex items-center gap-2">

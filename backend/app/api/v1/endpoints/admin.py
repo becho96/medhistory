@@ -18,6 +18,7 @@ from app.schemas.admin import (
     GrantProRequest,
     SetAdminRequest,
     AdminStats,
+    SignupSourceCount,
 )
 from app.schemas.user import User as UserSchema
 from app.services.subscription_service import SubscriptionService
@@ -158,6 +159,7 @@ async def list_users(
                 is_active=user.is_active,
                 created_at=user.created_at,
                 documents_count=int(docs or 0),
+                signup_source=user.signup_source,
             )
         )
     return items
@@ -238,9 +240,25 @@ async def get_stats(db: AsyncSession = Depends(get_db)):
         )
     ).scalar_one()
 
+    # Signups grouped by acquisition channel (signup_source). NULL covers users
+    # registered before attribution tracking existed.
+    source_col = func.coalesce(User.signup_source, "(не указан)")
+    source_rows = (
+        await db.execute(
+            select(source_col, func.count(User.id))
+            .group_by(source_col)
+            .order_by(func.count(User.id).desc())
+        )
+    ).all()
+    signups_by_source = [
+        SignupSourceCount(source=str(source), count=int(count))
+        for source, count in source_rows
+    ]
+
     return AdminStats(
         total_users=int(total_users),
         pro_users=int(pro_users),
         active_promocodes=int(active_promocodes),
         activations_this_month=int(activations_this_month),
+        signups_by_source=signups_by_source,
     )
