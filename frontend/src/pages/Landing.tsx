@@ -19,14 +19,7 @@ const Landing = () => {
       {/* Hero */}
       <section className="pt-12 sm:pt-16 pb-16 sm:pb-20 px-4 sm:px-10">
         <div className="max-w-[1400px] mx-auto text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 border border-gray-200 rounded-full px-1 py-1 mb-6 sm:mb-8">
-            <span className="bg-emerald-400 text-white text-[11px] sm:text-[12px] font-medium px-2.5 py-0.5 rounded-full">Новое</span>
-            <span className="text-[13px] sm:text-[14px] text-gray-600 pr-2 flex items-center gap-1">
-              AI-ассистент который знает вашу медисторию
-              <ChevronRight className="w-4 h-4 text-gray-400" />
-            </span>
-          </div>
+
 
           <h1 className="text-[38px] sm:text-[52px] md:text-[64px] leading-[1.05] font-semibold text-gray-900 tracking-tight max-w-[1088px] mx-auto mb-5 sm:mb-6">
             Умное управление{' '}
