@@ -1,10 +1,15 @@
-"""Tools: list_documents, get_doctor_visits, get_document_summary."""
+"""Tools: list_documents, get_doctor_visits, get_document_summary, get_document_original."""
 import json
+from datetime import timedelta
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
 
+from app.core.config import settings
+from app.db.minio_client import minio_client
 from mcp_server.database import get_pg_pool, get_mongo_db
 from mcp_server.tools._user import resolve_user_id
+
+ORIGINAL_URL_EXPIRES_SECONDS = 300
 
 
 def register(mcp: FastMCP) -> None:
@@ -78,7 +83,8 @@ def register(mcp: FastMCP) -> None:
     ) -> str:
         """
         Return a list of all medical documents uploaded by the patient (metadata only,
-        no content). Use search_documents or get_document_summary to get content.
+        no content). Use search_documents or get_document_summary to get summarized
+        content, or get_document_original to retrieve the source file.
 
         Document types: 'Прием врача', 'Результаты анализа', 'Инструментальное исследование',
         'Функциональная диагностика', 'Другое'.
@@ -106,7 +112,8 @@ def register(mcp: FastMCP) -> None:
 
             where = " AND ".join(conditions)
             rows = await conn.fetch(
-                f"SELECT id, original_filename, document_type, document_date, medical_facility "
+                f"SELECT id, original_filename, file_type, file_size, file_url, "
+                f"document_type, document_date, medical_facility "
                 f"FROM documents WHERE {where} "
                 f"ORDER BY document_date DESC LIMIT ${len(params) + 1}",
                 *params, limit,
@@ -119,6 +126,9 @@ def register(mcp: FastMCP) -> None:
                 "type": r["document_type"],
                 "date": str(r["document_date"]) if r["document_date"] else None,
                 "facility": r["medical_facility"],
+                "file_type": r["file_type"],
+                "file_size": r["file_size"],
+                "has_original": bool(r["file_url"]),
             }
             for r in rows
         ]
@@ -161,4 +171,49 @@ def register(mcp: FastMCP) -> None:
             "date": str(row["document_date"]) if row["document_date"] else None,
             "facility": row["medical_facility"],
             "summary": summary,
+        }, ensure_ascii=False)
+
+    @mcp.tool()
+    async def get_document_original(document_id: str) -> str:
+        """
+        Return a short-lived download URL for the original uploaded source file.
+        Get document IDs from list_documents or search_documents.
+
+        Args:
+            document_id: UUID of the document.
+        """
+        pool = await get_pg_pool()
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT original_filename, file_type, file_size, file_url, "
+                "document_type, document_date, medical_facility "
+                "FROM documents WHERE id = $1::uuid AND user_id = $2::uuid",
+                document_id, resolve_user_id(),
+            )
+
+        if not row:
+            return json.dumps({"error": "Document not found"})
+
+        file_url = row["file_url"]
+        prefix = f"s3://{settings.MINIO_BUCKET}/"
+        if not file_url or not file_url.startswith(prefix):
+            return json.dumps({"error": "Original file is not available"})
+
+        object_name = file_url.replace(prefix, "", 1)
+        download_url = minio_client.presigned_get_object(
+            bucket_name=settings.MINIO_BUCKET,
+            object_name=object_name,
+            expires=timedelta(seconds=ORIGINAL_URL_EXPIRES_SECONDS),
+        )
+
+        return json.dumps({
+            "document_id": document_id,
+            "filename": row["original_filename"],
+            "file_type": row["file_type"],
+            "file_size": row["file_size"],
+            "type": row["document_type"],
+            "date": str(row["document_date"]) if row["document_date"] else None,
+            "facility": row["medical_facility"],
+            "download_url": download_url,
+            "expires_in_seconds": ORIGINAL_URL_EXPIRES_SECONDS,
         }, ensure_ascii=False)
