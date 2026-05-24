@@ -1,0 +1,85 @@
+name: Product task / feature
+about: Product idea, UX improvement, or feature request for MedHistory
+title: "[Product] "
+labels: ["product", "needs-triage"]
+body:
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: Where did this come from? Voice note, user feedback, observation, metric, competitor, etc.
+      placeholder: "Hermes intake from Boris: ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user or business problem are we solving?
+      placeholder: "Users struggle to..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should be true after this is done?
+      placeholder: "After this task, users can..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: non_goals
+    attributes:
+      label: Non-goals
+      description: What explicitly should not be included in this iteration?
+      placeholder: "Do not change pricing/auth/prod config/etc."
+    validations:
+      required: false
+
+  - type: textarea
+    id: product_decisions
+    attributes:
+      label: Product decisions needed from Boris
+      description: Decisions that require human confirmation before implementation.
+      placeholder: "Boris must choose between option A and option B before development."
+    validations:
+      required: false
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed solution / spec draft
+      description: Initial UX/API/data approach. Keep it concise until approved.
+      placeholder: "Flow: ...\nUI copy in Russian: ...\nAPI/data changes: ..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance_criteria
+    attributes:
+      label: Acceptance criteria
+      description: Verifiable conditions for completion.
+      placeholder: "- [ ] ...\n- [ ] ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: risks
+    attributes:
+      label: Risks / approval gates
+      description: Note risky areas that require explicit approval.
+      placeholder: "Auth, migrations, PII, medical wording, legal docs, nginx, GitHub Actions, prod deploy."
+    validations:
+      required: false
+
+  - type: textarea
+    id: execution_log
+    attributes:
+      label: Execution log
+      description: Hermes/agent updates, links to branch/PR/commit, test results, deployment notes.
+      placeholder: "To be updated during execution."
+    validations:
+      required: false

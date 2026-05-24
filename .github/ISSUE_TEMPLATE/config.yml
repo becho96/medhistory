@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: MedHistory product intake via Hermes
+    url: https://github.com/becho96/medhistory/issues/new/choose
+    about: Use GitHub Issues as the source of truth. Product decisions should be confirmed with Boris before implementation.
