@@ -1,0 +1,63 @@
+name: Growth / acquisition task
+about: User acquisition, activation, analytics, positioning, or experiments
+title: "[Growth] "
+labels: ["growth", "needs-triage"]
+body:
+  - type: textarea
+    id: hypothesis
+    attributes:
+      label: Hypothesis
+      description: What do we believe will improve acquisition/activation/retention?
+      placeholder: "If we..., then users will..., because..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: target_user
+    attributes:
+      label: Target user / segment
+      placeholder: "Patients managing chronic conditions / parents / people preparing for doctor visit / etc."
+    validations:
+      required: true
+
+  - type: textarea
+    id: success_metric
+    attributes:
+      label: Success metric
+      description: What metric or observable outcome will tell us this worked?
+      placeholder: "Landing conversion, registrations, document uploads, activation rate, interviews booked."
+    validations:
+      required: true
+
+  - type: textarea
+    id: plan
+    attributes:
+      label: Proposed plan
+      placeholder: "Channels, copy, experiment design, implementation notes."
+    validations:
+      required: false
+
+  - type: textarea
+    id: assets
+    attributes:
+      label: Assets / copy / links
+      description: Draft copy, landing sections, creative, references.
+      placeholder: "Russian copy drafts, links, screenshots."
+    validations:
+      required: false
+
+  - type: textarea
+    id: approval
+    attributes:
+      label: Decisions needed from Boris
+      placeholder: "Positioning/copy/channel/budget decisions that need confirmation."
+    validations:
+      required: false
+
+  - type: textarea
+    id: execution_log
+    attributes:
+      label: Execution log
+      placeholder: "To be updated during execution."
+    validations:
+      required: false

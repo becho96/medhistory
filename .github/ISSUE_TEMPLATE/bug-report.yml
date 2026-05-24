@@ -1,0 +1,81 @@
+name: Bug report
+about: Something in MedHistory is broken or behaves incorrectly
+title: "[Bug] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: Short description of the bug.
+      placeholder: "Users cannot..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: impact
+    attributes:
+      label: User/business impact
+      description: Who is affected and how serious is it?
+      placeholder: "Affects new users during onboarding / blocks document upload / cosmetic only."
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Exact steps if known.
+      placeholder: "1. ...\n2. ...\n3. ..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: "What should happen?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      placeholder: "What happens instead?"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Unknown / needs triage
+        - Frontend
+        - Backend
+        - Document analysis / LLM
+        - Assistant / chat
+        - Auth
+        - Infrastructure / deploy
+        - Legal / consent
+    validations:
+      required: true
+
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Screenshots, logs, URLs, document IDs. Do not paste PII or medical document contents.
+      placeholder: "Screenshot/log link. IDs only; no medical values or PII."
+    validations:
+      required: false
+
+  - type: textarea
+    id: execution_log
+    attributes:
+      label: Execution log
+      description: Hermes/agent updates, branch/PR/commit, tests, deployment notes.
+      placeholder: "To be updated during execution."
+    validations:
+      required: false

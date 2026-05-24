@@ -1,0 +1,54 @@
+name: Research / decision memo
+about: Explore a product, technical, medical, legal, or growth question before implementation
+title: "[Research] "
+labels: ["research", "needs-triage"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Research question
+      placeholder: "What should we decide or understand?"
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      placeholder: "Why this matters now; source of the question."
+    validations:
+      required: true
+
+  - type: textarea
+    id: options
+    attributes:
+      label: Options to compare
+      placeholder: "Option A...\nOption B...\nOption C..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: constraints
+    attributes:
+      label: Constraints
+      placeholder: "Privacy, medical safety, cost, implementation complexity, current MVP scope."
+    validations:
+      required: false
+
+  - type: textarea
+    id: output
+    attributes:
+      label: Expected output
+      description: What should the research produce?
+      placeholder: "1-page recommendation with trade-offs and a go/no-go call."
+    validations:
+      required: true
+
+  - type: textarea
+    id: decision
+    attributes:
+      label: Final decision
+      description: Fill after Boris chooses a path.
+      placeholder: "Decision: ...\nRationale: ...\nFollow-up implementation issue: #..."
+    validations:
+      required: false
