@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { documentsService } from '../../services/documents'
 import { subscriptionService } from '../../services/subscription'
 import { trackGoal } from '../../lib/analytics'
+import { getSourceLabel } from '../../lib/attribution'
 import type { SubscriptionInfo } from '../../types'
 
 interface UploadingFile {
@@ -63,7 +64,7 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
       await documentsService.uploadDocument(file)
 
       clearInterval(progressInterval)
-      trackGoal('document_uploaded')
+      trackGoal('document_uploaded', { source: getSourceLabel() })
 
       // Обновляем статус на успешный
       setUploadingFiles((prev) =>

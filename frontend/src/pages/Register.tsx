@@ -6,7 +6,7 @@ import { authService } from '../services/auth'
 import { useAuthStore } from '../stores/authStore'
 import { HeartPulse } from 'lucide-react'
 import { sha256 } from '../lib/sha256'
-import { getAttribution } from '../lib/attribution'
+import { getAttribution, getSourceLabel } from '../lib/attribution'
 import { trackGoal } from '../lib/analytics'
 
 interface ConsentVersions {
@@ -66,7 +66,7 @@ export default function Register() {
     },
     onSuccess: ({ user, token }) => {
       setAuth(user, token)
-      trackGoal('signup')
+      trackGoal('signup', { source: getSourceLabel() })
       toast.success('Добро пожаловать!')
       navigate('/')
     },

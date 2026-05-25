@@ -50,3 +50,15 @@ export function getAttribution(): Attribution | null {
     return null
   }
 }
+
+/**
+ * Normalized acquisition channel label, mirroring the backend's signup_source
+ * logic (auth.py): utm_source → that value, else a referrer → 'referral',
+ * else 'direct'. Used to break Metrika goals down by channel.
+ */
+export function getSourceLabel(): string {
+  const attribution = getAttribution()
+  if (attribution?.utm_source) return attribution.utm_source
+  if (attribution?.referrer) return 'referral'
+  return 'direct'
+}
