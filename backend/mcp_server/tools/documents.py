@@ -1,11 +1,10 @@
 """Tools: list_documents, get_doctor_visits, get_document_summary, get_document_original."""
 import json
-from datetime import timedelta
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
 
 from app.core.config import settings
-from app.db.minio_client import minio_client
+from app.services.document_download_token import create_download_token
 from mcp_server.database import get_pg_pool, get_mongo_db
 from mcp_server.tools._user import resolve_user_id
 
@@ -182,28 +181,30 @@ def register(mcp: FastMCP) -> None:
         Args:
             document_id: UUID of the document.
         """
+        user_id = resolve_user_id()
         pool = await get_pg_pool()
         async with pool.acquire() as conn:
             row = await conn.fetchrow(
                 "SELECT original_filename, file_type, file_size, file_url, "
                 "document_type, document_date, medical_facility "
                 "FROM documents WHERE id = $1::uuid AND user_id = $2::uuid",
-                document_id, resolve_user_id(),
+                document_id, user_id,
             )
 
         if not row:
             return json.dumps({"error": "Document not found"})
 
-        file_url = row["file_url"]
-        prefix = f"s3://{settings.MINIO_BUCKET}/"
-        if not file_url or not file_url.startswith(prefix):
+        if not row["file_url"]:
             return json.dumps({"error": "Original file is not available"})
 
-        object_name = file_url.replace(prefix, "", 1)
-        download_url = minio_client.presigned_get_object(
-            bucket_name=settings.MINIO_BUCKET,
-            object_name=object_name,
-            expires=timedelta(seconds=ORIGINAL_URL_EXPIRES_SECONDS),
+        token = create_download_token(
+            user_id=user_id,
+            document_id=document_id,
+            expires_in_seconds=ORIGINAL_URL_EXPIRES_SECONDS,
+        )
+        download_url = (
+            f"{settings.PUBLIC_BASE_URL.rstrip('/')}"
+            f"/api/v1/documents/{document_id}/download?token={token}"
         )
 
         return json.dumps({

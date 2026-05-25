@@ -17,10 +17,13 @@ from app.schemas.document import (
     DocumentUploadResponse
 )
 from app.services.document_service import DocumentService
+from app.services.document_download_token import verify_download_token
 from app.services.unit_normalization_service import unit_normalization_service
 from app.services.analyte_normalization_service_db import analyte_normalization_service_db
 from app.services.subscription_service import SubscriptionService, QuotaExceededError
 from app.api.deps import get_current_user, get_profile_user_id
+from app.core.config import settings
+from app.db.minio_client import minio_client
 from app.db.mongodb import document_metadata_collection
 
 router = APIRouter()
@@ -344,6 +347,79 @@ async def download_document(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Ошибка при скачивании файла: {str(e)}"
         )
+
+_DOWNLOAD_CONTENT_TYPES = {
+    "pdf": "application/pdf",
+    "jpg": "image/jpeg",
+    "jpeg": "image/jpeg",
+    "png": "image/png",
+    "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
+
+
+@router.get("/{document_id}/download")
+async def download_document_with_token(
+    document_id: uuid.UUID,
+    token: str = Query(..., description="Short-lived signed download token"),
+    db: AsyncSession = Depends(get_db),
+):
+    """Stream an original document by short-lived token.
+
+    Token-authenticated alternative to `/{document_id}/file` — used by the MCP
+    `get_document_original` tool so external clients (LLM sandboxes, curl) can
+    fetch the file without a session bearer.
+    """
+    user_id = verify_download_token(token, str(document_id))
+    if not user_id:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired download token",
+        )
+
+    try:
+        owner_uuid = uuid.UUID(user_id)
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token subject",
+        )
+
+    document = await DocumentService.get_document_by_id(
+        document_id=document_id,
+        user_id=owner_uuid,
+        db=db,
+    )
+    if not document or not document.file_url:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Документ не найден")
+
+    prefix = f"s3://{settings.MINIO_BUCKET}/"
+    if not document.file_url.startswith(prefix):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Файл недоступен")
+    object_name = document.file_url[len(prefix):]
+
+    response = minio_client.get_object(settings.MINIO_BUCKET, object_name)
+
+    def iter_file():
+        try:
+            for chunk in response.stream(64 * 1024):
+                yield chunk
+        finally:
+            response.close()
+            response.release_conn()
+
+    content_type = _DOWNLOAD_CONTENT_TYPES.get(
+        (document.file_type or "").lower(), "application/octet-stream"
+    )
+    headers = {
+        "Content-Disposition": (
+            f"attachment; filename*=UTF-8''{quote(document.original_filename or 'document')}"
+        ),
+    }
+    if document.file_size:
+        headers["Content-Length"] = str(document.file_size)
+
+    return StreamingResponse(iter_file(), media_type=content_type, headers=headers)
+
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_document(

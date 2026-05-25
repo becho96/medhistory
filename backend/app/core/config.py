@@ -48,6 +48,12 @@ class Settings(BaseSettings):
     ASSISTANT_HEALTH_EVENTS_LIMIT: int = 100
     ASSISTANT_STUDIES_LIMIT: int = 100          # Инструментальные исследования + Функциональная диагностика
     
+    # Public base URL of the API (used to build self-contained download URLs
+    # served back through the proxy /api/v1/documents/{id}/download endpoint,
+    # e.g. by the MCP get_document_original tool).
+    # Local: http://localhost:8000   Prod: https://medhistory.ru
+    PUBLIC_BASE_URL: str = "http://localhost:8000"
+
     # MCP server
     MCP_ENABLED: bool = False
     # Phase 1 (single-user) — bearer token + hardcoded user_id. Kept as fallback
