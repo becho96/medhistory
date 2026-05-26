@@ -61,6 +61,23 @@ const loadDisplaySettings = (): DocumentDisplaySettingsValues => {
   }
 }
 
+const getDocumentGroupLabel = (dateStr: string | null | undefined, now: Date): string => {
+  if (!dateStr) return 'Без даты'
+  const date = new Date(dateStr)
+  if (isNaN(date.getTime())) return 'Без даты'
+
+  const sameYear = date.getFullYear() === now.getFullYear()
+  const sameMonth = sameYear && date.getMonth() === now.getMonth()
+  const sameDay = sameMonth && date.getDate() === now.getDate()
+
+  if (sameDay) return 'Сегодня'
+  if (sameMonth) return 'В этом месяце'
+
+  const monthName = date.toLocaleDateString('ru-RU', { month: 'long' })
+  const capitalizedMonth = monthName.charAt(0).toUpperCase() + monthName.slice(1)
+  return sameYear ? capitalizedMonth : `${capitalizedMonth} ${date.getFullYear()}`
+}
+
 // Transform documents to timeline events (unified data transformation)
 const transformDocumentsToTimelineEvents = (docs: any[]): TimelineEvent[] => {
   // Color mapping for document types
@@ -947,6 +964,24 @@ export default function Documents() {
   // Все фильтры применяются на сервере
   const filteredDocuments = documents
 
+  // Группировка документов по календарным периодам (для текущей страницы)
+  const groupedDocuments = useMemo(() => {
+    if (!filteredDocuments || filteredDocuments.length === 0) return []
+    const now = new Date()
+    const groups: Array<{ label: string; docs: typeof filteredDocuments }> = []
+    for (const doc of filteredDocuments) {
+      const dateField = sortBy === 'created_at' ? doc.created_at : doc.document_date
+      const label = getDocumentGroupLabel(dateField, now)
+      const last = groups[groups.length - 1]
+      if (last && last.label === label) {
+        last.docs.push(doc)
+      } else {
+        groups.push({ label, docs: [doc] })
+      }
+    }
+    return groups
+  }, [filteredDocuments, sortBy])
+
   return (
     <div className="space-y-5">
       {/* Header */}
@@ -1081,27 +1116,36 @@ export default function Documents() {
               </div>
             )}
 
-            <div className="divide-y divide-gray-50">
+            <div>
           {isLoading ? (
             <div className="py-12 text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto"></div>
             </div>
-          ) : filteredDocuments && filteredDocuments.length > 0 ? (
-            filteredDocuments.map((doc) => (
-              <DocumentListItem
-                key={doc.id}
-                doc={doc}
-                labsSummary={labsSummary}
-                showTags={displaySettings.showTags}
-                onClick={(id) => setSelectedDocumentId(id)}
-                onOpenLabs={(id) => openLabsModal(id)}
-                onDownload={(id, filename) => handleDownload(id, filename)}
-                onDelete={(id) => {
-                  if (window.confirm('Удалить этот документ?')) {
-                    deleteMutation.mutate(id)
-                  }
-                }}
-              />
+          ) : groupedDocuments.length > 0 ? (
+            groupedDocuments.map((group) => (
+              <section key={group.label}>
+                <h3 className="sticky top-0 z-10 px-3 sm:px-4 py-1.5 bg-gray-50/95 backdrop-blur border-y border-gray-100 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                  {group.label}
+                </h3>
+                <div className="divide-y divide-gray-50">
+                  {group.docs.map((doc) => (
+                    <DocumentListItem
+                      key={doc.id}
+                      doc={doc}
+                      labsSummary={labsSummary}
+                      showTags={displaySettings.showTags}
+                      onClick={(id) => setSelectedDocumentId(id)}
+                      onOpenLabs={(id) => openLabsModal(id)}
+                      onDownload={(id, filename) => handleDownload(id, filename)}
+                      onDelete={(id) => {
+                        if (window.confirm('Удалить этот документ?')) {
+                          deleteMutation.mutate(id)
+                        }
+                      }}
+                    />
+                  ))}
+                </div>
+              </section>
             ))
           ) : (
             <div className="py-12 text-center">
