@@ -6,9 +6,9 @@
 # ==================================================
 
 services:
-  # PostgreSQL Database
+  # PostgreSQL Database (pgvector-enabled image, drop-in for postgres:16)
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-medhistory}
       POSTGRES_USER: ${POSTGRES_USER:-medhistory_user}
@@ -91,6 +91,7 @@ services:
       GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:5173/auth/google/callback}
       ENVIRONMENT: ${ENVIRONMENT:-development}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173,http://localhost:3000}
+      EMBEDDINGS_URL: http://embeddings:8001
       BOT_SECRET: ${BOT_SECRET:-}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       MCP_ENABLED: ${MCP_ENABLED:-false}
@@ -114,6 +115,26 @@ services:
         condition: service_healthy
     networks:
       - medhistory_network
+
+  # Embeddings sidecar — multilingual-e5-base behind a tiny FastAPI
+  embeddings:
+    build:
+      context: ./embeddings
+      dockerfile: Dockerfile
+    environment:
+      EMBEDDINGS_MODEL: ${EMBEDDINGS_MODEL:-intfloat/multilingual-e5-base}
+    volumes:
+      - embeddings_models:/models
+    # No host port — only reachable inside medhistory_network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8001/health', timeout=2).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - medhistory_network
+    restart: unless-stopped
 
   # Frontend
   frontend:
@@ -218,6 +239,8 @@ volumes:
   minio_data:
     driver: local
   backend_uploads:
+    driver: local
+  embeddings_models:
     driver: local
 
 networks:

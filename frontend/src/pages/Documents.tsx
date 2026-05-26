@@ -1,9 +1,9 @@
 import { useEffect, useState, useRef, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { FileText, FlaskConical, Upload, ChevronLeft, ChevronRight, List, Clock, Brain, X, Maximize2, Minimize2 } from 'lucide-react'
+import { FileText, FlaskConical, Upload, ChevronLeft, ChevronRight, List, Clock, Brain, X, Maximize2, Minimize2, Search } from 'lucide-react'
 import { toast } from 'sonner'
 import { Timeline as VisTimeline, DataSet } from 'vis-timeline/standalone'
-import { documentsService } from '../services/documents'
+import { documentsService, type DocumentSearchHit } from '../services/documents'
 import UploadModal from '../components/Documents/UploadModal'
 import DocumentFilters, { DocumentFilterValues } from '../components/Documents/DocumentFilters'
 import InterpretationConfirmModal from '../components/Documents/InterpretationConfirmModal'
@@ -127,7 +127,22 @@ export default function Documents() {
   const [labsByDoc, setLabsByDoc] = useState<Record<string, Array<{ test_name: string; value: string; unit?: string | null; reference_range?: string | null; flag?: string | null }>>>({})
   const [labsSummary, setLabsSummary] = useState<Record<string, { has_labs: boolean; count: number }>>({})
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null)
-  
+
+  // Semantic search: input, debounced query, and result query
+  const [searchInput, setSearchInput] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
+  useEffect(() => {
+    const t = setTimeout(() => setSearchQuery(searchInput.trim()), 400)
+    return () => clearTimeout(t)
+  }, [searchInput])
+
+  const { data: searchResults, isFetching: isSearching } = useQuery<DocumentSearchHit[]>({
+    queryKey: ['documents-search', searchQuery],
+    queryFn: () => documentsService.searchDocuments(searchQuery, 20),
+    enabled: searchQuery.length > 0,
+  })
+  const isSearchActive = searchQuery.length > 0
+
   // Timeline-specific state
   const timelineRef = useRef<HTMLDivElement>(null)
   const timelineInstance = useRef<VisTimeline | null>(null)
@@ -1007,6 +1022,70 @@ export default function Documents() {
         onChange={setFilters}
         onReset={() => setFilters({})}
       />
+
+      {/* Semantic search */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-3 sm:p-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Поиск по смыслу: например «проблемы с плечом» или «давление высокое»"
+            className="w-full pl-9 pr-9 py-2.5 text-[14px] border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent"
+          />
+          {searchInput && (
+            <button
+              onClick={() => setSearchInput('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              aria-label="Очистить поиск"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+
+        {isSearchActive && (
+          <div className="mt-3">
+            {isSearching ? (
+              <p className="text-[13px] text-gray-500 px-1 py-3">Ищу…</p>
+            ) : !searchResults || searchResults.length === 0 ? (
+              <p className="text-[13px] text-gray-500 px-1 py-3">
+                По запросу «{searchQuery}» ничего не найдено. Попробуйте переформулировать.
+              </p>
+            ) : (
+              <>
+                <p className="text-[12px] font-medium text-gray-500 uppercase tracking-wider px-1 mb-2">
+                  Найдено по смыслу: {searchResults.length}
+                </p>
+                <ul className="divide-y divide-gray-100 border border-gray-100 rounded-xl overflow-hidden">
+                  {searchResults.map((hit) => (
+                    <li
+                      key={hit.document_id}
+                      onClick={() => setSelectedDocumentId(hit.document_id)}
+                      className="px-3 sm:px-4 py-3 hover:bg-gray-50 cursor-pointer"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 text-[12px] text-gray-500 mb-1">
+                            {hit.document_type && <span className="font-medium">{hit.document_type}</span>}
+                            {hit.document_date && <span>· {new Date(hit.document_date).toLocaleDateString('ru-RU')}</span>}
+                            {hit.medical_facility && <span className="truncate">· {hit.medical_facility}</span>}
+                          </div>
+                          <p className="text-[14px] text-gray-700 line-clamp-2">{hit.snippet || '—'}</p>
+                        </div>
+                        <span className="flex-shrink-0 text-[11px] font-mono text-gray-400 mt-1">
+                          {(hit.score * 100).toFixed(0)}%
+                        </span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* View Mode Tabs */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">

@@ -11,6 +11,7 @@ from app.models.analyte import (
 )
 from app.models.health_event import HealthEvent
 from app.models.consent import UserConsent
+from app.models.feedback import Feedback
 
 __all__ = [
     "User",
@@ -36,5 +37,7 @@ __all__ = [
     "HealthEvent",
     # 152-ФЗ consent records
     "UserConsent",
+    # User feedback
+    "Feedback",
 ]
 

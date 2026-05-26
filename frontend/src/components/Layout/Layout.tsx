@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import ProfileSwitcher from '../ProfileSwitcher'
 import FamilyManagementModal from '../FamilyManagementModal'
 import ProfileSettings from '../ProfileSettings'
+import FeedbackWidget from '../Feedback/FeedbackWidget'
 import { familyService } from '../../services/family'
 
 export default function Layout() {
@@ -234,6 +235,8 @@ export default function Layout() {
           onPendingInvitesUpdated={handlePendingInvitesUpdated}
         />
       )}
+
+      <FeedbackWidget />
     </div>
   )
 }

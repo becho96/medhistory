@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
 from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional, List
 from io import BytesIO
@@ -17,6 +18,8 @@ from app.schemas.document import (
     DocumentUploadResponse
 )
 from app.services.document_service import DocumentService
+from app.services.document_search_service import search_documents_semantic
+from app.services.embeddings_client import EmbeddingsError
 from app.services.document_download_token import verify_download_token
 from app.services.unit_normalization_service import unit_normalization_service
 from app.services.analyte_normalization_service_db import analyte_normalization_service_db
@@ -216,6 +219,39 @@ async def get_documents_count(
     )
     
     return {"total": count}
+
+
+class DocumentSearchRequest(BaseModel):
+    query: str = Field(..., min_length=1, max_length=500)
+    limit: int = Field(20, ge=1, le=100)
+
+
+@router.post("/search")
+async def search_documents(
+    body: DocumentSearchRequest,
+    current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """Semantic search over the user's document summaries.
+
+    Uses multilingual-e5-base embeddings + pgvector cosine similarity.
+    Returns documents ranked by relevance (higher score = better match).
+    """
+    try:
+        hits = await search_documents_semantic(
+            user_id=profile_user_id,
+            query=body.query,
+            db=db,
+            limit=body.limit,
+        )
+    except EmbeddingsError as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Сервис поиска временно недоступен: {e}",
+        )
+    return {"results": hits, "total": len(hits)}
+
 
 @router.get("/{document_id}", response_model=DocumentWithMetadata)
 async def get_document(

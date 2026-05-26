@@ -28,6 +28,15 @@ interface FilterValuesResponse {
   values: string[]
 }
 
+export interface DocumentSearchHit {
+  document_id: string
+  score: number
+  snippet: string
+  document_type: string | null
+  document_date: string | null
+  medical_facility: string | null
+}
+
 export const documentsService = {
   async uploadDocument(file: File): Promise<DocumentUploadResponse> {
     const formData = new FormData()
@@ -181,6 +190,14 @@ export const documentsService = {
       params: { field, q, limit }
     })
     return response.data.values
+  },
+
+  async searchDocuments(query: string, limit: number = 20): Promise<DocumentSearchHit[]> {
+    const response = await api.post<{ results: DocumentSearchHit[]; total: number }>(
+      '/documents/search',
+      { query, limit }
+    )
+    return response.data.results
   },
 
   async getDocumentsCount(params?: Omit<GetDocumentsParams, 'skip' | 'limit' | 'sort_by'>): Promise<number> {

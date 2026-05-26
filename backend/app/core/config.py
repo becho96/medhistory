@@ -72,6 +72,10 @@ class Settings(BaseSettings):
     # Prod:  https://medhistory.ru/oauth/consent
     MCP_CONSENT_URL: str = "http://localhost:5173/oauth/consent"
 
+    # Embeddings sidecar (multilingual-e5-base over HTTP)
+    EMBEDDINGS_URL: str = "http://embeddings:8001"
+    EMBEDDINGS_TIMEOUT: float = 30.0
+
     # CORS
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"  # Comma-separated list
     

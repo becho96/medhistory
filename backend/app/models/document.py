@@ -2,9 +2,14 @@ from sqlalchemy import Column, String, Integer, Date, Float, DateTime, ForeignKe
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
+from pgvector.sqlalchemy import Vector
 import uuid
 
 from app.db.postgres import Base
+
+# multilingual-e5-base produces 768-dim embeddings; must match the dimension
+# declared in migration 024_add_documents_embedding.sql.
+EMBEDDING_DIM = 768
 
 class Document(Base):
     __tablename__ = "documents"
@@ -30,6 +35,9 @@ class Document(Base):
     
     # MongoDB reference
     mongodb_metadata_id = Column(String(255))
+
+    # Semantic search: embedding of extracted_data.summary (multilingual-e5-base)
+    embedding = Column(Vector(EMBEDDING_DIM), nullable=True)
     
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now())

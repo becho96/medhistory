@@ -12,6 +12,7 @@ from app.models.document import Document
 from app.db.minio_client import minio_client
 from app.db.mongodb import document_metadata_collection
 from app.services.ai_service import ai_service
+from app.services.embeddings_client import embed_passages, EmbeddingsError
 from app.core.config import settings
 
 
@@ -243,10 +244,20 @@ class DocumentService:
         
         result = await document_metadata_collection.insert_one(mongo_doc)
         document.mongodb_metadata_id = str(result.inserted_id)
-        
+
+        # Compute summary embedding for semantic search. Soft-fails: if the
+        # sidecar is unreachable, the document is still saved and can be
+        # backfilled later by scripts/backfill_embeddings.py.
+        if metadata.summary:
+            try:
+                vectors = await embed_passages([metadata.summary])
+                document.embedding = vectors[0]
+            except EmbeddingsError as e:
+                print(f"⚠️  Embedding skipped for {document.id}: {e}")
+
         await db.commit()
         await db.refresh(document)
-        
+
         # If document is classified as "Результаты анализа", automatically extract lab results
         if document.document_type == "Результаты анализа":
             try:
