@@ -83,14 +83,19 @@ jobs:
           UP="docker compose -f docker-compose.prod.yml --env-file .env.production up -d"
           MON_BUILD="docker compose -f monitoring/docker-compose.monitoring.yml --env-file .env.production build --no-cache --progress=plain"
           MON_UP="docker compose -f monitoring/docker-compose.monitoring.yml --env-file .env.production up -d"
+          # Поднимаем postgres до миграций — если в compose сменился image
+          # (например, postgres:16-alpine → pgvector/pgvector:pg16), контейнер
+          # будет пересоздан, и миграции пойдут уже на новой версии БД.
+          # --wait блокирует до healthy, чтобы apply.sh не упал на ещё не готовом psql.
+          PG_UP="docker compose -f docker-compose.prod.yml --env-file .env.production up -d --no-deps --wait postgres"
           # Применяет новые SQL-миграции через таблицу schema_migrations.
           # Выполняется до `up -d`, чтобы новый backend стартовал на актуальной схеме.
           MIGRATE="PSQL='docker compose -f docker-compose.prod.yml --env-file .env.production exec -T postgres psql -U medhistory_user medhistory' bash backend/migrations/apply.sh"
 
           if [ "${{ inputs.service }}" = "all" ]; then
-            $SSH "cd ${{ env.DEPLOY_PATH }} && $BUILD && $MIGRATE && $UP && $MON_BUILD && $MON_UP"
+            $SSH "cd ${{ env.DEPLOY_PATH }} && $BUILD && $PG_UP && $MIGRATE && $UP && $MON_BUILD && $MON_UP"
           elif [ "${{ inputs.service }}" = "backend" ]; then
-            $SSH "cd ${{ env.DEPLOY_PATH }} && $BUILD backend && $MIGRATE && $UP backend"
+            $SSH "cd ${{ env.DEPLOY_PATH }} && $BUILD backend && $PG_UP && $MIGRATE && $UP backend"
           elif [ "${{ inputs.service }}" = "frontend" ]; then
             $SSH "cd ${{ env.DEPLOY_PATH }} && $BUILD frontend && $UP frontend"
           elif [ "${{ inputs.service }}" = "bot" ]; then
