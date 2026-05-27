@@ -23,7 +23,7 @@ export interface FeedbackResponse {
 
 export const feedbackService = {
   submit: async (payload: FeedbackPayload): Promise<FeedbackResponse> => {
-    const response = await api.post('/feedback', payload)
+    const response = await api.post('/feedback/', payload)
     return response.data
   },
 }
