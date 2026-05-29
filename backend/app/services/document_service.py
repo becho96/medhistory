@@ -272,9 +272,14 @@ class DocumentService:
                 )
                 print(f"✅ Automatic lab extraction completed for {document.id}: {lab_result.get('lab_results_count', 0)} results found")
             except Exception as e:
-                print(f"⚠️ Warning: Automatic lab extraction failed for {document.id}: {str(e)}")
-                # Don't fail the entire document processing if lab extraction fails
-                # The document is still successfully classified
+                # Lab values are missing for a document classified as lab
+                # results — log loudly so it can be reprocessed. We keep the
+                # document itself (classification succeeded) rather than failing
+                # the whole upload.
+                print(
+                    f"⚠️ Lab extraction FAILED for {document.id} — analyte values "
+                    f"are MISSING and the document needs reprocessing: {type(e).__name__}: {str(e)}"
+                )
     
     @staticmethod
     async def get_documents(

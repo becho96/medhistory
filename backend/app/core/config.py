@@ -21,6 +21,10 @@ class Settings(BaseSettings):
     OPENROUTER_API_KEY: str
     OPENROUTER_MODEL: str = "google/gemini-2.5-flash"  # Рекомендуется: быстрее, без geo-ограничений
     OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1/chat/completions"
+    # Output cap for extraction calls. Must fit the largest analysis JSON
+    # (multi-page lab reports can have 50+ analytes) — too low truncates the
+    # JSON and the parse falls back to an empty result.
+    OPENROUTER_MAX_TOKENS: int = 8000
     
     # Authentication
     JWT_SECRET: str

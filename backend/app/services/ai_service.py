@@ -209,7 +209,7 @@ document_subtype, research_area, specialties, summary, patient_name и medical_f
         payload = {
             "model": self.model,
             "messages": messages,
-            "max_tokens": 2000,
+            "max_tokens": settings.OPENROUTER_MAX_TOKENS,
             "temperature": 0.1  # Low temperature for consistent extraction
         }
         
@@ -425,8 +425,19 @@ document_subtype, research_area, specialties, summary, patient_name и medical_f
 """
 
     def _parse_labs_response(self, response_data: dict) -> dict:
+        # A truncated response (output hit max_tokens) yields invalid JSON. We
+        # must NOT swallow that as an empty result — an empty lab list would
+        # look like a successfully processed document with no analytes. Surface
+        # it so the caller can log/retry. A genuine "no labs" case still comes
+        # back as valid JSON ({"lab_results": []}) and is handled normally.
+        choice = response_data["choices"][0]
+        if choice.get("finish_reason") == "length":
+            raise ValueError(
+                "Labs extraction response truncated (finish_reason=length); "
+                "raise OPENROUTER_MAX_TOKENS"
+            )
         try:
-            content = response_data["choices"][0]["message"]["content"]
+            content = choice["message"]["content"]
             if "```json" in content:
                 content = content.split("```json")[1].split("```")[0].strip()
             elif "```" in content:
@@ -448,9 +459,10 @@ document_subtype, research_area, specialties, summary, patient_name и medical_f
                 "lab_results": normalized,
                 "usage": self._extract_usage(response_data),
             }
-        except Exception as e:
+        except json.JSONDecodeError as e:
+            # Malformed/partial JSON — treat as a failure, not an empty result.
             print(f"❌ Error parsing labs response: {type(e).__name__}")
-            return {"lab_results": [], "usage": None}
+            raise ValueError("Labs extraction returned invalid JSON") from e
 
 # Create global instance
 ai_service = AIService()

@@ -17,6 +17,7 @@ from typing import Any
 
 import httpx
 
+from app.core.config import settings
 from app.services.ai_service import AIService
 
 from .schema import DocMetadata, LabResult, Prediction
@@ -30,11 +31,15 @@ class BenchmarkAIService(AIService):
         self._benchmark_temperature = temperature
 
     async def _call_openrouter(self, messages: list) -> dict:
-        """Копия prod-метода с одним отличием: temperature из конфига бенчмарка."""
+        """Копия prod-метода с одним отличием: temperature из конфига бенчмарка.
+
+        max_tokens берём из настроек (как в проде) — иначе крупные многостраничные
+        отчёты обрезаются и бенчмарк перестаёт мерить реальное поведение.
+        """
         payload = {
             "model": self.model,
             "messages": messages,
-            "max_tokens": 2000,
+            "max_tokens": settings.OPENROUTER_MAX_TOKENS,
             "temperature": self._benchmark_temperature,
         }
         headers = {
