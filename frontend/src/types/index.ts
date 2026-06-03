@@ -180,12 +180,15 @@ export interface Document {
 }
 
 export interface DocumentOrderStatus {
+  order_index: number
   title: string
   order_type?: string | null
   target_document_type?: string | null
   target_document_subtype?: string | null
   target_research_area?: string | null
-  status: 'pending' | 'completed'
+  status: 'pending' | 'completed' | 'not_required' | 'incorrect'
+  status_source: 'auto' | 'manual'
+  is_active: boolean
   matched_document_id?: string | null
   matched_document_date?: string | null
   matched_document_title?: string | null
@@ -195,7 +198,31 @@ export interface DocumentOrdersSummary {
   total: number
   completed: number
   pending: number
+  dismissed: number
   items: DocumentOrderStatus[]
+}
+
+export interface DocumentExtractedTable {
+  title?: string | null
+  columns?: string[]
+  rows?: Array<Record<string, unknown>>
+}
+
+export interface DocumentLabResult {
+  test_name?: string | null
+  value?: string | null
+  unit?: string | null
+  reference_range?: string | null
+  flag?: string | null
+}
+
+export interface DocumentContent {
+  document_id: string
+  summary?: string | null
+  full_text?: string | null
+  full_text_source?: string | null
+  tables: DocumentExtractedTable[]
+  lab_results: DocumentLabResult[]
 }
 
 export interface TimelineEvent {

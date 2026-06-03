@@ -7,6 +7,7 @@ from io import BytesIO
 import uuid
 import logging
 from urllib.parse import quote
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -16,8 +17,10 @@ from app.models.user import User
 from app.models.document import Document as DocumentModel
 from app.schemas.document import (
     Document as DocumentSchema,
+    DocumentContentResponse,
     DocumentWithMetadata,
-    DocumentUploadResponse
+    DocumentUploadResponse,
+    DocumentOrderStatusUpdateRequest,
 )
 from app.services.document_service import DocumentService
 from app.services.document_search_service import search_documents_semantic
@@ -42,6 +45,7 @@ ORDER_TARGET_TYPES = {
 }
 
 FOLLOW_UP_DOCUMENT_TYPES = set(ORDER_TARGET_TYPES.values())
+MANUAL_ORDER_STATUSES = {"pending", "completed", "not_required", "incorrect"}
 
 ORDER_KEYWORDS = [
     ("Результаты анализа", None, ["анализ", "кров", "моч", "кал", "гормон", "биохим", "бактериолог", "серолог"]),
@@ -174,37 +178,46 @@ async def _build_orders_summary_map(
         orders = metadata_by_doc_id.get(source_id, {}).get("orders") or []
         items = []
 
-        for raw_order in orders:
+        for order_index, raw_order in enumerate(orders):
             if not isinstance(raw_order, dict):
                 continue
 
             target_type, target_subtype = _infer_order_target(raw_order)
             title = raw_order.get("title") or target_subtype or target_type or "Назначение"
             matched = None
+            manual_status = raw_order.get("manual_status")
 
-            for candidate in candidates:
-                if candidate["id"] == source_doc.id:
-                    continue
-
-                candidate_date = candidate.get("document_date")
-                candidate_created = candidate.get("created_at")
-                if source_date:
-                    if candidate_date and candidate_date < source_date:
-                        continue
-                    if not candidate_date and candidate_created and candidate_created.date() < source_date:
+            if manual_status not in MANUAL_ORDER_STATUSES:
+                for candidate in candidates:
+                    if candidate["id"] == source_doc.id:
                         continue
 
-                if _order_matches_candidate({**raw_order, "target_document_type": target_type, "target_document_subtype": target_subtype}, candidate):
-                    matched = candidate
-                    break
+                    candidate_date = candidate.get("document_date")
+                    candidate_created = candidate.get("created_at")
+                    if source_date:
+                        if candidate_date and candidate_date < source_date:
+                            continue
+                        if not candidate_date and candidate_created and candidate_created.date() < source_date:
+                            continue
+
+                    if _order_matches_candidate({**raw_order, "target_document_type": target_type, "target_document_subtype": target_subtype}, candidate):
+                        matched = candidate
+                        break
+
+            computed_status = "completed" if matched else "pending"
+            final_status = manual_status if manual_status in MANUAL_ORDER_STATUSES else computed_status
+            status_source = "manual" if manual_status in MANUAL_ORDER_STATUSES else "auto"
 
             item = {
+                "order_index": order_index,
                 "title": title,
                 "order_type": raw_order.get("order_type"),
                 "target_document_type": target_type,
                 "target_document_subtype": target_subtype,
                 "target_research_area": raw_order.get("target_research_area"),
-                "status": "completed" if matched else "pending",
+                "status": final_status,
+                "status_source": status_source,
+                "is_active": final_status == "pending",
                 "matched_document_id": matched["id"] if matched else None,
                 "matched_document_date": matched.get("document_date") if matched else None,
                 "matched_document_title": matched.get("title") if matched else None,
@@ -213,10 +226,13 @@ async def _build_orders_summary_map(
 
         if items:
             completed = sum(1 for item in items if item["status"] == "completed")
+            pending = sum(1 for item in items if item["status"] == "pending")
+            dismissed = sum(1 for item in items if item["status"] in {"not_required", "incorrect"})
             summaries[source_id] = {
                 "total": len(items),
                 "completed": completed,
-                "pending": len(items) - completed,
+                "pending": pending,
+                "dismissed": dismissed,
                 "items": items,
             }
 
@@ -532,6 +548,120 @@ async def get_document(
     doc_dict["orders_summary"] = orders_summary_by_doc_id.get(str(document.id))
     
     return DocumentWithMetadata(**doc_dict)
+
+
+@router.get("/{document_id}/content", response_model=DocumentContentResponse)
+async def get_document_content(
+    document_id: uuid.UUID,
+    current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """Return rich extracted content for a single document.
+
+    This is intentionally separate from list/get metadata endpoints because
+    full_text can be large.
+    """
+    document = await DocumentService.get_document_by_id(
+        document_id=document_id,
+        user_id=profile_user_id,
+        db=db,
+    )
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Документ не найден",
+        )
+
+    mongo_doc = await document_metadata_collection.find_one(
+        {"document_id": str(document_id)},
+        {
+            "extracted_data.summary": 1,
+            "extracted_data.full_text": 1,
+            "extracted_data.full_text_source": 1,
+            "extracted_data.tables": 1,
+            "extracted_data.lab_results": 1,
+        },
+    )
+    extracted_data = (mongo_doc or {}).get("extracted_data", {}) or {}
+
+    return DocumentContentResponse(
+        document_id=document_id,
+        summary=extracted_data.get("summary"),
+        full_text=extracted_data.get("full_text"),
+        full_text_source=extracted_data.get("full_text_source"),
+        tables=extracted_data.get("tables") or [],
+        lab_results=extracted_data.get("lab_results") or [],
+    )
+
+
+@router.patch("/{document_id}/orders/{order_index}/status")
+async def update_document_order_status(
+    document_id: uuid.UUID,
+    order_index: int,
+    body: DocumentOrderStatusUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """Manually override status for an extracted referral/order.
+
+    Manual status has priority over automatic matching. Any status except
+    "pending" removes the order from active patient reminders.
+    """
+
+    if order_index < 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Некорректный номер назначения",
+        )
+
+    document = await DocumentService.get_document_by_id(
+        document_id=document_id,
+        user_id=profile_user_id,
+        db=db,
+    )
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Документ не найден",
+        )
+
+    mongo_doc = await document_metadata_collection.find_one(
+        {"document_id": str(document_id)},
+        {"extracted_data.orders": 1},
+    )
+    orders = (mongo_doc or {}).get("extracted_data", {}).get("orders") or []
+
+    if order_index >= len(orders):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Назначение не найдено",
+        )
+
+    now = datetime.utcnow()
+    update_result = await document_metadata_collection.update_one(
+        {"document_id": str(document_id)},
+        {
+            "$set": {
+                f"extracted_data.orders.{order_index}.manual_status": body.status,
+                f"extracted_data.orders.{order_index}.manual_status_updated_at": now,
+                "updated_at": now,
+            }
+        },
+    )
+
+    if update_result.matched_count == 0:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Метаданные документа не найдены",
+        )
+
+    return {
+        "document_id": str(document_id),
+        "order_index": order_index,
+        "status": body.status,
+    }
 
 @router.get("/{document_id}/file")
 async def download_document(

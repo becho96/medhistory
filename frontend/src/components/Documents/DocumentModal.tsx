@@ -4,12 +4,51 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { documentsService } from '../../services/documents'
+import type { DocumentOrderManualStatus } from '../../services/documents'
 import LabResultsTable from './LabResultsTable'
 
 interface DocumentModalProps {
   documentId: string | null
   onClose: () => void
 }
+
+const ORDER_STATUS_OPTIONS: Array<{ value: DocumentOrderManualStatus; label: string }> = [
+  { value: 'pending', label: 'Активно' },
+  { value: 'completed', label: 'Выполнено без загрузки' },
+  { value: 'not_required', label: 'Не требуется' },
+  { value: 'incorrect', label: 'Ошибка распознавания' },
+]
+
+const orderStatusMeta = (status: DocumentOrderManualStatus) => ({
+  pending: {
+    text: 'Ожидает выполнения',
+    detail: 'Будет показываться как напоминание',
+    cardClass: 'border-amber-100 bg-amber-50',
+    iconClass: 'text-amber-600',
+    textClass: 'text-amber-700',
+  },
+  completed: {
+    text: 'Выполнено',
+    detail: 'Не будет показываться как напоминание',
+    cardClass: 'border-emerald-100 bg-emerald-50',
+    iconClass: 'text-emerald-600',
+    textClass: 'text-emerald-700',
+  },
+  not_required: {
+    text: 'Не требуется',
+    detail: 'Исключено из активных напоминаний',
+    cardClass: 'border-gray-200 bg-gray-50',
+    iconClass: 'text-gray-500',
+    textClass: 'text-gray-600',
+  },
+  incorrect: {
+    text: 'Ошибка распознавания',
+    detail: 'Исключено из активных напоминаний',
+    cardClass: 'border-gray-200 bg-gray-50',
+    iconClass: 'text-gray-500',
+    textClass: 'text-gray-600',
+  },
+}[status])
 
 export default function DocumentModal({ documentId, onClose }: DocumentModalProps) {
   const queryClient = useQueryClient()
@@ -33,6 +72,28 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
     },
     onError: () => {
       toast.error('Ошибка при удалении документа')
+    },
+  })
+
+  const orderStatusMutation = useMutation({
+    mutationFn: ({
+      documentId,
+      orderIndex,
+      status,
+    }: {
+      documentId: string
+      orderIndex: number
+      status: DocumentOrderManualStatus
+    }) => documentsService.updateOrderStatus(documentId, orderIndex, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['document', documentId] })
+      queryClient.invalidateQueries({ queryKey: ['documents'] })
+      queryClient.invalidateQueries({ queryKey: ['documents-count'] })
+      queryClient.invalidateQueries({ queryKey: ['documents-all'] })
+      toast.success('Статус назначения обновлён')
+    },
+    onError: () => {
+      toast.error('Не удалось обновить статус назначения')
     },
   })
 
@@ -65,6 +126,15 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
     } catch {
       toast.error('Не удалось открыть документ')
     }
+  }
+
+  const handleOrderStatusChange = (orderIndex: number, status: DocumentOrderManualStatus) => {
+    if (!doc) return
+    orderStatusMutation.mutate({
+      documentId: doc.id,
+      orderIndex,
+      status,
+    })
   }
 
   const handleDelete = () => {
@@ -234,12 +304,15 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
                               : 'border-emerald-200 bg-emerald-50 text-emerald-700'
                           }`}
                         >
-                          {doc.orders_summary.completed}/{doc.orders_summary.total}
+                          {doc.orders_summary.pending > 0
+                            ? `Активно: ${doc.orders_summary.pending}`
+                            : 'Нет активных'}
                         </span>
                       </div>
                       <div className="space-y-2">
                         {doc.orders_summary.items.map((order, index) => {
-                          const isCompleted = order.status === 'completed'
+                          const meta = orderStatusMeta(order.status)
+                          const isActive = order.status === 'pending'
                           const matchedDate = order.matched_document_date
                             ? format(new Date(order.matched_document_date), 'dd.MM.yyyy')
                             : null
@@ -247,30 +320,42 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
                           return (
                             <div
                               key={`${order.title}-${index}`}
-                              className={`rounded-xl border p-3 ${
-                                isCompleted
-                                  ? 'border-emerald-100 bg-emerald-50'
-                                  : 'border-amber-100 bg-amber-50'
-                              }`}
+                              className={`rounded-xl border p-3 ${meta.cardClass}`}
                             >
-                              <div className="flex items-start gap-2">
-                                {isCompleted ? (
-                                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                              <div className="flex items-start gap-2 sm:gap-3">
+                                {isActive ? (
+                                  <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${meta.iconClass}`} />
                                 ) : (
-                                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                                  <CheckCircle2 className={`mt-0.5 h-4 w-4 shrink-0 ${meta.iconClass}`} />
                                 )}
                                 <div className="min-w-0 flex-1">
-                                  <p className="text-sm font-medium text-gray-900">{order.title}</p>
+                                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                    <p className="text-sm font-medium text-gray-900">{order.title}</p>
+                                    <select
+                                      value={order.status}
+                                      onChange={(e) => handleOrderStatusChange(order.order_index, e.target.value as DocumentOrderManualStatus)}
+                                      disabled={orderStatusMutation.isPending}
+                                      className="h-8 rounded-md border border-gray-200 bg-white px-2 text-xs font-medium text-gray-700 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:opacity-60"
+                                    >
+                                      {ORDER_STATUS_OPTIONS.map((option) => (
+                                        <option key={option.value} value={option.value}>
+                                          {option.label}
+                                        </option>
+                                      ))}
+                                    </select>
+                                  </div>
                                   <p className="mt-0.5 text-xs text-gray-600">
                                     {order.target_document_type || 'Назначение'}
                                     {order.target_document_subtype && ` · ${order.target_document_subtype}`}
                                     {order.target_research_area && ` · ${order.target_research_area}`}
                                   </p>
-                                  {isCompleted ? (
+                                  <p className={`mt-2 text-xs ${meta.textClass}`}>
+                                    {meta.text}
+                                    {order.status_source === 'manual' ? ' · вручную' : ' · автоматически'}
+                                  </p>
+                                  {order.status === 'completed' && order.matched_document_id ? (
                                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                                      <span className="text-xs text-emerald-700">
-                                        Выполнено{matchedDate ? ` ${matchedDate}` : ''}
-                                      </span>
+                                      {matchedDate && <span className="text-xs text-emerald-700">Найдено {matchedDate}</span>}
                                       {order.matched_document_id && (
                                         <button
                                           type="button"
@@ -282,7 +367,7 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
                                       )}
                                     </div>
                                   ) : (
-                                    <p className="mt-2 text-xs text-amber-700">Ожидает выполнения</p>
+                                    <p className={`mt-1 text-xs ${meta.textClass}`}>{meta.detail}</p>
                                   )}
                                 </div>
                               </div>

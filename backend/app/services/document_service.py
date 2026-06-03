@@ -232,6 +232,9 @@ class DocumentService:
             },
             "extracted_data": {
                 "summary": metadata.summary,
+                "full_text": metadata.full_text,
+                "full_text_source": metadata.full_text_source,
+                "tables": metadata.tables or [],
                 "orders": metadata.orders or [],
             },
             "ai_response": {

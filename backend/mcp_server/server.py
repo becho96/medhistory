@@ -56,7 +56,9 @@ def _build_mcp() -> FastMCP:
             "You have access to the authenticated patient's medical history "
             "stored in the MedHistory service. Always retrieve the patient "
             "profile first to get gender and age for proper medical context "
-            "and reference range selection."
+            "and reference range selection. When a document summary is not "
+            "sufficient, call get_document_content to retrieve detailed "
+            "extracted text, tables, and lab rows."
         ),
         # Default streamable_http_path="/mcp"; with mount at "/mcp" final path
         # becomes "/mcp/mcp" — unambiguous, no trailing-slash redirect that POST

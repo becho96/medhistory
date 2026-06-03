@@ -1,4 +1,4 @@
-"""Tools: list_documents, get_doctor_visits, get_document_summary, get_document_original."""
+"""Tools for retrieving patient documents and extracted document content."""
 import json
 from typing import Optional
 from mcp.server.fastmcp import FastMCP
@@ -82,8 +82,9 @@ def register(mcp: FastMCP) -> None:
     ) -> str:
         """
         Return a list of all medical documents uploaded by the patient (metadata only,
-        no content). Use search_documents or get_document_summary to get summarized
-        content, or get_document_original to retrieve the source file.
+        no content). Use get_document_content when you need detailed extracted
+        content, get_document_summary for a short summary, or get_document_original
+        to retrieve the source file.
 
         Document types: 'Прием врача', 'Результаты анализа', 'Инструментальное исследование',
         'Функциональная диагностика', 'Другое'.
@@ -137,6 +138,7 @@ def register(mcp: FastMCP) -> None:
     async def get_document_summary(document_id: str) -> str:
         """
         Return the AI-generated summary of a single document by its ID.
+        Use get_document_content instead when clinical details or tables matter.
         Get document IDs from list_documents or search_documents.
 
         Args:
@@ -170,6 +172,52 @@ def register(mcp: FastMCP) -> None:
             "date": str(row["document_date"]) if row["document_date"] else None,
             "facility": row["medical_facility"],
             "summary": summary,
+        }, ensure_ascii=False)
+
+    @mcp.tool()
+    async def get_document_content(document_id: str) -> str:
+        """
+        Return rich extracted content for a single uploaded medical document.
+
+        Use this when a summary is not enough: it returns the AI/system extracted
+        near-full text, recognized tables, and structured lab results when
+        available. Get document IDs from list_documents or search_documents.
+
+        Args:
+            document_id: UUID of the document.
+        """
+        pool = await get_pg_pool()
+        async with pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT mongodb_metadata_id, document_type, document_date, medical_facility "
+                "FROM documents WHERE id = $1::uuid AND user_id = $2::uuid",
+                document_id, resolve_user_id(),
+            )
+
+        if not row:
+            return json.dumps({"error": "Document not found"})
+
+        extracted = {}
+        meta_id = row["mongodb_metadata_id"]
+        if meta_id:
+            from bson import ObjectId
+            mongo_db = get_mongo_db()
+            try:
+                meta = await mongo_db.document_metadata.find_one({"_id": ObjectId(meta_id)}) or {}
+            except Exception:
+                meta = await mongo_db.document_metadata.find_one({"document_id": meta_id}) or {}
+            extracted = meta.get("extracted_data", {}) or {}
+
+        return json.dumps({
+            "document_id": document_id,
+            "type": row["document_type"],
+            "date": str(row["document_date"]) if row["document_date"] else None,
+            "facility": row["medical_facility"],
+            "summary": extracted.get("summary"),
+            "full_text": extracted.get("full_text"),
+            "full_text_source": extracted.get("full_text_source"),
+            "tables": extracted.get("tables") or [],
+            "lab_results": extracted.get("lab_results") or [],
         }, ensure_ascii=False)
 
     @mcp.tool()

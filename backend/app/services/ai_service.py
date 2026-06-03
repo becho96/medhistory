@@ -2,9 +2,9 @@ import base64
 import httpx
 import json
 from typing import Optional, Tuple
-from datetime import datetime
 from io import BytesIO
 import PyPDF2
+from docx import Document as DocxDocument
 
 from app.core.config import settings
 from app.schemas.document import DocumentMetadata
@@ -19,9 +19,6 @@ class AIService:
         """Analyze document and extract metadata using AI. Returns (metadata, usage)."""
         
         try:
-            # Build prompt
-            prompt = self._build_extraction_prompt()
-            
             # Handle different file types
             if file_type == 'pdf':
                 # Extract text from PDF
@@ -34,13 +31,35 @@ class AIService:
                 print(f"  ✅ Извлечено {len(text_content)} символов текста")
 
                 # Prepare text-only message
+                prompt = self._build_extraction_prompt(include_full_text=False)
                 messages = [
                     {
                         "role": "user",
                         "content": f"{prompt}\n\nТекст медицинского документа:\n\n{text_content}"
                     }
                 ]
-                
+                extracted_full_text = text_content
+                full_text_source = "pdf_text_extraction"
+
+            elif file_type == 'docx':
+                print("📝 Извлекаем текст из DOCX...")
+                text_content = self._extract_text_from_docx(file_bytes)
+
+                if not text_content or len(text_content.strip()) < 20:
+                    raise ValueError("DOCX содержит слишком мало текста для анализа.")
+
+                print(f"  ✅ Извлечено {len(text_content)} символов текста")
+
+                prompt = self._build_extraction_prompt(include_full_text=False)
+                messages = [
+                    {
+                        "role": "user",
+                        "content": f"{prompt}\n\nТекст медицинского документа:\n\n{text_content}"
+                    }
+                ]
+                extracted_full_text = text_content
+                full_text_source = "docx_text_extraction"
+
             elif file_type in ['jpg', 'jpeg', 'png']:
                 # Use vision API for images
                 print(f"🖼️ Обрабатываем изображение ({file_type})...")
@@ -55,6 +74,7 @@ class AIService:
                     mime_type = 'image/png'
                 
                 # Prepare vision message
+                prompt = self._build_extraction_prompt(include_full_text=True)
                 messages = [
                     {
                         "role": "user",
@@ -72,6 +92,8 @@ class AIService:
                         ]
                     }
                 ]
+                extracted_full_text = None
+                full_text_source = "ai_vision_transcription"
             else:
                 raise ValueError(f"Unsupported file type: {file_type}")
             
@@ -80,6 +102,11 @@ class AIService:
             
             # Parse response
             metadata = self._parse_ai_response(response_data)
+            if extracted_full_text:
+                metadata.full_text = extracted_full_text
+                metadata.full_text_source = full_text_source
+            elif metadata.full_text:
+                metadata.full_text_source = metadata.full_text_source or full_text_source
             usage = self._extract_usage(response_data)
             return (metadata, usage)
             
@@ -114,9 +141,60 @@ class AIService:
         except Exception as e:
             print(f"❌ Ошибка извлечения текста из PDF: {e}")
             raise ValueError(f"Не удалось извлечь текст из PDF: {str(e)}")
+
+    def _extract_text_from_docx(self, file_bytes: bytes) -> str:
+        """Extract paragraphs and tables from a DOCX file as readable text."""
+        try:
+            docx_file = BytesIO(file_bytes)
+            document = DocxDocument(docx_file)
+
+            text_parts: list[str] = []
+            for paragraph in document.paragraphs:
+                text = paragraph.text.strip()
+                if text:
+                    text_parts.append(text)
+
+            for table_index, table in enumerate(document.tables, start=1):
+                rows: list[str] = []
+                for row in table.rows:
+                    cells = [cell.text.strip() for cell in row.cells]
+                    if any(cells):
+                        rows.append(" | ".join(cells))
+                if rows:
+                    text_parts.append(f"Таблица {table_index}:\n" + "\n".join(rows))
+
+            return "\n\n".join(text_parts).strip()
+        except Exception as e:
+            print(f"❌ Ошибка извлечения текста из DOCX: {e}")
+            raise ValueError(f"Не удалось извлечь текст из DOCX: {str(e)}")
     
-    def _build_extraction_prompt(self) -> str:
-        return """Проанализируй этот медицинский документ и извлеки следующую информацию в формате JSON.
+    def _build_extraction_prompt(self, include_full_text: bool = False) -> str:
+        content_fields = """
+  "full_text": "подробная транскрипция всего видимого текста документа",
+  "tables": [
+    {
+      "title": "название таблицы или null",
+      "columns": ["колонка 1", "колонка 2"],
+      "rows": [
+        {"колонка 1": "значение", "колонка 2": "значение"}
+      ]
+    }
+  ],""" if include_full_text else """
+  "tables": [],"""
+
+        content_rules = """
+9. full_text - подробная транскрипция содержимого документа, а НЕ summary.
+   Сохраняй исходные формулировки, порядок разделов, назначения, заключения,
+   показатели и примечания. Не сокращай клинически значимые детали.
+10. Если в документе есть таблицы, продублируй их данные в tables.
+    Для результатов анализов сохраняй строки с названием показателя, значением,
+    единицами измерения, референсами и отметками нормы/отклонения, если они есть.
+11. full_text сохраняй на языке оригинального документа. Остальные классификационные
+    поля возвращай на русском по правилам ниже.""" if include_full_text else """
+9. tables верни пустым массивом []. Полный текст документа уже извлечен системным
+   парсером и будет сохранен отдельно."""
+
+        return f"""Проанализируй этот медицинский документ и извлеки следующую информацию в формате JSON.
 
 # ОБЯЗАТЕЛЬНАЯ СТРУКТУРА JSON:
 
@@ -131,6 +209,7 @@ class AIService:
   "document_language": "ISO 639-1 код языка документа (например: ru, en, nl, de, fr)",
   "confidence": 0.95,
   "summary": "краткое содержание",
+{content_fields}
   "orders": [
     {
       "title": "УЗИ брюшной полости",
@@ -207,6 +286,7 @@ class AIService:
    target_document_type должен быть одним из:
    "Результаты анализа", "Инструментальное исследование", "Функциональная диагностика".
    target_document_subtype и target_research_area заполняй, когда это можно понять из текста.
+{content_rules}
 
 # ИНОСТРАННЫЕ ДОКУМЕНТЫ:
 Документ может быть на любом языке (русский, английский, голландский, немецкий и др.).
@@ -284,6 +364,7 @@ document_subtype, research_area, specialties, summary, patient_name и medical_f
                 content = content.split("```")[1].split("```")[0].strip()
             
             data = json.loads(content)
+            tables = data.get("tables") if isinstance(data.get("tables"), list) else []
             
             # Create DocumentMetadata object with new structure
             metadata = DocumentMetadata(
@@ -302,6 +383,8 @@ document_subtype, research_area, specialties, summary, patient_name и medical_f
                 
                 # MongoDB extracted_data fields
                 summary=data.get("summary"),
+                full_text=data.get("full_text") if isinstance(data.get("full_text"), str) else None,
+                tables=[t for t in tables if isinstance(t, dict)],
                 orders=data.get("orders") if isinstance(data.get("orders"), list) else []
             )
             
@@ -372,6 +455,14 @@ document_subtype, research_area, specialties, summary, patient_name и medical_f
         # Prepare messages similarly to analyze_document
         if file_type == 'pdf':
             text_content = self._extract_text_from_pdf(file_bytes)
+            messages = [
+                {
+                    "role": "user",
+                    "content": f"{prompt}\n\nТекст медицинского документа:\n\n{text_content}"
+                }
+            ]
+        elif file_type == 'docx':
+            text_content = self._extract_text_from_docx(file_bytes)
             messages = [
                 {
                     "role": "user",

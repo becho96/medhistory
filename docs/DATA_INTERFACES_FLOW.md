@@ -19,12 +19,12 @@
 
 - **MinIO (S3)**: сырые файлы документов (`s3://<bucket>/<user_id>/<file_id>.<ext>`)
 - **PostgreSQL**: индекс/каркас документа + минимальные поля для фильтрации/списков (`documents`)
-- **MongoDB (`document_metadata`)**: расширенная “AI‑метадата” и извлечённые структуры (summary, classification, lab_results, …)
+- **MongoDB (`document_metadata`)**: расширенная “AI‑метадата” и извлечённые структуры (summary, full_text, tables, classification, lab_results, …)
 
 ### Сервисы обработки
 
 - **`DocumentService`**: загрузка файла в MinIO, запись `documents`, запуск AI‑обработки, запись `document_metadata`
-- **`ai_service.analyze_document(...)`**: классификация и извлечение базовых метаданных + summary
+- **`ai_service.analyze_document(...)`**: классификация и извлечение базовых метаданных + summary + полного текстового контента
 - **`LabAnalysisService.analyze_labs_for_document(...)`**: отдельный шаг извлечения результатов анализов, если документ классифицирован как “Результаты анализа”
 - **`analyte_normalization_service_db`**: справочник канонических анализов + конвертация в стандартные единицы (используется и в UI, и в MCP)
 
@@ -62,9 +62,9 @@ sequenceDiagram
   API->>API: _process_document_ai(...)
   API->>PG: UPDATE documents (processing)
   API->>AI: analyze_document(file_bytes, ext, filename)
-  AI-->>API: metadata (type/date/patient/facility/summary/...)
+  AI-->>API: metadata (type/date/patient/facility/summary/full_text/tables/...)
   API->>PG: UPDATE documents (document_type, document_date, ...) + completed
-  API->>MDB: INSERT document_metadata (classification + extracted_data.summary + usage)
+  API->>MDB: INSERT document_metadata (classification + extracted_data.summary/full_text/tables + usage)
   MDB-->>API: inserted_id
   API->>PG: UPDATE documents.mongodb_metadata_id
 
@@ -81,14 +81,14 @@ sequenceDiagram
 - **Файл** — только в **MinIO** (в Postgres хранится ссылка `file_url`)
 - **Канонический список документов** (для UI списков/фильтров по дате/типу/клинике/пациенту) — **Postgres `documents`**
 - **AI‑обогащение**:
-  - `classification.*`, `extracted_data.summary` — **Mongo `document_metadata`**
+  - `classification.*`, `extracted_data.summary`, `extracted_data.full_text`, `extracted_data.tables` — **Mongo `document_metadata`**
   - `extracted_data.lab_results` — **Mongo**, заполняется отдельным шагом `LabAnalysisService` (условно “пост‑обработка”)
 
 ### Ключевые преобразования
 
-- **Классификация документа** (LLM): превращает “сырые байты файла” → структурные поля:
+- **Классификация и текстовое извлечение документа** (LLM/парсеры): превращает “сырые байты файла” → структурные поля:
   - `document_type`, `document_date`, `patient_name`, `medical_facility`
-  - `summary`
+  - `summary`, `full_text`, `tables`
   - `classification` (specialties/subtype/research_area/…)
 - **Извлечение анализов** (LLM/парсер): превращает документ типа “Результаты анализа” → массив нормализуемых записей `lab_results[]` в Mongo.
 - **Нормализация анализов**:
@@ -268,12 +268,12 @@ flowchart LR
   - MinIO: raw bytes
   - Postgres: `documents` с `file_url`, `file_hash`, `processing_status=pending`
 
-### Этап B — AI‑анализ (классификация + summary)
+### Этап B — AI‑анализ (классификация + summary + full_text)
 
 - input: raw bytes
 - output:
   - Postgres: `document_type`, `document_date`, `patient_name`, `medical_facility`, `processing_status=completed`
-  - Mongo: `classification.*`, `extracted_data.summary`, `ai_response.usage/model`
+  - Mongo: `classification.*`, `extracted_data.summary`, `extracted_data.full_text`, `extracted_data.full_text_source`, `extracted_data.tables`, `ai_response.usage/model`
 
 ### Этап C — Извлечение анализов (условно)
 
@@ -287,7 +287,7 @@ flowchart LR
   - списки/фильтры: Postgres + (summary/classification) из Mongo
   - графики/тренды: Mongo `lab_results` + нормализация/конверсия + даты из Postgres
 - MCP:
-  - ассистент получает “факты”: summary, списки документов, тренды анализов, профайл пациента
+  - ассистент получает “факты”: summary, полный извлечённый текст документа (`get_document_content`), таблицы, списки документов, тренды анализов, профайл пациента
 
 ---
 
@@ -299,4 +299,3 @@ flowchart LR
 - MinIO: `backend/app/db/minio_client.py`
 - MCP server: `backend/mcp_server/server.py`
 - MCP tools: `backend/mcp_server/tools/*.py` (documents/profile/lab_results/search/…)
-

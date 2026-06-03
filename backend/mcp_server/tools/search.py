@@ -1,5 +1,6 @@
-"""Tool: search_documents — full-text search over document summaries."""
+"""Tool: search_documents — full-text search over extracted document content."""
 import json
+import re
 from bson import ObjectId
 from mcp.server.fastmcp import FastMCP
 
@@ -9,10 +10,20 @@ from mcp_server.tools._user import resolve_user_id
 SNIPPET_LEN = 240
 
 
-def _snippet(summary: str) -> str:
-    if not summary:
+def _snippet(text: str, query: str) -> str:
+    if not text:
         return ""
-    s = summary.strip()
+    s = text.strip()
+    terms = [t for t in re.split(r"\s+", query.strip().lower()) if len(t) >= 3]
+    lower = s.lower()
+    for term in terms:
+        pos = lower.find(term)
+        if pos >= 0:
+            start = max(0, pos - 80)
+            end = min(len(s), start + SNIPPET_LEN)
+            prefix = "…" if start > 0 else ""
+            suffix = "…" if end < len(s) else ""
+            return prefix + s[start:end].strip() + suffix
     return s if len(s) <= SNIPPET_LEN else s[:SNIPPET_LEN].rstrip() + "…"
 
 
@@ -21,9 +32,10 @@ def register(mcp: FastMCP) -> None:
     @mcp.tool()
     async def search_documents(query: str, limit: int = 20) -> str:
         """
-        Lexical full-text search across the patient's document summaries.
+        Lexical full-text search across the patient's document summaries and
+        near-full extracted text when available.
         Uses Russian-language stemming. Returns the most relevant documents
-        with a short snippet from each summary.
+        with a short snippet from the matching extracted content.
 
         Args:
             query: Search terms (e.g. "щитовидная железа", "холестерин").
@@ -56,7 +68,11 @@ def register(mcp: FastMCP) -> None:
         mongo_db = get_mongo_db()
         cursor = mongo_db.document_metadata.find(
             {"_id": {"$in": object_ids}, "$text": {"$search": query}},
-            {"score": {"$meta": "textScore"}, "extracted_data.summary": 1},
+            {
+                "score": {"$meta": "textScore"},
+                "extracted_data.summary": 1,
+                "extracted_data.full_text": 1,
+            },
         ).sort([("score", {"$meta": "textScore"})]).limit(limit)
 
         results = []
@@ -64,14 +80,18 @@ def register(mcp: FastMCP) -> None:
             r = meta_index.get(str(doc["_id"]))
             if not r:
                 continue
-            summary = (doc.get("extracted_data") or {}).get("summary") or ""
+            extracted = doc.get("extracted_data") or {}
+            summary = extracted.get("summary") or ""
+            full_text = extracted.get("full_text") or ""
+            snippet_source = f"{summary}\n\n{full_text}".strip()
             results.append({
                 "document_id": str(r["id"]),
                 "type": r["document_type"],
                 "date": str(r["document_date"]) if r["document_date"] else None,
                 "facility": r["medical_facility"],
                 "score": doc.get("score"),
-                "snippet": _snippet(summary),
+                "snippet": _snippet(snippet_source, query),
+                "has_full_text": bool(full_text),
             })
 
         return json.dumps(results, ensure_ascii=False)

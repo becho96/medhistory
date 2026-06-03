@@ -1,5 +1,7 @@
 import api from '../lib/api'
-import type { Document } from '../types'
+import type { Document, DocumentContent } from '../types'
+
+export type DocumentOrderManualStatus = 'pending' | 'completed' | 'not_required' | 'incorrect'
 
 interface DocumentUploadResponse {
   document_id: string
@@ -81,8 +83,22 @@ export const documentsService = {
     return response.data
   },
 
+  async getDocumentContent(id: string): Promise<DocumentContent> {
+    const response = await api.get<DocumentContent>(`/documents/${id}/content`)
+    return response.data
+  },
+
   async deleteDocument(id: string): Promise<void> {
     await api.delete(`/documents/${id}`)
+  },
+
+  async updateOrderStatus(
+    documentId: string,
+    orderIndex: number,
+    status: DocumentOrderManualStatus
+  ): Promise<{ document_id: string; order_index: number; status: DocumentOrderManualStatus }> {
+    const response = await api.patch(`/documents/${documentId}/orders/${orderIndex}/status`, { status })
+    return response.data
   },
 
   getDocumentFileUrl(id: string): string {
@@ -222,4 +238,3 @@ export const documentsService = {
     return response.data.total
   },
 }
-

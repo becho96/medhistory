@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Literal
 from datetime import datetime, date
 import uuid
 
@@ -28,16 +28,22 @@ class DocumentMetadata(BaseModel):
     
     # MongoDB extracted_data fields
     summary: Optional[str] = None
+    full_text: Optional[str] = None
+    full_text_source: Optional[str] = None
+    tables: Optional[list[Dict[str, Any]]] = None
     orders: Optional[list[Dict[str, Any]]] = None
 
 
 class DocumentOrderStatus(BaseModel):
+    order_index: int
     title: str
     order_type: Optional[str] = None
     target_document_type: Optional[str] = None
     target_document_subtype: Optional[str] = None
     target_research_area: Optional[str] = None
     status: str = "pending"
+    status_source: str = "auto"
+    is_active: bool = True
     matched_document_id: Optional[uuid.UUID] = None
     matched_document_date: Optional[date] = None
     matched_document_title: Optional[str] = None
@@ -47,7 +53,12 @@ class DocumentOrdersSummary(BaseModel):
     total: int = 0
     completed: int = 0
     pending: int = 0
+    dismissed: int = 0
     items: list[DocumentOrderStatus] = Field(default_factory=list)
+
+
+class DocumentOrderStatusUpdateRequest(BaseModel):
+    status: Literal["pending", "completed", "not_required", "incorrect"]
 
 class Document(DocumentBase):
     id: uuid.UUID
@@ -72,6 +83,16 @@ class DocumentWithMetadata(Document):
     research_area: Optional[str] = None  # From MongoDB
     summary: Optional[str] = None  # From MongoDB
     orders_summary: Optional[DocumentOrdersSummary] = None
+
+
+class DocumentContentResponse(BaseModel):
+    document_id: uuid.UUID
+    summary: Optional[str] = None
+    full_text: Optional[str] = None
+    full_text_source: Optional[str] = None
+    tables: list[Dict[str, Any]] = Field(default_factory=list)
+    lab_results: list[Dict[str, Any]] = Field(default_factory=list)
+
 
 class DocumentUploadResponse(BaseModel):
     document_id: uuid.UUID

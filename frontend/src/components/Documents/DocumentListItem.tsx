@@ -81,7 +81,7 @@ export default function DocumentListItem({
             title={
               doc.orders_summary.pending > 0
                 ? `Невыполнено назначений: ${doc.orders_summary.pending}`
-                : 'Все назначения выполнены'
+                : 'Нет активных напоминаний по назначениям'
             }
           >
             {doc.orders_summary.pending > 0 ? (
@@ -91,8 +91,8 @@ export default function DocumentListItem({
             )}
             <span className="truncate">
               {doc.orders_summary.pending > 0
-                ? `Назначения: ${doc.orders_summary.completed}/${doc.orders_summary.total}`
-                : `Назначения выполнены: ${doc.orders_summary.total}`}
+                ? `Активные назначения: ${doc.orders_summary.pending}`
+                : 'Назначения закрыты'}
             </span>
           </div>
         )}
