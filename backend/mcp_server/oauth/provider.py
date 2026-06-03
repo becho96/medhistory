@@ -90,7 +90,8 @@ class MedHistoryOAuthProvider(OAuthAuthorizationServerProvider):
     async def register_client(self, client_info: OAuthClientInformationFull) -> None:
         if not client_info.client_id:
             client_info.client_id = uuid.uuid4().hex
-        if not client_info.client_secret:
+        auth_method = client_info.token_endpoint_auth_method or "client_secret_post"
+        if auth_method != "none" and not client_info.client_secret:
             client_info.client_secret = secrets.token_urlsafe(32)
         client_info.client_id_issued_at = int(time.time())
 
