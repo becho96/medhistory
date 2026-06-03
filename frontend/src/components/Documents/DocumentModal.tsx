@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { X, Download, Trash2, FileText, Calendar, User, Building2, Stethoscope, FlaskConical, Eye } from 'lucide-react'
+import { X, Download, Trash2, FileText, Calendar, User, Building2, Stethoscope, FlaskConical, Eye, ClipboardList, CheckCircle2, AlertTriangle } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -53,6 +53,15 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
     const targetWindow = window.open('', '_blank')
     try {
       await documentsService.openDocument(doc.id, targetWindow)
+    } catch {
+      toast.error('Не удалось открыть документ')
+    }
+  }
+
+  const handleOpenMatchedDocument = async (matchedDocumentId: string) => {
+    const targetWindow = window.open('', '_blank')
+    try {
+      await documentsService.openDocument(matchedDocumentId, targetWindow)
     } catch {
       toast.error('Не удалось открыть документ')
     }
@@ -210,6 +219,79 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
                       </span>
                     </div>
                   </div>
+
+                  {!!doc.orders_summary?.total && (
+                    <div>
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        <h4 className="flex items-center gap-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          <ClipboardList className="h-4 w-4" />
+                          Назначения
+                        </h4>
+                        <span
+                          className={`shrink-0 rounded-md border px-2 py-0.5 text-[11px] font-medium ${
+                            doc.orders_summary.pending > 0
+                              ? 'border-amber-200 bg-amber-50 text-amber-700'
+                              : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                          }`}
+                        >
+                          {doc.orders_summary.completed}/{doc.orders_summary.total}
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {doc.orders_summary.items.map((order, index) => {
+                          const isCompleted = order.status === 'completed'
+                          const matchedDate = order.matched_document_date
+                            ? format(new Date(order.matched_document_date), 'dd.MM.yyyy')
+                            : null
+
+                          return (
+                            <div
+                              key={`${order.title}-${index}`}
+                              className={`rounded-xl border p-3 ${
+                                isCompleted
+                                  ? 'border-emerald-100 bg-emerald-50'
+                                  : 'border-amber-100 bg-amber-50'
+                              }`}
+                            >
+                              <div className="flex items-start gap-2">
+                                {isCompleted ? (
+                                  <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                                ) : (
+                                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium text-gray-900">{order.title}</p>
+                                  <p className="mt-0.5 text-xs text-gray-600">
+                                    {order.target_document_type || 'Назначение'}
+                                    {order.target_document_subtype && ` · ${order.target_document_subtype}`}
+                                    {order.target_research_area && ` · ${order.target_research_area}`}
+                                  </p>
+                                  {isCompleted ? (
+                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                      <span className="text-xs text-emerald-700">
+                                        Выполнено{matchedDate ? ` ${matchedDate}` : ''}
+                                      </span>
+                                      {order.matched_document_id && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleOpenMatchedDocument(order.matched_document_id!)}
+                                          className="rounded-md bg-white px-2 py-1 text-xs font-medium text-emerald-700 border border-emerald-200"
+                                        >
+                                          Открыть результат
+                                        </button>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <p className="mt-2 text-xs text-amber-700">Ожидает выполнения</p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Summary */}
                   {doc.summary && (

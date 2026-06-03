@@ -232,6 +232,7 @@ class DocumentService:
             },
             "extracted_data": {
                 "summary": metadata.summary,
+                "orders": metadata.orders or [],
             },
             "ai_response": {
                 "model": settings.OPENROUTER_MODEL,
@@ -660,4 +661,3 @@ class DocumentService:
         response.release_conn()
         
         return file_content
-

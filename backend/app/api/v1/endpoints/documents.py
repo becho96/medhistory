@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File,
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from io import BytesIO
 import uuid
 import logging
@@ -11,7 +11,9 @@ from urllib.parse import quote
 logger = logging.getLogger(__name__)
 
 from app.db.postgres import get_db
+from sqlalchemy import select
 from app.models.user import User
+from app.models.document import Document as DocumentModel
 from app.schemas.document import (
     Document as DocumentSchema,
     DocumentWithMetadata,
@@ -30,6 +32,195 @@ from app.db.minio_client import minio_client
 from app.db.mongodb import document_metadata_collection
 
 router = APIRouter()
+
+ORDER_TARGET_TYPES = {
+    "lab": "Результаты анализа",
+    "analysis": "Результаты анализа",
+    "instrumental": "Инструментальное исследование",
+    "imaging": "Инструментальное исследование",
+    "functional": "Функциональная диагностика",
+}
+
+FOLLOW_UP_DOCUMENT_TYPES = set(ORDER_TARGET_TYPES.values())
+
+ORDER_KEYWORDS = [
+    ("Результаты анализа", None, ["анализ", "кров", "моч", "кал", "гормон", "биохим", "бактериолог", "серолог"]),
+    ("Инструментальное исследование", "УЗИ", ["узи", "эхо"]),
+    ("Инструментальное исследование", "МРТ", ["мрт", "магнитно"]),
+    ("Инструментальное исследование", "КТ", ["кт", "компьютерн"]),
+    ("Инструментальное исследование", "Рентген", ["рентген", "флюорограф"]),
+    ("Функциональная диагностика", "ЭКГ (электрокардиография)", ["экг", "электрокардиограф"]),
+    ("Функциональная диагностика", "ЭЭГ (электроэнцефалография)", ["ээг", "электроэнцефалограф"]),
+    ("Функциональная диагностика", "Холтер-мониторирование", ["холтер"]),
+    ("Функциональная диагностика", "Спирометрия", ["спирометр"]),
+    ("Функциональная диагностика", "ФГДС (фиброгастродуоденоскопия)", ["фгдс", "гастроскоп"]),
+    ("Функциональная диагностика", "Колоноскопия", ["колоноскоп"]),
+]
+
+
+def _normalize_text(value: Optional[str]) -> str:
+    return (value or "").strip().lower()
+
+
+def _infer_order_target(order: Dict[str, Any]) -> tuple[Optional[str], Optional[str]]:
+    target_type = order.get("target_document_type")
+    target_subtype = order.get("target_document_subtype")
+    order_type = _normalize_text(order.get("order_type"))
+    title = _normalize_text(order.get("title"))
+
+    if not target_type and order_type in ORDER_TARGET_TYPES:
+        target_type = ORDER_TARGET_TYPES[order_type]
+
+    for doc_type, subtype, keywords in ORDER_KEYWORDS:
+        if any(keyword in title for keyword in keywords):
+            target_type = target_type or doc_type
+            if target_type == doc_type:
+                target_subtype = target_subtype or subtype
+            break
+
+    return target_type, target_subtype
+
+
+def _order_matches_candidate(order: Dict[str, Any], candidate: Dict[str, Any]) -> bool:
+    target_type, target_subtype = _infer_order_target(order)
+    if not target_type or candidate.get("document_type") != target_type:
+        return False
+
+    target_subtype_norm = _normalize_text(target_subtype)
+    candidate_subtype_norm = _normalize_text(candidate.get("document_subtype"))
+    if (
+        target_subtype_norm
+        and candidate_subtype_norm
+        and target_subtype_norm != candidate_subtype_norm
+        and target_subtype_norm not in candidate_subtype_norm
+        and candidate_subtype_norm not in target_subtype_norm
+    ):
+        return False
+
+    target_research_area = _normalize_text(order.get("target_research_area"))
+    candidate_research_area = _normalize_text(candidate.get("research_area"))
+    if (
+        target_research_area
+        and candidate_research_area
+        and target_research_area != candidate_research_area
+        and target_research_area not in candidate_research_area
+        and candidate_research_area not in target_research_area
+    ):
+        return False
+
+    return True
+
+
+async def _build_orders_summary_map(
+    user_id: uuid.UUID,
+    documents: List[DocumentModel],
+    metadata_by_doc_id: Dict[str, Dict[str, Any]],
+    db: AsyncSession,
+) -> Dict[str, Dict[str, Any]]:
+    source_docs = [
+        doc for doc in documents
+        if (metadata_by_doc_id.get(str(doc.id), {}).get("orders") or [])
+    ]
+    if not source_docs:
+        return {}
+
+    candidate_query = (
+        select(DocumentModel)
+        .where(
+            DocumentModel.user_id == user_id,
+            DocumentModel.document_type.in_(list(FOLLOW_UP_DOCUMENT_TYPES)),
+            DocumentModel.processing_status == "completed",
+        )
+    )
+    result = await db.execute(candidate_query)
+    candidate_docs = result.scalars().all()
+    candidate_ids = [str(doc.id) for doc in candidate_docs if doc.mongodb_metadata_id]
+
+    candidate_metadata_by_doc_id: Dict[str, Dict[str, Any]] = {}
+    if candidate_ids:
+        cursor = document_metadata_collection.find(
+            {"document_id": {"$in": candidate_ids}},
+            {
+                "document_id": 1,
+                "classification.document_subtype": 1,
+                "classification.research_area": 1,
+            },
+        )
+        mongo_docs = await cursor.to_list(length=len(candidate_ids))
+        for m in mongo_docs:
+            classification = m.get("classification", {}) or {}
+            candidate_metadata_by_doc_id[m.get("document_id")] = {
+                "document_subtype": classification.get("document_subtype"),
+                "research_area": classification.get("research_area"),
+            }
+
+    candidates = []
+    for candidate_doc in candidate_docs:
+        candidate_meta = candidate_metadata_by_doc_id.get(str(candidate_doc.id), {})
+        candidates.append({
+            "id": candidate_doc.id,
+            "document_type": candidate_doc.document_type,
+            "document_date": candidate_doc.document_date,
+            "created_at": candidate_doc.created_at,
+            "title": candidate_doc.original_filename,
+            "document_subtype": candidate_meta.get("document_subtype"),
+            "research_area": candidate_meta.get("research_area"),
+        })
+
+    summaries: Dict[str, Dict[str, Any]] = {}
+    for source_doc in source_docs:
+        source_id = str(source_doc.id)
+        source_date = source_doc.document_date
+        orders = metadata_by_doc_id.get(source_id, {}).get("orders") or []
+        items = []
+
+        for raw_order in orders:
+            if not isinstance(raw_order, dict):
+                continue
+
+            target_type, target_subtype = _infer_order_target(raw_order)
+            title = raw_order.get("title") or target_subtype or target_type or "Назначение"
+            matched = None
+
+            for candidate in candidates:
+                if candidate["id"] == source_doc.id:
+                    continue
+
+                candidate_date = candidate.get("document_date")
+                candidate_created = candidate.get("created_at")
+                if source_date:
+                    if candidate_date and candidate_date < source_date:
+                        continue
+                    if not candidate_date and candidate_created and candidate_created.date() < source_date:
+                        continue
+
+                if _order_matches_candidate({**raw_order, "target_document_type": target_type, "target_document_subtype": target_subtype}, candidate):
+                    matched = candidate
+                    break
+
+            item = {
+                "title": title,
+                "order_type": raw_order.get("order_type"),
+                "target_document_type": target_type,
+                "target_document_subtype": target_subtype,
+                "target_research_area": raw_order.get("target_research_area"),
+                "status": "completed" if matched else "pending",
+                "matched_document_id": matched["id"] if matched else None,
+                "matched_document_date": matched.get("document_date") if matched else None,
+                "matched_document_title": matched.get("title") if matched else None,
+            }
+            items.append(item)
+
+        if items:
+            completed = sum(1 for item in items if item["status"] == "completed")
+            summaries[source_id] = {
+                "total": len(items),
+                "completed": completed,
+                "pending": len(items) - completed,
+                "items": items,
+            }
+
+    return summaries
 
 @router.post("/upload", response_model=DocumentUploadResponse)
 async def upload_document(
@@ -150,18 +341,28 @@ async def get_documents(
                 "classification.specialties": 1,
                 "classification.document_subtype": 1,
                 "classification.research_area": 1,
-                "extracted_data.summary": 1
+                "extracted_data.summary": 1,
+                "extracted_data.orders": 1
             })
             mongo_docs = await cursor.to_list(length=len(doc_ids))
             
             for m in mongo_docs:
                 doc_id = m.get("document_id")
+                extracted_data = m.get("extracted_data", {}) or {}
                 metadata_by_doc_id[doc_id] = {
                     "specialties": m.get("classification", {}).get("specialties"),
                     "document_subtype": m.get("classification", {}).get("document_subtype"),
                     "research_area": m.get("classification", {}).get("research_area"),
-                    "summary": m.get("extracted_data", {}).get("summary")
+                    "summary": extracted_data.get("summary"),
+                    "orders": extracted_data.get("orders") or [],
                 }
+
+        orders_summary_by_doc_id = await _build_orders_summary_map(
+            user_id=profile_user_id,
+            documents=documents,
+            metadata_by_doc_id=metadata_by_doc_id,
+            db=db,
+        )
         
         # Build response with metadata
         result = []
@@ -177,6 +378,7 @@ async def get_documents(
             doc_dict["document_subtype"] = metadata.get("document_subtype")
             doc_dict["research_area"] = metadata.get("research_area")
             doc_dict["summary"] = metadata.get("summary")
+            doc_dict["orders_summary"] = orders_summary_by_doc_id.get(str(doc.id))
             
             result.append(DocumentWithMetadata(**doc_dict))
         
@@ -293,8 +495,10 @@ async def get_document(
         "specialty": None,
         "document_subtype": None,
         "research_area": None,
-        "summary": None
+        "summary": None,
+        "orders_summary": None
     }
+    metadata_by_doc_id: Dict[str, Dict[str, Any]] = {}
     
     # Load MongoDB metadata if available
     if document.mongodb_metadata_id:
@@ -311,6 +515,21 @@ async def get_document(
             doc_dict["document_subtype"] = classification.get("document_subtype")
             doc_dict["research_area"] = classification.get("research_area")
             doc_dict["summary"] = extracted_data.get("summary")
+            metadata_by_doc_id[str(document.id)] = {
+                "specialties": specialties,
+                "document_subtype": classification.get("document_subtype"),
+                "research_area": classification.get("research_area"),
+                "summary": extracted_data.get("summary"),
+                "orders": extracted_data.get("orders") or [],
+            }
+
+    orders_summary_by_doc_id = await _build_orders_summary_map(
+        user_id=profile_user_id,
+        documents=[document],
+        metadata_by_doc_id=metadata_by_doc_id,
+        db=db,
+    )
+    doc_dict["orders_summary"] = orders_summary_by_doc_id.get(str(document.id))
     
     return DocumentWithMetadata(**doc_dict)
 
@@ -981,4 +1200,3 @@ async def get_filter_values(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Invalid field: {field}. Allowed fields: {', '.join(postgres_fields | mongodb_fields)}"
         )
-

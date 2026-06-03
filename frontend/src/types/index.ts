@@ -174,8 +174,28 @@ export interface Document {
   ai_confidence_score?: number
   mongodb_metadata_id?: string
   summary?: string
+  orders_summary?: DocumentOrdersSummary | null
   created_at: string
   updated_at: string
+}
+
+export interface DocumentOrderStatus {
+  title: string
+  order_type?: string | null
+  target_document_type?: string | null
+  target_document_subtype?: string | null
+  target_research_area?: string | null
+  status: 'pending' | 'completed'
+  matched_document_id?: string | null
+  matched_document_date?: string | null
+  matched_document_title?: string | null
+}
+
+export interface DocumentOrdersSummary {
+  total: number
+  completed: number
+  pending: number
+  items: DocumentOrderStatus[]
 }
 
 export interface TimelineEvent {
@@ -316,4 +336,3 @@ export interface HealthEventsListResponse {
   total: number
   events: HealthEvent[]
 }
-

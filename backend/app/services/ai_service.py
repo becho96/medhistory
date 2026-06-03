@@ -130,7 +130,16 @@ class AIService:
   "medical_facility": "название учреждения",
   "document_language": "ISO 639-1 код языка документа (например: ru, en, nl, de, fr)",
   "confidence": 0.95,
-  "summary": "краткое содержание"
+  "summary": "краткое содержание",
+  "orders": [
+    {
+      "title": "УЗИ брюшной полости",
+      "order_type": "instrumental",
+      "target_document_type": "Инструментальное исследование",
+      "target_document_subtype": "УЗИ",
+      "target_research_area": "Брюшная полость"
+    }
+  ]
 }
 
 # ТИПЫ ДОКУМЕНТОВ (выбери ОДИН из 5):
@@ -190,6 +199,14 @@ class AIService:
 5. Если информация не найдена - используй null
 6. confidence (0.0-1.0) - твоя уверенность в классификации
 7. document_language - ISO 639-1 код языка оригинала ("ru", "en", "nl", "de" и т.д.)
+8. orders - список назначений/направлений врача, если они явно указаны в документе.
+   Заполняй его прежде всего для "Прием врача". Если назначений нет, верни [].
+   Включай только направления на анализы, инструментальные исследования и функциональную диагностику.
+   Не включай лекарства, общие рекомендации по режиму, питанию и повторный прием без обследования.
+   order_type: "lab", "instrumental" или "functional".
+   target_document_type должен быть одним из:
+   "Результаты анализа", "Инструментальное исследование", "Функциональная диагностика".
+   target_document_subtype и target_research_area заполняй, когда это можно понять из текста.
 
 # ИНОСТРАННЫЕ ДОКУМЕНТЫ:
 Документ может быть на любом языке (русский, английский, голландский, немецкий и др.).
@@ -284,7 +301,8 @@ document_subtype, research_area, specialties, summary, patient_name и medical_f
                 confidence=data.get("confidence", 0.5),
                 
                 # MongoDB extracted_data fields
-                summary=data.get("summary")
+                summary=data.get("summary"),
+                orders=data.get("orders") if isinstance(data.get("orders"), list) else []
             )
             
             return metadata
@@ -466,4 +484,3 @@ document_subtype, research_area, specialties, summary, patient_name и medical_f
 
 # Create global instance
 ai_service = AIService()
-

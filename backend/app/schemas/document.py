@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
 from datetime import datetime, date
 import uuid
@@ -28,6 +28,26 @@ class DocumentMetadata(BaseModel):
     
     # MongoDB extracted_data fields
     summary: Optional[str] = None
+    orders: Optional[list[Dict[str, Any]]] = None
+
+
+class DocumentOrderStatus(BaseModel):
+    title: str
+    order_type: Optional[str] = None
+    target_document_type: Optional[str] = None
+    target_document_subtype: Optional[str] = None
+    target_research_area: Optional[str] = None
+    status: str = "pending"
+    matched_document_id: Optional[uuid.UUID] = None
+    matched_document_date: Optional[date] = None
+    matched_document_title: Optional[str] = None
+
+
+class DocumentOrdersSummary(BaseModel):
+    total: int = 0
+    completed: int = 0
+    pending: int = 0
+    items: list[DocumentOrderStatus] = Field(default_factory=list)
 
 class Document(DocumentBase):
     id: uuid.UUID
@@ -51,6 +71,7 @@ class DocumentWithMetadata(Document):
     document_subtype: Optional[str] = None  # From MongoDB
     research_area: Optional[str] = None  # From MongoDB
     summary: Optional[str] = None  # From MongoDB
+    orders_summary: Optional[DocumentOrdersSummary] = None
 
 class DocumentUploadResponse(BaseModel):
     document_id: uuid.UUID
@@ -90,4 +111,3 @@ class ReportGenerateResponse(BaseModel):
     report_id: uuid.UUID
     status: str
     message: str
-

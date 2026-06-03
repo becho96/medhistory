@@ -1,5 +1,6 @@
-import { FileText, Download, Trash2, FlaskConical } from 'lucide-react'
+import { FileText, Download, Trash2, FlaskConical, AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { format } from 'date-fns'
+import type { DocumentOrdersSummary } from '../../types'
 
 interface LabsSummaryEntry {
   has_labs: boolean
@@ -15,6 +16,7 @@ interface DocumentListItemProps {
     document_date?: string | null
     specialty?: string | null
     research_area?: string | null
+    orders_summary?: DocumentOrdersSummary | null
   }
   labsSummary?: Record<string, LabsSummaryEntry>
   showTags?: boolean
@@ -69,6 +71,31 @@ export default function DocumentListItem({
           {doc.document_type || '—'}
           {doc.document_date && ` · ${format(new Date(doc.document_date), 'dd.MM.yy')}`}
         </p>
+        {!!doc.orders_summary?.total && (
+          <div
+            className={`mt-1 inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-medium ${
+              doc.orders_summary.pending > 0
+                ? 'border-amber-200 bg-amber-50 text-amber-700'
+                : 'border-emerald-200 bg-emerald-50 text-emerald-700'
+            }`}
+            title={
+              doc.orders_summary.pending > 0
+                ? `Невыполнено назначений: ${doc.orders_summary.pending}`
+                : 'Все назначения выполнены'
+            }
+          >
+            {doc.orders_summary.pending > 0 ? (
+              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            ) : (
+              <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+            )}
+            <span className="truncate">
+              {doc.orders_summary.pending > 0
+                ? `Назначения: ${doc.orders_summary.completed}/${doc.orders_summary.total}`
+                : `Назначения выполнены: ${doc.orders_summary.total}`}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Actions */}
