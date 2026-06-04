@@ -89,8 +89,8 @@ export default function ProfileSettings({ user, onClose, onPendingInvitesUpdated
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 sm:p-4">
+      <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
@@ -104,8 +104,9 @@ export default function ProfileSettings({ user, onClose, onPendingInvitesUpdated
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl hover:bg-gray-100 transition-colors"
             disabled={updateMutation.isPending}
+            aria-label="Закрыть"
           >
             <X className="h-5 w-5 text-gray-500" />
           </button>
@@ -138,7 +139,7 @@ export default function ProfileSettings({ user, onClose, onPendingInvitesUpdated
                       type="button"
                       onClick={() => handleDeclineInvite(invite.id)}
                       disabled={invitesLoading}
-                      className="p-2 rounded-lg text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition-colors disabled:opacity-50"
+                      className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-gray-500 hover:bg-gray-200 hover:text-gray-700 transition-colors disabled:opacity-50"
                       title="Отклонить"
                     >
                       <XCircle className="w-4 h-4" />
@@ -147,7 +148,7 @@ export default function ProfileSettings({ user, onClose, onPendingInvitesUpdated
                       type="button"
                       onClick={() => handleAcceptInvite(invite.id)}
                       disabled={invitesLoading}
-                      className="p-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
+                      className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors disabled:opacity-50"
                       title="Принять"
                     >
                       <Check className="w-4 h-4" />
@@ -234,39 +235,42 @@ export default function ProfileSettings({ user, onClose, onPendingInvitesUpdated
             <p className="text-xs text-gray-500 mb-3">
               Используется для определения референсных значений анализов
             </p>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
               <button
                 type="button"
                 onClick={() => setGender('male')}
-                className={`px-4 py-3 rounded-lg border-2 transition-all font-medium ${
+                className={`min-h-16 px-2 sm:px-4 py-3 rounded-lg border-2 transition-all text-sm font-medium ${
                   gender === 'male'
                     ? 'border-blue-500 bg-blue-50 text-blue-700'
                     : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
                 }`}
               >
-                👨 Мужской
+                <span className="block">👨</span>
+                Мужской
               </button>
               <button
                 type="button"
                 onClick={() => setGender('female')}
-                className={`px-4 py-3 rounded-lg border-2 transition-all font-medium ${
+                className={`min-h-16 px-2 sm:px-4 py-3 rounded-lg border-2 transition-all text-sm font-medium ${
                   gender === 'female'
                     ? 'border-pink-500 bg-pink-50 text-pink-700'
                     : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
                 }`}
               >
-                👩 Женский
+                <span className="block">👩</span>
+                Женский
               </button>
               <button
                 type="button"
                 onClick={() => setGender('other')}
-                className={`px-4 py-3 rounded-lg border-2 transition-all font-medium ${
+                className={`min-h-16 px-2 sm:px-4 py-3 rounded-lg border-2 transition-all text-sm font-medium ${
                   gender === 'other'
                     ? 'border-purple-500 bg-purple-50 text-purple-700'
                     : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
                 }`}
               >
-                ⚧ Другой
+                <span className="block">⚧</span>
+                Другой
               </button>
             </div>
           </div>
@@ -292,14 +296,14 @@ export default function ProfileSettings({ user, onClose, onPendingInvitesUpdated
               type="button"
               onClick={onClose}
               disabled={updateMutation.isPending}
-              className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 min-h-11 px-4 py-2.5 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Отмена
             </button>
             <button
               type="submit"
               disabled={updateMutation.isPending}
-              className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="flex-1 min-h-11 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {updateMutation.isPending ? (
                 <>

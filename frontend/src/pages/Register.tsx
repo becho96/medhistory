@@ -38,6 +38,7 @@ export default function Register() {
   const [interviewOptIn, setInterviewOptIn] = useState(false)
   const [versions, setVersions] = useState<ConsentVersions | null>(null)
   const [versionsError, setVersionsError] = useState<string | null>(null)
+  const [submitAttempted, setSubmitAttempted] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -84,8 +85,13 @@ export default function Register() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    setSubmitAttempted(true)
     if (!versions) {
       toast.error('Не удалось загрузить условия — обновите страницу')
+      return
+    }
+    if (!fullName.trim() || !email.trim() || !password.trim()) {
+      toast.error('Заполните имя, email и пароль')
       return
     }
     if (!termsAccepted || !consentAccepted) return
@@ -99,7 +105,14 @@ export default function Register() {
     })
   }
 
-  const canSubmit = termsAccepted && consentAccepted && !!versions && !registerMutation.isPending
+  const canSubmit =
+    !!fullName.trim() &&
+    !!email.trim() &&
+    !!password.trim() &&
+    termsAccepted &&
+    consentAccepted &&
+    !!versions &&
+    !registerMutation.isPending
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white px-4 py-8">
@@ -126,11 +139,16 @@ export default function Register() {
             <input
               id="fullName"
               type="text"
+              autoComplete="name"
+              required
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               className="w-full h-[48px] px-4 border border-gray-200 rounded-xl text-[15px] text-gray-900 placeholder:text-gray-400 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
               placeholder="Иван Иванов"
             />
+            {submitAttempted && !fullName.trim() && (
+              <p className="mt-1.5 text-[12px] text-red-600">Укажите полное имя</p>
+            )}
           </div>
 
           <div>
@@ -147,6 +165,9 @@ export default function Register() {
               className="w-full h-[48px] px-4 border border-gray-200 rounded-xl text-[15px] text-gray-900 placeholder:text-gray-400 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
               placeholder="your@email.com"
             />
+            {submitAttempted && !email.trim() && (
+              <p className="mt-1.5 text-[12px] text-red-600">Укажите email</p>
+            )}
           </div>
 
           <div>
@@ -163,15 +184,18 @@ export default function Register() {
               className="w-full h-[48px] px-4 border border-gray-200 rounded-xl text-[15px] text-gray-900 placeholder:text-gray-400 outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
               placeholder="••••••••"
             />
+            {submitAttempted && !password.trim() && (
+              <p className="mt-1.5 text-[12px] text-red-600">Укажите пароль</p>
+            )}
           </div>
 
           <div className="space-y-3 pt-2">
-            <label className="flex items-start gap-2.5 cursor-pointer">
+            <label className="flex items-start gap-3 cursor-pointer rounded-xl p-1.5 -m-1.5">
               <input
                 type="checkbox"
                 checked={termsAccepted}
                 onChange={(e) => setTermsAccepted(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0"
+                className="mt-0.5 w-5 h-5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0"
               />
               <span className="text-[13px] text-gray-600 leading-relaxed">
                 Я согласен с{' '}
@@ -184,13 +208,16 @@ export default function Register() {
                 </Link>
               </span>
             </label>
+            {submitAttempted && !termsAccepted && (
+              <p className="text-[12px] text-red-600">Примите пользовательское соглашение и политику обработки данных</p>
+            )}
 
-            <label className="flex items-start gap-2.5 cursor-pointer">
+            <label className="flex items-start gap-3 cursor-pointer rounded-xl p-1.5 -m-1.5">
               <input
                 type="checkbox"
                 checked={consentAccepted}
                 onChange={(e) => setConsentAccepted(e.target.checked)}
-                className="mt-0.5 w-4 h-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0"
+                className="mt-0.5 w-5 h-5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0"
               />
               <span className="text-[13px] text-gray-600 leading-relaxed">
                 Даю{' '}
@@ -200,6 +227,9 @@ export default function Register() {
                 {' '}(спец. категория ПДн по ст. 10 152-ФЗ)
               </span>
             </label>
+            {submitAttempted && !consentAccepted && (
+              <p className="text-[12px] text-red-600">Подтвердите согласие на обработку данных о здоровье</p>
+            )}
 
             {versionsError && (
               <p className="text-[12px] text-red-600">
@@ -208,12 +238,12 @@ export default function Register() {
             )}
           </div>
 
-          <label className="flex items-start gap-2.5 cursor-pointer bg-emerald-50 border border-emerald-100 rounded-xl p-3">
+          <label className="flex items-start gap-3 cursor-pointer bg-emerald-50 border border-emerald-100 rounded-xl p-3">
             <input
               type="checkbox"
               checked={interviewOptIn}
               onChange={(e) => setInterviewOptIn(e.target.checked)}
-              className="mt-0.5 w-4 h-4 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0"
+              className="mt-0.5 w-5 h-5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500 focus:ring-offset-0"
             />
             <span className="text-[13px] text-gray-700 leading-relaxed">
               Готов(а) поделиться опытом в коротком интервью (~30 минут).

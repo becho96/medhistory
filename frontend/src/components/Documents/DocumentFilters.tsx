@@ -190,7 +190,7 @@ export default function DocumentFilters({ filters, onChange, onReset }: Document
         <button
           type="button"
           onClick={() => setIsMobileExpanded(v => !v)}
-          className="flex items-center gap-2 text-sm font-medium text-gray-600"
+          className="flex min-h-11 items-center gap-2 rounded-xl text-sm font-medium text-gray-600"
         >
           <SlidersHorizontal className="w-4 h-4" />
           Фильтры
@@ -202,7 +202,7 @@ export default function DocumentFilters({ filters, onChange, onReset }: Document
           <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${isMobileExpanded ? 'rotate-180' : ''}`} />
         </button>
         {hasActiveFilters && (
-          <button type="button" onClick={handleReset} className="flex items-center gap-1 text-xs text-gray-400">
+          <button type="button" onClick={handleReset} className="flex min-h-11 items-center gap-1 rounded-xl text-xs text-gray-400">
             <X className="w-3.5 h-3.5" />
             Сбросить
           </button>
@@ -224,7 +224,7 @@ export default function DocumentFilters({ filters, onChange, onReset }: Document
                 key={type}
                 type="button"
                 onClick={() => handleChipToggle(type)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap
+                className={`min-h-10 px-3 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap
                   ${isActive
                     ? 'bg-emerald-500 text-white hover:bg-emerald-600'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -246,7 +246,7 @@ export default function DocumentFilters({ filters, onChange, onReset }: Document
                 key={id}
                 type="button"
                 onClick={() => handleDatePreset(id)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-colors whitespace-nowrap
+                className={`min-h-10 px-3 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap
                   ${isActive
                     ? 'bg-emerald-500 text-white hover:bg-emerald-600'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -261,7 +261,7 @@ export default function DocumentFilters({ filters, onChange, onReset }: Document
             <button
               type="button"
               onClick={handleReset}
-              className="flex items-center gap-1 text-sm text-gray-400 hover:text-gray-600 transition-colors ml-1"
+              className="flex min-h-10 items-center gap-1 rounded-xl text-sm text-gray-400 hover:text-gray-600 transition-colors ml-1"
             >
               <X className="h-3.5 w-3.5" />
               Сбросить
@@ -275,7 +275,7 @@ export default function DocumentFilters({ filters, onChange, onReset }: Document
         <button
           type="button"
           onClick={() => setIsAdvancedOpen(v => !v)}
-          className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 transition-colors"
+          className="flex min-h-10 items-center gap-1.5 rounded-xl text-sm text-gray-400 hover:text-gray-600 transition-colors"
         >
           <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isAdvancedOpen ? 'rotate-180' : ''}`} />
           Расширенные фильтры

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { documentsService } from '../services/documents'
 import { Search, ChevronDown, ChevronRight, FlaskConical } from 'lucide-react'
@@ -90,7 +90,7 @@ function AnalyteSelector({ categories, selectedAnalyte, onSelect }: AnalyteSelec
             <div key={category.name} className="border-b border-gray-100 last:border-b-0">
               <button
                 onClick={() => toggleCategory(category.name)}
-                className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-gray-50 transition-colors"
+                className="w-full flex min-h-12 items-center justify-between px-3 py-2.5 hover:bg-gray-50 transition-colors"
               >
                 <div className="flex items-center gap-2">
                   <span className="text-lg">{categoryIcons[category.name] || '📋'}</span>
@@ -108,21 +108,21 @@ function AnalyteSelector({ categories, selectedAnalyte, onSelect }: AnalyteSelec
                     <button
                       key={analyte.canonical_name}
                       onClick={() => onSelect(analyte.canonical_name)}
-                      className={`w-full flex items-center justify-between px-4 py-2 text-left hover:bg-gray-100 transition-colors ${
+                      className={`w-full flex min-h-11 items-center justify-between gap-3 px-4 py-2.5 text-left hover:bg-gray-100 transition-colors ${
                         selectedAnalyte === analyte.canonical_name
                           ? 'bg-blue-50 border-l-2 border-l-blue-500'
                           : 'border-l-2 border-l-transparent'
                       }`}
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex min-w-0 flex-col sm:flex-row sm:items-center sm:gap-2">
                         <span className={`text-sm ${selectedAnalyte === analyte.canonical_name ? 'font-medium text-blue-900' : 'text-gray-700'}`}>
                           {analyte.canonical_name}
                         </span>
                         {analyte.standard_unit && (
-                          <span className="text-xs text-gray-500">({analyte.standard_unit})</span>
+                          <span className="mt-0.5 text-xs text-gray-500 sm:mt-0">({analyte.standard_unit})</span>
                         )}
                       </div>
-                      <span className="text-xs text-gray-400">{analyte.count} изм.</span>
+                      <span className="shrink-0 text-xs text-gray-400">{analyte.count} изм.</span>
                     </button>
                   ))}
                 </div>
@@ -139,6 +139,7 @@ export default function Labs() {
   const [selected, setSelected] = useState<string>('')
   const [excludedPoints, setExcludedPoints] = useState<Set<string>>(new Set())
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null)
+  const chartSectionRef = useRef<HTMLDivElement>(null)
 
   const { data: analytesData, isLoading: loadingAnalytes } = useQuery({
     queryKey: ['labs_analytes'],
@@ -180,6 +181,13 @@ export default function Labs() {
     })
   }
 
+  const handleSelectAnalyte = (analyteName: string) => {
+    setSelected(analyteName)
+    window.setTimeout(() => {
+      chartSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 120)
+  }
+
   return (
     <div className="space-y-4 md:space-y-8 page-transition">
       {/* Header */}
@@ -215,7 +223,7 @@ export default function Labs() {
             <AnalyteSelector
               categories={categories}
               selectedAnalyte={selected}
-              onSelect={setSelected}
+              onSelect={handleSelectAnalyte}
             />
           ) : (
             <div className="text-center py-8 text-sm text-gray-500">Нет доступных анализов</div>
@@ -247,7 +255,7 @@ export default function Labs() {
       </div>
 
       {/* Chart */}
-      <div className="medical-card">
+      <div ref={chartSectionRef} className="medical-card scroll-mt-20">
         <div className="flex items-center gap-2 mb-4 sm:mb-6">
           <h3 className="text-base sm:text-xl font-semibold text-gray-900">📊 График динамики</h3>
         </div>

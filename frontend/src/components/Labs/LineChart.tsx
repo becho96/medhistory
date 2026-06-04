@@ -24,9 +24,9 @@ interface LineChartProps {
 
 export default function LineChart({ points, excludedPoints, onTogglePoint, onOpenDocument, standardUnit, referenceMin, referenceMax }: LineChartProps) {
   const [hoveredPoint, setHoveredPoint] = useState<number | null>(null)
-  const width = 1000
-  const height = 400
-  const padding = { top: 40, right: 40, bottom: 70, left: 80 }
+  const width = 760
+  const height = 420
+  const padding = { top: 40, right: 28, bottom: 70, left: 62 }
 
   const data = points
     .filter((p) => typeof p.value_num === 'number' && p.date && !excludedPoints.has(p._id || ''))
@@ -103,6 +103,9 @@ export default function LineChart({ points, excludedPoints, onTogglePoint, onOpe
   const formatValue = (v: number) => (v % 1 === 0 ? v.toString() : v.toFixed(2))
 
   const displayUnit = standardUnit || data[0]?.unit || ''
+  const tablePoints = points
+    .filter((p) => typeof p.value_num === 'number' && p.date)
+    .sort((a, b) => new Date(b.date || '').getTime() - new Date(a.date || '').getTime())
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -290,7 +293,59 @@ export default function LineChart({ points, excludedPoints, onTogglePoint, onOpe
             </span>
           )}
         </div>
-        <div className="max-h-80 overflow-x-auto overflow-y-auto">
+        <div className="sm:hidden max-h-80 overflow-y-auto divide-y divide-gray-100 bg-white">
+          {tablePoints.map((p, originalIndex) => {
+            const isExcluded = excludedPoints.has(p._id || '')
+            const deviationValue = isExcluded ? 0 : ((p.value_num - avgValue) / avgValue * 100)
+            const deviation = deviationValue.toFixed(1)
+            const isAboveAvg = p.value_num > avgValue
+            const pointIndex = data.findIndex(d => d._id === p._id)
+
+            return (
+              <div
+                key={p._id || originalIndex}
+                className={`p-3 ${isExcluded ? 'bg-gray-50 opacity-60' : 'bg-white'} ${p.document_id ? 'cursor-pointer' : ''}`}
+                onMouseEnter={() => !isExcluded && pointIndex !== -1 && setHoveredPoint(pointIndex)}
+                onMouseLeave={() => setHoveredPoint(null)}
+                onClick={() => p.document_id && onOpenDocument(p.document_id)}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <label className="flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-gray-200 bg-white" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={!isExcluded}
+                      onChange={() => onTogglePoint(p._id || '')}
+                      className="h-5 w-5 cursor-pointer rounded border-gray-300 text-[#4A90E2] focus:ring-[#4A90E2]"
+                    />
+                  </label>
+                  <div className="min-w-0 flex-1">
+                    <p className={`text-sm font-medium ${isExcluded ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+                      {formatDate(new Date(p.date!).getTime())}
+                    </p>
+                    <p className={`mt-1 text-lg font-semibold ${isExcluded ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
+                      {formatValue(p.value_num)} {displayUnit}
+                    </p>
+                    {!isExcluded && (
+                      <p className={`mt-1 text-xs ${Math.abs(parseFloat(deviation)) < 5 ? 'text-emerald-700' : isAboveAvg ? 'text-orange-700' : 'text-blue-700'}`}>
+                        {isAboveAvg ? 'Выше среднего' : 'Ниже среднего'} на {Math.abs(parseFloat(deviation))}%
+                      </p>
+                    )}
+                  </div>
+                  {p.document_id && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onOpenDocument(p.document_id!) }}
+                      className="flex min-h-11 min-w-11 items-center justify-center rounded-xl text-[#4A90E2] hover:bg-blue-50"
+                      aria-label="Открыть документ"
+                    >
+                      <FileText className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+        <div className="hidden sm:block max-h-80 overflow-x-auto overflow-y-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50 sticky top-0">
               <tr>
@@ -315,10 +370,7 @@ export default function LineChart({ points, excludedPoints, onTogglePoint, onOpe
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {points
-                .filter((p) => typeof p.value_num === 'number' && p.date)
-                .sort((a, b) => new Date(b.date || '').getTime() - new Date(a.date || '').getTime())
-                .map((p, originalIndex) => {
+              {tablePoints.map((p, originalIndex) => {
                   const isExcluded = excludedPoints.has(p._id || '')
                   const deviationValue = isExcluded ? 0 : ((p.value_num - avgValue) / avgValue * 100)
                   const deviation = deviationValue.toFixed(1)
@@ -345,7 +397,7 @@ export default function LineChart({ points, excludedPoints, onTogglePoint, onOpe
                         </label>
                       </td>
                       <td className={`px-2 sm:px-6 py-1.5 sm:py-4 whitespace-nowrap text-xs sm:text-sm font-medium hidden sm:table-cell ${isExcluded ? 'text-gray-400 line-through' : 'text-gray-900'}`}>
-                        {points.filter((p) => typeof p.value_num === 'number' && p.date).length - originalIndex}
+                        {tablePoints.length - originalIndex}
                       </td>
                       <td className={`px-2 sm:px-6 py-1.5 sm:py-4 whitespace-nowrap text-xs sm:text-sm ${isExcluded ? 'text-gray-400 line-through' : 'text-gray-700'}`}>
                         {formatDate(new Date(p.date!).getTime())}

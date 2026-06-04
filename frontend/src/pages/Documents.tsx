@@ -1009,7 +1009,8 @@ export default function Documents() {
         </div>
         <button
           onClick={() => setIsUploadModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 sm:px-5 sm:py-2.5 bg-emerald-500 text-white rounded-xl font-medium text-[14px] hover:bg-emerald-600 transition-colors flex-shrink-0"
+          className="flex min-h-11 min-w-11 items-center justify-center gap-2 px-3 py-2.5 sm:px-5 sm:py-2.5 bg-emerald-500 text-white rounded-xl font-medium text-[14px] hover:bg-emerald-600 transition-colors flex-shrink-0"
+          aria-label="Загрузить документы"
         >
           <Upload className="h-4 w-4 flex-shrink-0" />
           <span className="hidden sm:inline">Загрузить документы</span>
@@ -1070,11 +1071,11 @@ export default function Documents() {
                           <div className="flex items-center gap-2 text-[12px] text-gray-500 mb-1">
                             {hit.document_type && <span className="font-medium">{hit.document_type}</span>}
                             {hit.document_date && <span>· {new Date(hit.document_date).toLocaleDateString('ru-RU')}</span>}
-                            {hit.medical_facility && <span className="truncate">· {hit.medical_facility}</span>}
+                            {hit.medical_facility && <span className="hidden sm:inline truncate">· {hit.medical_facility}</span>}
                           </div>
-                          <p className="text-[14px] text-gray-700 line-clamp-2">{hit.snippet || '—'}</p>
+                          <p className="text-[14px] text-gray-700 line-clamp-1 sm:line-clamp-2">{hit.snippet || '—'}</p>
                         </div>
-                        <span className="flex-shrink-0 text-[11px] font-mono text-gray-400 mt-1">
+                        <span className="hidden sm:inline flex-shrink-0 text-[11px] font-mono text-gray-400 mt-1">
                           {(hit.score * 100).toFixed(0)}%
                         </span>
                       </div>
@@ -1135,7 +1136,7 @@ export default function Documents() {
                 <div className="flex rounded-xl border border-gray-200 overflow-hidden text-[12px] font-medium">
                   <button
                     onClick={() => setSortBy('document_date')}
-                    className={`px-2.5 py-1.5 transition-colors ${
+                    className={`min-h-11 px-2.5 py-2 transition-colors ${
                       sortBy === 'document_date'
                         ? 'bg-emerald-500 text-white'
                         : 'bg-white text-gray-600'
@@ -1145,7 +1146,7 @@ export default function Documents() {
                   </button>
                   <button
                     onClick={() => setSortBy('created_at')}
-                    className={`px-2.5 py-1.5 border-l border-gray-200 transition-colors ${
+                    className={`min-h-11 px-2.5 py-2 border-l border-gray-200 transition-colors ${
                       sortBy === 'created_at'
                         ? 'bg-emerald-500 text-white'
                         : 'bg-white text-gray-600'
@@ -1175,17 +1176,17 @@ export default function Documents() {
                       <button
                         onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                         disabled={currentPage === 1}
-                        className="relative inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-l-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="relative inline-flex min-h-11 min-w-11 items-center justify-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-l-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                       </button>
-                      <span className="relative inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 border-t border-b border-gray-200 bg-white text-xs sm:text-sm font-semibold text-gray-700">
+                      <span className="relative inline-flex min-h-11 items-center px-3 sm:px-4 py-1.5 sm:py-2 border-t border-b border-gray-200 bg-white text-xs sm:text-sm font-semibold text-gray-700">
                         {currentPage} / {totalPages}
                       </span>
                       <button
                         onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                         disabled={currentPage >= totalPages}
-                        className="relative inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-r-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="relative inline-flex min-h-11 min-w-11 items-center justify-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-r-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                       >
                         <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
                       </button>
@@ -1264,17 +1265,17 @@ export default function Documents() {
                     <button
                       onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                       disabled={currentPage === 1}
-                      className="relative inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-l-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="relative inline-flex min-h-11 min-w-11 items-center justify-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-l-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                     </button>
-                    <span className="relative inline-flex items-center px-3 sm:px-4 py-1.5 sm:py-2 border-t border-b border-gray-200 bg-white text-xs sm:text-sm font-semibold text-gray-700">
+                    <span className="relative inline-flex min-h-11 items-center px-3 sm:px-4 py-1.5 sm:py-2 border-t border-b border-gray-200 bg-white text-xs sm:text-sm font-semibold text-gray-700">
                       {currentPage} / {totalPages}
                     </span>
                     <button
                       onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                       disabled={currentPage >= totalPages}
-                      className="relative inline-flex items-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-r-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="relative inline-flex min-h-11 min-w-11 items-center justify-center px-2 sm:px-3 py-1.5 sm:py-2 rounded-r-lg border border-gray-200 bg-white text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                       <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
                     </button>

@@ -104,7 +104,7 @@ export default function DocumentListItem({
           {doc.document_type === 'Результаты анализа' && labsSummary?.[doc.id]?.has_labs && (
             <button
               onClick={() => onOpenLabs?.(doc.id)}
-              className="p-1.5 rounded-lg text-purple-500 hover:bg-purple-50 transition-colors"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-purple-500 hover:bg-purple-50 transition-colors"
               title="Анализы"
             >
               <FlaskConical className="h-4 w-4" />
@@ -124,7 +124,7 @@ export default function DocumentListItem({
           {onDelete && (
             <button
               onClick={() => onDelete(doc.id)}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+              className="hidden sm:inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
               title="Удалить"
             >
               <Trash2 className="h-4 w-4" />

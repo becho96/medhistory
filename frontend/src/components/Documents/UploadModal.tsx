@@ -177,23 +177,24 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/50 sm:p-4">
+      <div className="bg-white rounded-t-2xl sm:rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+        <div className="px-5 sm:px-6 py-4 border-b border-gray-200 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-gray-900">
             Загрузка документов
           </h3>
           <button
             onClick={handleClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-colors"
+            aria-label="Закрыть"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto flex-1">
+        <div className="p-5 sm:p-6 overflow-y-auto flex-1">
           <div className="space-y-4">
             {/* Quota info */}
             {subscription && (
@@ -236,7 +237,7 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
               <div
                 {...getRootProps()}
                 className={`
-                  border-2 border-dashed rounded-lg p-8 text-center cursor-pointer
+                  border-2 border-dashed rounded-lg p-6 sm:p-8 text-center cursor-pointer
                   transition-colors duration-200
                   ${
                     isDragActive
@@ -251,9 +252,12 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
                   <p className="mt-2 text-sm text-primary-600">Отпустите файлы здесь...</p>
                 ) : (
                   <div className="mt-2">
-                    <p className="text-base text-gray-900">Перетащите файлы сюда</p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      или нажмите для выбора файлов
+                    <p className="text-base font-medium text-gray-900">Выберите файл или сделайте фото</p>
+                    <p className="text-sm text-gray-500 mt-1 sm:hidden">
+                      Нажмите на область, чтобы открыть файлы или камеру телефона
+                    </p>
+                    <p className="hidden sm:block text-sm text-gray-500 mt-1">
+                      Нажмите для выбора файлов или перетащите их сюда
                     </p>
                     <p className="text-xs text-gray-400 mt-2">
                       Поддерживаемые форматы: PDF, JPG, PNG, DOCX (макс. 20 МБ)
@@ -355,10 +359,10 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex justify-end">
+        <div className="px-5 sm:px-6 py-4 border-t border-gray-200 flex justify-end">
           <button
             onClick={handleClose}
-            className="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-md text-sm font-medium text-gray-700 transition-colors"
+            className="min-h-11 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm font-medium text-gray-700 transition-colors"
           >
             Закрыть
           </button>
@@ -367,4 +371,3 @@ export default function UploadModal({ isOpen, onClose }: UploadModalProps) {
     </div>
   )
 }
-

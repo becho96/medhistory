@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { X, Download, Trash2, FileText, Calendar, User, Building2, Stethoscope, FlaskConical, Eye, ClipboardList, CheckCircle2, AlertTriangle, ArrowLeft } from 'lucide-react'
+import { X, Download, Trash2, FileText, Calendar, User, Building2, Stethoscope, FlaskConical, Eye, ClipboardList, CheckCircle2, AlertTriangle, ArrowLeft, MoreVertical } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -79,6 +79,7 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
   const [activeTab, setActiveTab] = useState<'info' | 'labs'>('info')
   const [summaryExpanded, setSummaryExpanded] = useState(false)
   const [showFullContent, setShowFullContent] = useState(false)
+  const [showActionsMenu, setShowActionsMenu] = useState(false)
 
   const { data: doc, isLoading } = useQuery({
     queryKey: ['document', documentId],
@@ -174,6 +175,7 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
 
   const handleDelete = () => {
     if (!doc) return
+    setShowActionsMenu(false)
     if (window.confirm('Вы уверены, что хотите удалить этот документ?')) {
       deleteMutation.mutate(doc.id)
     }
@@ -182,6 +184,7 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
   useEffect(() => {
     setSummaryExpanded(false)
     setShowFullContent(false)
+    setShowActionsMenu(false)
   }, [documentId])
 
   useEffect(() => {
@@ -229,7 +232,7 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
               <p className="text-xs text-gray-500">{doc.document_type}</p>
             )}
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 shrink-0">
+          <button onClick={onClose} className="min-h-11 min-w-11 inline-flex items-center justify-center rounded-xl text-gray-400 shrink-0" aria-label="Закрыть">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -597,7 +600,7 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
         {/* Footer */}
         {doc && (
           <div
-            className="px-4 py-3 border-t border-gray-100 bg-white flex items-center gap-2 shrink-0"
+            className="relative px-4 py-3 border-t border-gray-100 bg-white flex items-center gap-2 shrink-0"
             style={{ paddingBottom: 'max(12px, env(safe-area-inset-bottom))' }}
           >
             <button
@@ -615,13 +618,25 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
               Скачать
             </button>
             <button
-              onClick={handleDelete}
-              disabled={deleteMutation.isPending}
-              className="inline-flex items-center justify-center p-2.5 bg-red-50 text-red-500 rounded-xl disabled:opacity-50"
-              title="Удалить"
+              onClick={() => setShowActionsMenu((value) => !value)}
+              className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-500"
+              aria-label="Дополнительные действия"
+              aria-expanded={showActionsMenu}
             >
-              <Trash2 className="h-4 w-4" />
+              <MoreVertical className="h-4 w-4" />
             </button>
+            {showActionsMenu && (
+              <div className="absolute bottom-full right-4 mb-2 w-52 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-xl">
+                <button
+                  onClick={handleDelete}
+                  disabled={deleteMutation.isPending}
+                  className="flex min-h-11 w-full items-center gap-2 px-3 py-2.5 text-left text-sm font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Удалить документ
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>

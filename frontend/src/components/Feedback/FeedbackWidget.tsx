@@ -77,7 +77,7 @@ export default function FeedbackWidget() {
         onClick={() => setIsOpen(true)}
         title="Сообщить о проблеме"
         aria-label="Сообщить о проблеме"
-        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-40 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-emerald-500 text-white shadow-lg hover:bg-emerald-600 hover:shadow-xl active:scale-95 transition-all flex items-center justify-center"
+        className="fixed bottom-20 right-4 sm:bottom-6 sm:right-6 z-40 w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-emerald-500 text-white shadow-lg hover:bg-emerald-600 hover:shadow-xl active:scale-95 transition-all flex items-center justify-center"
         style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
       >
         <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6" strokeWidth={2} />

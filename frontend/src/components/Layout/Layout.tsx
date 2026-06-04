@@ -6,6 +6,7 @@ import ProfileSwitcher from '../ProfileSwitcher'
 import FamilyManagementModal from '../FamilyManagementModal'
 import ProfileSettings from '../ProfileSettings'
 import FeedbackWidget from '../Feedback/FeedbackWidget'
+import BottomNav from './BottomNav'
 import { familyService } from '../../services/family'
 
 export default function Layout() {
@@ -89,8 +90,9 @@ export default function Layout() {
               {isViewingOwnProfile && (
                 <button
                   onClick={() => setIsProfileSettingsOpen(true)}
-                  className="relative flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg sm:rounded-xl hover:bg-gray-50 transition-all"
+                  className="relative flex min-h-11 min-w-11 items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg sm:rounded-xl hover:bg-gray-50 transition-all"
                   title="Настройки профиля"
+                  aria-label="Настройки профиля"
                 >
                   <span className="relative inline-block">
                     <Settings className="w-4 h-4" />
@@ -103,7 +105,8 @@ export default function Layout() {
               )}
               <button
                 onClick={logout}
-                className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg sm:rounded-xl hover:bg-gray-50 transition-all"
+                className="flex min-h-11 min-w-11 items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg sm:rounded-xl hover:bg-gray-50 transition-all"
+                aria-label="Выйти"
               >
                 <LogOut className="w-4 h-4" />
                 <span className="hidden sm:inline">Выход</span>
@@ -114,8 +117,8 @@ export default function Layout() {
       </header>
 
       <div className="flex flex-1 min-h-0">
-        {/* Sidebar — icon-only on mobile, full on desktop */}
-        <aside className="flex flex-col w-14 lg:w-64 bg-white border-r border-gray-100 overflow-y-auto shrink-0">
+        {/* Sidebar — desktop navigation. Mobile uses BottomNav to preserve content width. */}
+        <aside className="hidden lg:flex flex-col lg:w-64 bg-white border-r border-gray-100 overflow-y-auto shrink-0">
           <nav className="p-2 lg:p-4 flex-1 space-y-1">
             {navigation.map((item) => {
               const isActive = location.pathname === item.href
@@ -201,7 +204,7 @@ export default function Layout() {
 
         {/* Main content */}
         <main className="flex-1 overflow-auto min-w-0">
-          <div className="p-3 sm:p-6 md:p-8 max-w-7xl mx-auto">
+          <div className="p-3 pb-24 sm:p-6 md:p-8 max-w-7xl mx-auto">
             {!isViewingOwnProfile && activeProfile && (
               <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">
@@ -221,6 +224,8 @@ export default function Layout() {
           </div>
         </main>
       </div>
+
+      <BottomNav />
 
       <FamilyManagementModal
         isOpen={isFamilyModalOpen}

@@ -39,29 +39,30 @@ export default function Integrations() {
       </p>
 
       {/* Setup card */}
-      <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-8">
+      <div className="bg-white rounded-2xl border border-gray-200 p-5 sm:p-6 mb-8">
         <div className="flex items-start gap-4">
           <div className="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center flex-shrink-0">
             <Plug className="w-5 h-5 text-emerald-600" strokeWidth={2} />
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <h2 className="text-[17px] font-semibold text-gray-900 mb-1">Подключить Claude</h2>
             <p className="text-[14px] text-gray-500 mb-4">
               Откройте claude.ai → Settings → Connectors → Add custom connector. Вставьте URL
               ниже, OAuth-поля оставьте пустыми. После подключения вы вернётесь сюда для подтверждения.
             </p>
             {mcpUrl ? (
-              <div className="flex gap-2 items-center">
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <code className="flex-1 px-3 py-2 bg-gray-50 rounded-lg text-[13px] font-mono text-gray-800 truncate">
                   {mcpUrl}
                 </code>
                 <button
                   type="button"
                   onClick={copyUrl}
-                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                  className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors"
                   title="Скопировать"
                 >
                   <Copy className="w-4 h-4 text-gray-500" strokeWidth={2} />
+                  <span className="sm:hidden">Скопировать URL</span>
                 </button>
               </div>
             ) : (
@@ -117,7 +118,7 @@ export default function Integrations() {
                   }
                 }}
                 disabled={revoke.isPending}
-                className="p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors disabled:opacity-50"
+                className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg hover:bg-red-50 text-red-600 transition-colors disabled:opacity-50"
                 title="Отозвать"
               >
                 <Trash2 className="w-4 h-4" strokeWidth={2} />
