@@ -198,7 +198,7 @@ class AIService:
 
 # ОБЯЗАТЕЛЬНАЯ СТРУКТУРА JSON:
 
-{
+{{
   "document_type": "ОБЯЗАТЕЛЬНО - один из 5 типов",
   "document_subtype": "условно обязательно",
   "research_area": "только для инструментальных исследований",
@@ -211,15 +211,15 @@ class AIService:
   "summary": "краткое содержание",
 {content_fields}
   "orders": [
-    {
+    {{
       "title": "УЗИ брюшной полости",
       "order_type": "instrumental",
       "target_document_type": "Инструментальное исследование",
       "target_document_subtype": "УЗИ",
       "target_research_area": "Брюшная полость"
-    }
+    }}
   ]
-}
+}}
 
 # ТИПЫ ДОКУМЕНТОВ (выбери ОДИН из 5):
 
