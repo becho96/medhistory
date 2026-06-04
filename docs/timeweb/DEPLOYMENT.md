@@ -100,17 +100,18 @@ Workflow запускается вручную через **Actions → Deploy t
 
 5. **DNS в Docker daemon** — без него `apt-get install` в backend-контейнере падал с `Temporary failure resolving 'deb.debian.org'`.
 
-## Текущее состояние (переходное)
+## Текущее состояние
 
-- **DNS `medhistory.ru`** всё ещё указывает на старый Yandex IP.
-- **SSL-сертификат** Let's Encrypt ещё не выпущен — certbot требует работающий HTTP challenge на домене.
-- **nginx** работает через **временный HTTP-only конфиг** (`nginx-temp/nginx.conf`), запущен как отдельный контейнер `medhistory-nginx-temp`.
-- Приложение доступно по прямому IP: http://194.87.140.190
+- **DNS `medhistory.ru`** указывает на Timeweb IP `194.87.140.190`.
+- **SSL-сертификат** Let's Encrypt выпущен, автообновление выполняет контейнер `certbot`.
+- **nginx** работает по HTTPS через основной конфиг [nginx/nginx.conf](../../nginx/nginx.conf).
+- Приложение доступно на https://medhistory.ru
+- Поддомен `www.medhistory.ru` пока не настроен.
 
-## TODO — завершение миграции
+## TODO — `www.medhistory.ru`
 
-1. **Переключить A-запись** `medhistory.ru` и `www.medhistory.ru` на `194.87.140.190`.
-2. **Выпустить SSL** через certbot:
+1. **Добавить A-запись** `www.medhistory.ru` на `194.87.140.190`.
+2. **Перевыпустить SSL** через certbot с обоими доменами:
    ```bash
    ssh root@194.87.140.190
    cd ~/medhistory
@@ -119,13 +120,11 @@ Workflow запускается вручную через **Actions → Deploy t
      -d medhistory.ru -d www.medhistory.ru \
      --email <email> --agree-tos --no-eff-email
    ```
-3. **Остановить временный nginx**, запустить основной:
+3. **Обновить nginx.conf** если пути к сертификатам изменятся.
+4. **Перезапустить nginx**:
    ```bash
-   docker rm -f medhistory-nginx-temp
    docker compose -f docker-compose.prod.yml --env-file .env.production up -d nginx
    ```
-4. **Обновить nginx.conf** если пути к сертификатам изменились (`live/medhistory.ru-0001/` может стать `live/medhistory.ru/` при первичной выдаче).
-5. **Отключить старый Yandex сервер** после проверки что всё работает.
 
 ## Полезные команды
 

@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
-import { X, Download, Trash2, FileText, Calendar, User, Building2, Stethoscope, FlaskConical, Eye, ClipboardList, CheckCircle2, AlertTriangle } from 'lucide-react'
+import { X, Download, Trash2, FileText, Calendar, User, Building2, Stethoscope, FlaskConical, Eye, ClipboardList, CheckCircle2, AlertTriangle, ArrowLeft } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 import { documentsService } from '../../services/documents'
 import type { DocumentOrderManualStatus } from '../../services/documents'
+import type { DocumentExtractedTable } from '../../types'
 import LabResultsTable from './LabResultsTable'
 
 interface DocumentModalProps {
@@ -50,15 +51,49 @@ const orderStatusMeta = (status: DocumentOrderManualStatus) => ({
   },
 }[status])
 
+const tableColumns = (table: DocumentExtractedTable) => {
+  if (table.columns?.length) return table.columns
+  const keys = new Set<string>()
+  ;(table.rows || []).forEach((row) => {
+    Object.keys(row || {}).forEach((key) => keys.add(key))
+  })
+  return Array.from(keys)
+}
+
+const formatCell = (value: unknown) => {
+  if (value === null || value === undefined) return ''
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+  return JSON.stringify(value)
+}
+
+const fullTextSourceLabel = (source?: string | null) => ({
+  pdf_text_extraction: 'PDF-текст',
+  docx_text_extraction: 'DOCX-текст',
+  ai_vision_transcription: 'AI-транскрипция',
+}[source || ''] || source)
+
 export default function DocumentModal({ documentId, onClose }: DocumentModalProps) {
   const queryClient = useQueryClient()
   const [activeTab, setActiveTab] = useState<'info' | 'labs'>('info')
   const [summaryExpanded, setSummaryExpanded] = useState(false)
+  const [showFullContent, setShowFullContent] = useState(false)
 
   const { data: doc, isLoading } = useQuery({
     queryKey: ['document', documentId],
     queryFn: () => documentsService.getDocument(documentId!),
     enabled: !!documentId,
+  })
+
+  const {
+    data: documentContent,
+    isLoading: isContentLoading,
+    isError: isContentError,
+  } = useQuery({
+    queryKey: ['document-content', doc?.id],
+    queryFn: () => documentsService.getDocumentContent(doc!.id),
+    enabled: !!doc?.id && showFullContent,
   })
 
   const deleteMutation = useMutation({
@@ -146,10 +181,14 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
 
   useEffect(() => {
     setSummaryExpanded(false)
+    setShowFullContent(false)
   }, [documentId])
 
   useEffect(() => {
-    if (doc) setActiveTab(doc.document_type === 'Результаты анализа' ? 'labs' : 'info')
+    if (doc) {
+      setActiveTab(doc.document_type === 'Результаты анализа' ? 'labs' : 'info')
+      setShowFullContent(false)
+    }
   }, [doc?.id, doc?.document_type])
 
   useEffect(() => {
@@ -196,7 +235,7 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
         </div>
 
         {/* Tabs — only for lab results */}
-        {isLabResult && (
+        {isLabResult && !showFullContent && (
           <div className="flex border-b border-gray-100 px-4 bg-white shrink-0">
             <button
               onClick={() => setActiveTab('info')}
@@ -226,8 +265,135 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
             </div>
           ) : doc ? (
             <>
+              {showFullContent && (
+                <div className="p-4 sm:p-6 space-y-4">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => setShowFullContent(false)}
+                        className="mb-2 inline-flex items-center gap-1.5 text-sm font-medium text-gray-500 hover:text-gray-900"
+                      >
+                        <ArrowLeft className="h-4 w-4" />
+                        AI-анализ
+                      </button>
+                      <h4 className="text-base font-semibold text-gray-900">Полное содержание</h4>
+                    </div>
+                    {documentContent?.full_text_source && (
+                      <span className="self-start rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-xs font-medium text-gray-500 sm:self-auto">
+                        {fullTextSourceLabel(documentContent.full_text_source)}
+                      </span>
+                    )}
+                  </div>
+
+                  {isContentLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <div className="animate-spin rounded-full h-9 w-9 border-b-2 border-emerald-500" />
+                    </div>
+                  ) : isContentError ? (
+                    <div className="rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-700">
+                      Не удалось загрузить полное содержание документа.
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {documentContent?.full_text ? (
+                        <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                          <pre className="whitespace-pre-wrap break-words font-sans text-sm leading-6 text-gray-800">
+                            {documentContent.full_text}
+                          </pre>
+                        </div>
+                      ) : (
+                        <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 text-sm text-amber-800">
+                          Полное содержание для этого документа пока не извлечено.
+                        </div>
+                      )}
+
+                      {!!documentContent?.tables?.length && (
+                        <div className="space-y-3">
+                          <h5 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Табличные данные
+                          </h5>
+                          {documentContent.tables.map((table, tableIndex) => {
+                            const columns = tableColumns(table)
+                            return (
+                              <div key={`${table.title || 'table'}-${tableIndex}`} className="overflow-hidden rounded-xl border border-gray-100">
+                                {table.title && (
+                                  <div className="border-b border-gray-100 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800">
+                                    {table.title}
+                                  </div>
+                                )}
+                                <div className="overflow-x-auto">
+                                  <table className="min-w-full divide-y divide-gray-100 text-sm">
+                                    {!!columns.length && (
+                                      <thead className="bg-gray-50">
+                                        <tr>
+                                          {columns.map((column) => (
+                                            <th key={column} className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                                              {column}
+                                            </th>
+                                          ))}
+                                        </tr>
+                                      </thead>
+                                    )}
+                                    <tbody className="divide-y divide-gray-100 bg-white">
+                                      {(table.rows || []).map((row, rowIndex) => (
+                                        <tr key={rowIndex}>
+                                          {columns.map((column) => (
+                                            <td key={column} className="px-3 py-2 align-top text-gray-800">
+                                              {formatCell(row?.[column])}
+                                            </td>
+                                          ))}
+                                        </tr>
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+
+                      {!!documentContent?.lab_results?.length && (
+                        <div className="space-y-3">
+                          <h5 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                            Извлеченные анализы
+                          </h5>
+                          <div className="overflow-hidden rounded-xl border border-gray-100">
+                            <div className="overflow-x-auto">
+                              <table className="min-w-full divide-y divide-gray-100 text-sm">
+                                <thead className="bg-gray-50">
+                                  <tr>
+                                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Показатель</th>
+                                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Значение</th>
+                                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Ед.</th>
+                                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Референс</th>
+                                    <th className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Флаг</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-100 bg-white">
+                                  {documentContent.lab_results.map((result, resultIndex) => (
+                                    <tr key={`${result.test_name || 'lab'}-${resultIndex}`}>
+                                      <td className="px-3 py-2 align-top font-medium text-gray-900">{result.test_name || ''}</td>
+                                      <td className="px-3 py-2 align-top text-gray-800">{result.value || ''}</td>
+                                      <td className="px-3 py-2 align-top text-gray-600">{result.unit || ''}</td>
+                                      <td className="px-3 py-2 align-top text-gray-600">{result.reference_range || ''}</td>
+                                      <td className="px-3 py-2 align-top text-gray-600">{result.flag || ''}</td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Info tab */}
-              {(!isLabResult || activeTab === 'info') && (
+              {!showFullContent && (!isLabResult || activeTab === 'info') && (
                 <div className="p-4 sm:p-6 space-y-4">
                   {/* Compact metadata rows */}
                   <div className="bg-gray-50 rounded-xl overflow-hidden divide-y divide-gray-100">
@@ -381,9 +547,21 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
                   {/* Summary */}
                   {doc.summary && (
                     <div>
-                      <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                        📝 AI-анализ
-                      </h4>
+                      <div className="mb-2 flex items-center justify-between gap-3">
+                        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          📝 AI-анализ
+                        </h4>
+                        {doc.processing_status === 'completed' && (
+                          <button
+                            type="button"
+                            onClick={() => setShowFullContent(true)}
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-100 bg-white px-2.5 py-1.5 text-xs font-medium text-emerald-700 shadow-sm hover:bg-emerald-50"
+                          >
+                            <FileText className="h-3.5 w-3.5" />
+                            Полное содержание
+                          </button>
+                        )}
+                      </div>
                       <div className="bg-emerald-50 rounded-xl p-3 sm:p-4">
                         <p className={`text-sm text-gray-800 leading-relaxed whitespace-pre-wrap ${!summaryExpanded ? 'line-clamp-4' : ''}`}>
                           {doc.summary}
@@ -403,7 +581,7 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
               )}
 
               {/* Labs tab */}
-              {isLabResult && activeTab === 'labs' && (
+              {!showFullContent && isLabResult && activeTab === 'labs' && (
                 <div className="p-3 sm:p-6">
                   <LabResultsTable documentId={doc.id} documentType={doc.document_type} />
                 </div>
