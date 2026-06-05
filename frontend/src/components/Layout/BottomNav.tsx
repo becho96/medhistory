@@ -13,7 +13,7 @@ export default function BottomNav() {
 
   return (
     <nav
-      className="w-full flex-shrink-0 bg-white/95 backdrop-blur-md border-t border-gray-100 lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-50 w-full bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-[0_-6px_20px_rgba(15,23,42,0.06)] overscroll-contain lg:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <div className="flex h-14">
@@ -25,7 +25,7 @@ export default function BottomNav() {
             <Link
               key={tab.href}
               to={tab.href}
-              className={`relative flex-1 flex min-h-16 flex-col items-center justify-center gap-0.5 transition-colors active:opacity-60 ${
+              className={`relative flex h-full min-h-0 flex-1 flex-col items-center justify-center gap-0.5 transition-colors active:opacity-60 ${
                 isActive ? 'text-emerald-500' : 'text-gray-400'
               }`}
             >

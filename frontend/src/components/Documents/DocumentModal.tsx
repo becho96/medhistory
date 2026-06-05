@@ -76,15 +76,16 @@ const fullTextSourceLabel = (source?: string | null) => ({
 
 export default function DocumentModal({ documentId, onClose }: DocumentModalProps) {
   const queryClient = useQueryClient()
+  const [activeDocumentId, setActiveDocumentId] = useState<string | null>(documentId)
   const [activeTab, setActiveTab] = useState<'info' | 'labs'>('info')
   const [summaryExpanded, setSummaryExpanded] = useState(false)
   const [showFullContent, setShowFullContent] = useState(false)
   const [showActionsMenu, setShowActionsMenu] = useState(false)
 
   const { data: doc, isLoading } = useQuery({
-    queryKey: ['document', documentId],
-    queryFn: () => documentsService.getDocument(documentId!),
-    enabled: !!documentId,
+    queryKey: ['document', activeDocumentId],
+    queryFn: () => documentsService.getDocument(activeDocumentId!),
+    enabled: !!activeDocumentId,
   })
 
   const {
@@ -121,8 +122,8 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
       orderIndex: number
       status: DocumentOrderManualStatus
     }) => documentsService.updateOrderStatus(documentId, orderIndex, status),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['document', documentId] })
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['document', variables.documentId] })
       queryClient.invalidateQueries({ queryKey: ['documents'] })
       queryClient.invalidateQueries({ queryKey: ['documents-count'] })
       queryClient.invalidateQueries({ queryKey: ['documents-all'] })
@@ -155,13 +156,11 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
     }
   }
 
-  const handleOpenMatchedDocument = async (matchedDocumentId: string) => {
-    const targetWindow = window.open('', '_blank')
-    try {
-      await documentsService.openDocument(matchedDocumentId, targetWindow)
-    } catch {
-      toast.error('Не удалось открыть документ')
-    }
+  const handleOpenMatchedDocument = (matchedDocumentId: string) => {
+    setActiveDocumentId(matchedDocumentId)
+    setSummaryExpanded(false)
+    setShowFullContent(false)
+    setShowActionsMenu(false)
   }
 
   const handleOrderStatusChange = (orderIndex: number, status: DocumentOrderManualStatus) => {
@@ -182,10 +181,14 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
   }
 
   useEffect(() => {
+    setActiveDocumentId(documentId)
+  }, [documentId])
+
+  useEffect(() => {
     setSummaryExpanded(false)
     setShowFullContent(false)
     setShowActionsMenu(false)
-  }, [documentId])
+  }, [activeDocumentId])
 
   useEffect(() => {
     if (doc) {
@@ -212,18 +215,29 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
 
   return (
     <div
-      className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm sm:p-4"
+      className="fixed inset-0 z-[110] flex items-stretch justify-center bg-black/50 backdrop-blur-sm sm:items-center sm:p-4"
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl max-w-4xl w-full overflow-hidden max-h-[92vh] flex flex-col"
+        className="flex h-[100dvh] max-h-[100dvh] w-full max-w-4xl flex-col overflow-hidden bg-white shadow-2xl sm:h-auto sm:max-h-[92dvh] sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
-            <FileText className="h-4 w-4 text-emerald-500" />
-          </div>
+        <div className="shrink-0 px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 bg-white flex items-center gap-3">
+          {activeDocumentId !== documentId ? (
+            <button
+              type="button"
+              onClick={() => setActiveDocumentId(documentId)}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-50 text-gray-500"
+              aria-label="Вернуться к исходному документу"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+          ) : (
+            <div className="w-9 h-9 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+              <FileText className="h-4 w-4 text-emerald-500" />
+            </div>
+          )}
           <div className="flex-1 min-w-0">
             <h3 className="text-sm sm:text-base font-semibold text-gray-900 truncate">
               {isLoading ? 'Загрузка...' : doc?.original_filename || 'Документ'}
@@ -261,7 +275,7 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
         )}
 
         {/* Content */}
-        <div className="overflow-y-auto flex-1">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
           {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-500" />
@@ -489,22 +503,22 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
                           return (
                             <div
                               key={`${order.title}-${index}`}
-                              className={`rounded-xl border p-3 ${meta.cardClass}`}
+                              className={`rounded-lg border px-3 py-2.5 ${meta.cardClass}`}
                             >
-                              <div className="flex items-start gap-2 sm:gap-3">
+                              <div className="flex items-start gap-2.5">
                                 {isActive ? (
                                   <AlertTriangle className={`mt-0.5 h-4 w-4 shrink-0 ${meta.iconClass}`} />
                                 ) : (
                                   <CheckCircle2 className={`mt-0.5 h-4 w-4 shrink-0 ${meta.iconClass}`} />
                                 )}
                                 <div className="min-w-0 flex-1">
-                                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                                    <p className="text-sm font-medium text-gray-900">{order.title}</p>
+                                  <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between">
+                                    <p className="text-sm font-semibold leading-5 text-gray-900">{order.title}</p>
                                     <select
                                       value={order.status}
                                       onChange={(e) => handleOrderStatusChange(order.order_index, e.target.value as DocumentOrderManualStatus)}
                                       disabled={orderStatusMutation.isPending}
-                                      className="h-8 rounded-md border border-gray-200 bg-white px-2 text-xs font-medium text-gray-700 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:opacity-60"
+                                      className="h-8 max-w-full self-start rounded-md border border-gray-200 bg-white px-2 text-xs font-medium text-gray-700 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 disabled:opacity-60"
                                     >
                                       {ORDER_STATUS_OPTIONS.map((option) => (
                                         <option key={option.value} value={option.value}>
@@ -513,17 +527,17 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
                                       ))}
                                     </select>
                                   </div>
-                                  <p className="mt-0.5 text-xs text-gray-600">
+                                  <p className="mt-1 text-xs leading-4 text-gray-600">
                                     {order.target_document_type || 'Назначение'}
                                     {order.target_document_subtype && ` · ${order.target_document_subtype}`}
                                     {order.target_research_area && ` · ${order.target_research_area}`}
                                   </p>
-                                  <p className={`mt-2 text-xs ${meta.textClass}`}>
+                                  <p className={`mt-1 text-xs leading-4 ${meta.textClass}`}>
                                     {meta.text}
                                     {order.status_source === 'manual' ? ' · вручную' : ' · автоматически'}
                                   </p>
                                   {order.status === 'completed' && order.matched_document_id ? (
-                                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                                    <div className="mt-1.5 flex flex-wrap items-center gap-2">
                                       {matchedDate && <span className="text-xs text-emerald-700">Найдено {matchedDate}</span>}
                                       {order.matched_document_id && (
                                         <button
@@ -531,13 +545,11 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
                                           onClick={() => handleOpenMatchedDocument(order.matched_document_id!)}
                                           className="rounded-md bg-white px-2 py-1 text-xs font-medium text-emerald-700 border border-emerald-200"
                                         >
-                                          Открыть результат
+                                          Открыть карточку
                                         </button>
                                       )}
                                     </div>
-                                  ) : (
-                                    <p className={`mt-1 text-xs ${meta.textClass}`}>{meta.detail}</p>
-                                  )}
+                                  ) : null}
                                 </div>
                               </div>
                             </div>
