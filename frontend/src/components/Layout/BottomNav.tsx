@@ -1,11 +1,11 @@
 import { Link, useLocation } from 'react-router-dom'
-import { Home, FileText, FlaskConical, Plug } from 'lucide-react'
+import { Home, FileText, FlaskConical, User } from 'lucide-react'
 
 const tabs = [
   { name: 'Главная',  href: '/',          icon: Home },
   { name: 'Медкарта', href: '/documents', icon: FileText },
   { name: 'Анализы',  href: '/labs',      icon: FlaskConical },
-  { name: 'Интеграции', href: '/settings/integrations', icon: Plug },
+  { name: 'Профиль', href: '/profile', icon: User, matches: ['/profile', '/settings', '/subscription', '/health-events', '/admin'] },
 ]
 
 export default function BottomNav() {
@@ -20,7 +20,7 @@ export default function BottomNav() {
         {tabs.map((tab) => {
           const isActive = tab.href === '/'
             ? location.pathname === tab.href
-            : location.pathname.startsWith(tab.href)
+            : (tab.matches || [tab.href]).some((path) => location.pathname.startsWith(path))
           return (
             <Link
               key={tab.href}

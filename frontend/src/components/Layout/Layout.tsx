@@ -71,7 +71,7 @@ export default function Layout() {
   return (
     <div className="h-[100dvh] flex flex-col bg-gray-50">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-gray-100"
+      <header className="hidden lg:block bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50 border-b border-gray-100"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         <div className="max-w-full px-4 sm:px-6 md:px-8">
@@ -204,7 +204,7 @@ export default function Layout() {
 
         {/* Main content */}
         <main className="flex-1 overflow-auto min-w-0">
-          <div className="p-3 pb-24 sm:p-6 md:p-8 max-w-7xl mx-auto">
+          <div className="p-3 pt-4 pb-24 sm:p-6 md:p-8 max-w-7xl mx-auto">
             {!isViewingOwnProfile && activeProfile && (
               <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-4">
                 <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center">

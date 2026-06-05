@@ -9,7 +9,6 @@ import DocumentFilters, { DocumentFilterValues } from '../components/Documents/D
 import InterpretationConfirmModal from '../components/Documents/InterpretationConfirmModal'
 import DocumentModal from '../components/Documents/DocumentModal'
 import DocumentListItem from '../components/Documents/DocumentListItem'
-import DocumentDisplaySettings, { DocumentDisplaySettingsValues } from '../components/Documents/DocumentDisplaySettings'
 
 import type { TimelineEvent } from '../types'
 import 'vis-timeline/styles/vis-timeline-graph2d.min.css'
@@ -43,23 +42,6 @@ const timelineStyles = `
 `
 
 type ViewMode = 'list' | 'timeline'
-
-const DISPLAY_SETTINGS_STORAGE_KEY = 'documents.displaySettings'
-
-const DEFAULT_DISPLAY_SETTINGS: DocumentDisplaySettingsValues = {
-  showTags: true,
-}
-
-const loadDisplaySettings = (): DocumentDisplaySettingsValues => {
-  try {
-    const raw = localStorage.getItem(DISPLAY_SETTINGS_STORAGE_KEY)
-    if (!raw) return DEFAULT_DISPLAY_SETTINGS
-    const parsed = JSON.parse(raw)
-    return { ...DEFAULT_DISPLAY_SETTINGS, ...parsed }
-  } catch {
-    return DEFAULT_DISPLAY_SETTINGS
-  }
-}
 
 const getDocumentGroupLabel = (dateStr: string | null | undefined, now: Date): string => {
   if (!dateStr) return 'Без даты'
@@ -119,7 +101,6 @@ export default function Documents() {
   const queryClient = useQueryClient()
   const [viewMode, setViewMode] = useState<ViewMode>('list')
   const [filters, setFilters] = useState<DocumentFilterValues>({})
-  const [displaySettings, setDisplaySettings] = useState<DocumentDisplaySettingsValues>(loadDisplaySettings)
   const [currentPage, setCurrentPage] = useState(1)
   const [sortBy, setSortBy] = useState<'document_date' | 'created_at'>('document_date')
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
@@ -228,15 +209,6 @@ export default function Documents() {
   useEffect(() => {
     setCurrentPage(1)
   }, [filters, sortBy])
-
-  // Persist display settings
-  useEffect(() => {
-    try {
-      localStorage.setItem(DISPLAY_SETTINGS_STORAGE_KEY, JSON.stringify(displaySettings))
-    } catch {
-      // ignore quota / privacy-mode errors
-    }
-  }, [displaySettings])
 
   // Calculate total pages
   const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE)
@@ -998,7 +970,7 @@ export default function Documents() {
   }, [filteredDocuments, sortBy])
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3 sm:space-y-5">
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div>
@@ -1022,6 +994,8 @@ export default function Documents() {
         filters={filters}
         onChange={setFilters}
         onReset={() => setFilters({})}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
       />
 
       {/* Semantic search */}
@@ -1032,7 +1006,7 @@ export default function Documents() {
             type="text"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            placeholder="Поиск по смыслу: например «проблемы с плечом» или «давление высокое»"
+            placeholder="Поиск по смыслу"
             className="w-full pl-9 pr-9 py-2.5 text-[14px] border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent"
           />
           {searchInput && (
@@ -1090,7 +1064,7 @@ export default function Documents() {
 
       {/* View Mode Tabs */}
       <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-        <div className="border-b border-gray-100">
+        <div className="hidden border-b border-gray-100 lg:block">
           <nav className="flex gap-2 p-2">
             <button
               onClick={() => setViewMode('list')}
@@ -1124,11 +1098,7 @@ export default function Documents() {
         {/* List View */}
         {viewMode === 'list' && (
           <>
-            <DocumentDisplaySettings
-              settings={displaySettings}
-              onChange={setDisplaySettings}
-            />
-            <div className="px-3 sm:px-6 py-3 border-b border-gray-100">
+            <div className="hidden px-3 sm:px-6 py-3 border-b border-gray-100 lg:block">
               <div className="flex items-center justify-between gap-2">
                 <p className="text-[13px] font-medium text-gray-500">
                   {totalCount} {totalCount === 1 ? 'документ' : totalCount < 5 ? 'документа' : 'документов'}
@@ -1160,7 +1130,7 @@ export default function Documents() {
 
             {/* Top Pagination */}
             {totalPages > 1 && (
-              <div className="px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 bg-gray-50/50">
+              <div className="hidden px-4 sm:px-6 py-3 sm:py-4 border-b border-gray-100 bg-gray-50/50">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                   <div>
                     <p className="text-xs sm:text-sm text-gray-600">
@@ -1213,7 +1183,7 @@ export default function Documents() {
                       key={doc.id}
                       doc={doc}
                       labsSummary={labsSummary}
-                      showTags={displaySettings.showTags}
+                      showTags={true}
                       onClick={(id) => setSelectedDocumentId(id)}
                       onOpenLabs={(id) => openLabsModal(id)}
                       onDownload={(id, filename) => handleDownload(id, filename)}

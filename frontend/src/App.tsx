@@ -14,6 +14,7 @@ import Interpretations from './pages/Interpretations'
 import HealthEvents from './pages/HealthEvents'
 import AssistantPage from './pages/AssistantPage'
 import Integrations from './pages/Integrations'
+import Profile from './pages/Profile'
 import OAuthConsent from './pages/OAuthConsent'
 import LegalPage from './pages/LegalPage'
 import Subscription from './pages/Subscription'
@@ -53,6 +54,7 @@ function App() {
           <Route path="/reports" element={<Reports />} />
           <Route path="/labs" element={<Labs />} />
           <Route path="/assistant" element={<AssistantPage />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/settings/integrations" element={<Integrations />} />
           <Route path="/subscription" element={<Subscription />} />
           <Route element={<AdminRoute />}>
@@ -68,4 +70,3 @@ function App() {
 }
 
 export default App
-

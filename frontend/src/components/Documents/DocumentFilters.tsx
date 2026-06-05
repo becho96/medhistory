@@ -22,6 +22,8 @@ interface DocumentFiltersProps {
   filters: DocumentFilterValues
   onChange: (filters: DocumentFilterValues) => void
   onReset?: () => void
+  sortBy?: 'document_date' | 'created_at'
+  onSortChange?: (sortBy: 'document_date' | 'created_at') => void
 }
 
 const DOCUMENT_TYPE_CHIPS = [
@@ -69,7 +71,7 @@ const ADVANCED_FIELDS: (keyof DocumentFilterValues)[] = [
   'medical_facility', 'patient_name', 'created_from', 'created_to',
 ]
 
-export default function DocumentFilters({ filters, onChange, onReset }: DocumentFiltersProps) {
+export default function DocumentFilters({ filters, onChange, onReset, sortBy, onSortChange }: DocumentFiltersProps) {
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false)
   const [isMobileExpanded, setIsMobileExpanded] = useState(false)
   const [selectedDatePresets, setSelectedDatePresets] = useState<DatePresetId[]>([])
@@ -211,6 +213,36 @@ export default function DocumentFilters({ filters, onChange, onReset }: Document
 
       {/* Filter content: hidden on mobile when collapsed, always visible on desktop */}
       <div className={`${isMobileExpanded ? 'block' : 'hidden'} lg:block space-y-3`}>
+
+      {sortBy && onSortChange && (
+        <div className="lg:hidden">
+          <span className="mb-2 block text-xs font-medium text-gray-400">Сортировка</span>
+          <div className="grid grid-cols-2 overflow-hidden rounded-xl border border-gray-200 text-sm font-medium">
+            <button
+              type="button"
+              onClick={() => onSortChange('document_date')}
+              className={`min-h-11 px-3 py-2 transition-colors ${
+                sortBy === 'document_date'
+                  ? 'bg-emerald-500 text-white'
+                  : 'bg-white text-gray-600'
+              }`}
+            >
+              По дате документа
+            </button>
+            <button
+              type="button"
+              onClick={() => onSortChange('created_at')}
+              className={`min-h-11 border-l border-gray-200 px-3 py-2 transition-colors ${
+                sortBy === 'created_at'
+                  ? 'bg-emerald-500 text-white'
+                  : 'bg-white text-gray-600'
+              }`}
+            >
+              По загрузке
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Tier 1: chip groups */}
       <div className="space-y-2">
