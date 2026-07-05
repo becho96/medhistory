@@ -375,8 +375,8 @@ def _create_unit_conversion_deprecated(analyte_id: str, from_unit: str):
     """DEPRECATED: unit_conversions объединены с analyte_synonyms."""
     return True, None  # no-op
 
-def call_backend_reload():
-    """Вызвать backend текущего окружения для инвалидации кэша нормализации"""
+def get_backend_base_url():
+    """Base URL of the backend for the current environment."""
     env_config = ENVIRONMENTS[current_env]
     backend_url = env_config.get('backend_url', '')
     if not backend_url and current_env == 'production':
@@ -385,7 +385,12 @@ def call_backend_reload():
         backend_url = f"http://{host}" if host else ''
     if not backend_url:
         backend_url = os.getenv('BACKEND_URL', 'http://backend:8000')
-    url = f"{backend_url.rstrip('/')}/api/v1/internal/analytes/reload"
+    return backend_url.rstrip('/')
+
+
+def call_backend_reload():
+    """Вызвать backend текущего окружения для инвалидации кэша нормализации"""
+    url = f"{get_backend_base_url()}/api/v1/internal/analytes/reload"
     try:
         import requests
         r = requests.post(url, timeout=10)
@@ -2036,6 +2041,228 @@ def api_analytes_reload_cache():
     if ok:
         return jsonify({'success': True, 'message': 'Кэш backend обновлён. Обновите страницу Анализов.'})
     return jsonify({'success': False, 'error': msg}), 502
+
+
+QUEUE_PAGE_HTML = """<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Очередь маппинга анализов</title>
+<style>
+  :root { color-scheme: light dark; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; padding: 20px;
+         background: #f4f5f7; color: #1a1a1a; }
+  @media (prefers-color-scheme: dark) { body { background:#16181d; color:#e6e6e6; } .card{background:#1f2229 !important;border-color:#2c313a !important;} select,input{background:#14161a;color:#e6e6e6;border-color:#333;} }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color:#888; font-size:13px; margin-bottom:16px; }
+  .bar { display:flex; gap:10px; align-items:center; margin-bottom:16px; flex-wrap:wrap; }
+  button { cursor:pointer; border:1px solid #ccc; background:#fff; border-radius:8px; padding:7px 12px; font-size:13px; }
+  button.primary { background:#2d6cdf; color:#fff; border-color:#2d6cdf; }
+  button.ok { background:#1e9e5a; color:#fff; border-color:#1e9e5a; }
+  button.no { background:#fff; color:#c0392b; border-color:#e0b4ae; }
+  button:disabled { opacity:.5; cursor:default; }
+  .card { background:#fff; border:1px solid #e2e4e8; border-radius:12px; padding:14px 16px; margin-bottom:12px; }
+  .card h3 { margin:0 0 2px; font-size:15px; }
+  .unit { color:#888; font-weight:400; }
+  .occ { font-size:12px; color:#888; }
+  .badge { display:inline-block; font-size:11px; padding:2px 8px; border-radius:10px; margin-left:6px; }
+  .b-map { background:#e6f0ff; color:#2d6cdf; }
+  .b-create { background:#eafaf0; color:#1e9e5a; }
+  .b-uncertain { background:#fff3e0; color:#e08a00; }
+  .b-dup { background:#fdecea; color:#c0392b; }
+  .reason { font-size:12px; color:#777; margin:6px 0; }
+  .cands { font-size:11px; color:#999; margin:4px 0 8px; }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin:6px 0; }
+  select, input { padding:6px 8px; border:1px solid #ccc; border-radius:7px; font-size:13px; }
+  input.name { min-width:220px; } select.target { min-width:260px; } input.coef { width:80px; }
+  .muted { display:none; }
+  .msg { font-size:13px; margin-left:8px; }
+</style>
+</head>
+<body>
+<h1>Очередь маппинга анализов</h1>
+<div class="sub">Немапленные анализы с предложением резолвера (kNN + LLM). Подтверди или отклони — ничего не пишется без твоего действия.</div>
+<div class="bar">
+  <button class="primary" id="rebuild">🔄 Обновить очередь (rebuild)</button>
+  <button id="refresh">↻ Перечитать</button>
+  <span class="msg" id="topmsg"></span>
+</div>
+<div id="list"></div>
+
+<script>
+const CATS = ["Общий анализ крови","Биохимия крови","Липидный профиль","Гормоны","Витамины и микроэлементы","Маркеры воспаления","Общий анализ мочи","Другие анализы"];
+let STANDARDS = [];
+
+function norm(s){ return (s||"").toLowerCase().replace(/[^a-zа-яё0-9]+/g,""); }
+
+async function loadStandards(){
+  const r = await fetch('/api/analytes/standards'); const d = await r.json();
+  STANDARDS = (d.standards||[]).map(s => s.canonical_name).sort((a,b)=>a.localeCompare(b,'ru'));
+}
+
+function optionList(selected){
+  return STANDARDS.map(n => `<option value="${n.replace(/"/g,'&quot;')}"${n===selected?' selected':''}>${n}</option>`).join('');
+}
+function catOptions(selected){
+  return CATS.map(c => `<option${c===selected?' selected':''}>${c}</option>`).join('');
+}
+
+function cardHTML(it, dupKeys){
+  const act = it.proposed_action || 'uncertain';
+  const badge = act==='map' ? 'b-map' : act==='create' ? 'b-create' : 'b-uncertain';
+  const conf = it.llm_confidence!=null ? ` · conf ${it.llm_confidence}` : '';
+  const cands = (it.candidates||[]).map(c => `${c.canonical} (${c.score})`).join(' · ');
+  const dupKey = act==='create' ? norm(it.proposed_new_name) : '';
+  const dupBadge = (dupKey && dupKeys[dupKey]>1) ? '<span class="badge b-dup">возможный дубль</span>' : '';
+  return `<div class="card" data-id="${it.id}">
+    <h3>${it.original_name} <span class="unit">[${it.unit||'—'}]</span>
+        <span class="badge ${badge}">${act}</span>${dupBadge}
+        <span class="occ">×${it.occurrences}${conf}</span></h3>
+    <div class="reason">${it.llm_reason||''}</div>
+    <div class="cands">кандидаты: ${cands||'—'}</div>
+    <div class="row act-row">
+      <select class="action">
+        <option value="map"${act==='map'?' selected':''}>map → существующий</option>
+        <option value="create"${act==='create'?' selected':''}>create → новый</option>
+      </select>
+      <span class="map-fields">
+        <select class="target">${optionList(it.proposed_target)}</select>
+        <label>коэф.<input class="coef" type="number" step="any" value="${it.proposed_coefficient||1}"></label>
+      </span>
+      <span class="create-fields">
+        <input class="name" placeholder="каноническое имя" value="${(it.proposed_new_name||'').replace(/"/g,'&quot;')}">
+        <select class="cat">${catOptions(it.proposed_new_category)}</select>
+        <input class="stdunit" placeholder="ед." value="${(it.proposed_new_unit||it.unit||'').replace(/"/g,'&quot;')}">
+      </span>
+      <button class="ok approve">✓ Принять</button>
+      <button class="no reject">✕ Отклонить</button>
+      <span class="msg rowmsg"></span>
+    </div>
+  </div>`;
+}
+
+function wire(card){
+  const sel = card.querySelector('.action');
+  const sync = () => {
+    const isMap = sel.value==='map';
+    card.querySelector('.map-fields').style.display = isMap?'':'none';
+    card.querySelector('.create-fields').style.display = isMap?'none':'';
+  };
+  sel.addEventListener('change', sync); sync();
+  card.querySelector('.approve').addEventListener('click', () => approve(card));
+  card.querySelector('.reject').addEventListener('click', () => reject(card));
+}
+
+async function approve(card){
+  const id = card.dataset.id;
+  const action = card.querySelector('.action').value;
+  const payload = { action };
+  if (action==='map'){
+    payload.target = card.querySelector('.target').value;
+    payload.coefficient = parseFloat(card.querySelector('.coef').value)||1;
+  } else {
+    payload.new_name = card.querySelector('.name').value.trim();
+    payload.new_category = card.querySelector('.cat').value;
+    payload.new_std_unit = card.querySelector('.stdunit').value.trim();
+  }
+  const msg = card.querySelector('.rowmsg'); msg.textContent = '…';
+  const r = await fetch(`/api/analytes/queue/${id}/approve`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+  if (r.ok){ card.style.opacity=.4; card.querySelectorAll('button,select,input').forEach(e=>e.disabled=true); msg.textContent='принято ✓'; }
+  else { const d=await r.json().catch(()=>({})); msg.textContent='ошибка: '+(d.detail||d.error||r.status); }
+}
+
+async function reject(card){
+  const id = card.dataset.id;
+  const msg = card.querySelector('.rowmsg'); msg.textContent='…';
+  const r = await fetch(`/api/analytes/queue/${id}/reject`, {method:'POST'});
+  if (r.ok){ card.style.opacity=.4; card.querySelectorAll('button,select,input').forEach(e=>e.disabled=true); msg.textContent='отклонено'; }
+  else { msg.textContent='ошибка'; }
+}
+
+async function load(){
+  document.getElementById('topmsg').textContent='загрузка…';
+  if (!STANDARDS.length) await loadStandards();
+  const r = await fetch('/api/analytes/queue?status=pending'); const d = await r.json();
+  let items = d.items||[];
+  const dupKeys = {};
+  items.forEach(it => { if (it.proposed_action==='create'){ const k=norm(it.proposed_new_name); dupKeys[k]=(dupKeys[k]||0)+1; } });
+  items.sort((a,b) => (a.proposed_action||'').localeCompare(b.proposed_action||'')
+      || norm(a.proposed_new_name||a.proposed_target).localeCompare(norm(b.proposed_new_name||b.proposed_target))
+      || b.occurrences-a.occurrences);
+  const list = document.getElementById('list');
+  list.innerHTML = items.length ? items.map(it=>cardHTML(it,dupKeys)).join('') : '<p>Очередь пуста. Нажми «Обновить очередь».</p>';
+  list.querySelectorAll('.card').forEach(wire);
+  document.getElementById('topmsg').textContent = `${items.length} на ревью`;
+}
+
+document.getElementById('refresh').addEventListener('click', load);
+document.getElementById('rebuild').addEventListener('click', async () => {
+  const btn = document.getElementById('rebuild'); btn.disabled=true;
+  document.getElementById('topmsg').textContent='резолвер работает (может занять минуту)…';
+  const r = await fetch('/api/analytes/queue/rebuild', {method:'POST'});
+  const d = await r.json().catch(()=>({}));
+  btn.disabled=false;
+  if (r.ok){ document.getElementById('topmsg').textContent = `новых: ${d.newly_queued}, уже в очереди: ${d.already_queued}, ошибок: ${d.failed}`; load(); }
+  else { document.getElementById('topmsg').textContent = 'ошибка rebuild: '+(d.error||d.detail||r.status); }
+});
+
+load();
+</script>
+</body>
+</html>"""
+
+
+# ============== Mapping review queue (proxies to backend resolver) ==============
+
+def _backend_proxy(method, path, payload=None, timeout=30):
+    """Forward a request to the backend's internal analyte-queue API."""
+    import requests
+    url = f"{get_backend_base_url()}/api/v1/internal{path}"
+    try:
+        r = requests.request(method, url, json=payload, timeout=timeout)
+        try:
+            body = r.json()
+        except ValueError:
+            body = {'error': r.text[:500]}
+        return body, r.status_code
+    except Exception as e:
+        return {'error': str(e)}, 502
+
+
+@app.route('/api/analytes/queue')
+def api_analytes_queue():
+    status = request.args.get('status', 'pending')
+    body, code = _backend_proxy('GET', f'/analytes/queue?status={status}')
+    return jsonify(body), code
+
+
+@app.route('/api/analytes/queue/rebuild', methods=['POST'])
+def api_analytes_queue_rebuild():
+    # Resolver runs one LLM call per new miss — allow a generous timeout.
+    body, code = _backend_proxy('POST', '/analytes/queue/rebuild', timeout=600)
+    return jsonify(body), code
+
+
+@app.route('/api/analytes/queue/<item_id>/approve', methods=['POST'])
+def api_analytes_queue_approve(item_id):
+    payload = request.get_json() or {}
+    payload.setdefault('resolved_by', 'db-viewer')
+    body, code = _backend_proxy('POST', f'/analytes/queue/{item_id}/approve', payload=payload)
+    return jsonify(body), code
+
+
+@app.route('/api/analytes/queue/<item_id>/reject', methods=['POST'])
+def api_analytes_queue_reject(item_id):
+    body, code = _backend_proxy('POST', f'/analytes/queue/{item_id}/reject', payload={})
+    return jsonify(body), code
+
+
+@app.route('/analytes/queue')
+def analytes_queue_page():
+    return QUEUE_PAGE_HTML
+
 
 if __name__ == '__main__':
     print("=" * 60)
