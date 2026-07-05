@@ -179,13 +179,17 @@ async def _canonical_id(db: AsyncSession, name: str) -> Optional[str]:
 
 
 async def _add_synonym(db: AsyncSession, analyte_id: str, synonym: str, unit: str, coef: float) -> None:
+    # Pass pre-lowered values as their own params — reusing one placeholder in both
+    # a varchar column and lower(...) makes asyncpg fail to deduce a single type.
+    unit = unit or ""
     await db.execute(text("""
         INSERT INTO analyte_synonyms
             (id, analyte_id, synonym, synonym_lower, unit, unit_lower, coefficient, source)
         VALUES
-            (gen_random_uuid(), :aid, :syn, lower(:syn), :unit, lower(:unit), :coef, 'queue_approved')
+            (gen_random_uuid(), :aid, :syn, :syn_l, :unit, :unit_l, :coef, 'queue_approved')
         ON CONFLICT (synonym_lower, unit_lower) DO NOTHING
-    """), {"aid": analyte_id, "syn": synonym, "unit": unit or "", "coef": coef})
+    """), {"aid": analyte_id, "syn": synonym, "syn_l": synonym.lower(),
+           "unit": unit, "unit_l": unit.lower(), "coef": coef})
 
 
 @router.post("/analytes/queue/{item_id}/approve")
