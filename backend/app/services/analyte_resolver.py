@@ -93,7 +93,10 @@ class AnalyteResolver:
             self._loaded = True
             return
 
-        vectors = await embed_passages(labels)
+        # The e5 sidecar caps a request at 128 texts — batch the ~500 labels.
+        vectors: List[List[float]] = []
+        for i in range(0, len(labels), 100):
+            vectors.extend(await embed_passages(labels[i:i + 100]))
         refs: List[RefLabel] = []
         for label, vector in zip(labels, vectors):
             canonical = label_to_canon[label]
