@@ -182,6 +182,25 @@ class AnalyteResolver:
             content = part[4:].strip() if part.startswith("json") else part.strip()
         return json.loads(content)
 
+    @staticmethod
+    def _snap_target(target: Optional[str], candidates: List[Candidate]) -> Optional[str]:
+        """Map the LLM's free-text target back to an exact candidate canonical.
+
+        The arbiter is shown candidates as "- {canonical} [ед: ...]" and sometimes
+        echoes the decorated line ("Моноциты (абс) [ед: 10*9/л]"). Snap to the
+        longest candidate canonical contained in the target so the stored target
+        is always an exact analyte_standards.canonical_name.
+        """
+        if not target:
+            return target
+        t = target.lower()
+        best = None
+        for c in sorted(candidates, key=lambda x: -len(x.canonical)):
+            if c.canonical.lower() in t:
+                best = c.canonical
+                break
+        return best or target
+
     async def resolve(self, db: AsyncSession, name: str, unit: str) -> Dict[str, Any]:
         """Full resolve for one (name, unit): candidates + LLM proposal."""
         await self.ensure_loaded(db)
@@ -191,10 +210,11 @@ class AnalyteResolver:
         action = verdict.get("action")
         if action not in ("map", "create"):
             action = "uncertain"
+        target = self._snap_target(verdict.get("target"), candidates) if action == "map" else verdict.get("target")
         return {
             "candidates": [c.__dict__ for c in candidates],
             "action": action,
-            "target": verdict.get("target"),
+            "target": target,
             "new_name": verdict.get("new_name"),
             "new_category": verdict.get("new_category"),
             "new_std_unit": verdict.get("new_std_unit"),

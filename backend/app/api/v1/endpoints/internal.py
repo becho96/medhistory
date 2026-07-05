@@ -170,6 +170,11 @@ async def _canonical_id(db: AsyncSession, name: str) -> Optional[str]:
     row = (await db.execute(text(
         "SELECT id FROM analyte_standards WHERE canonical_name = :n"
     ), {"n": name})).first()
+    if not row:
+        # Tolerate whitespace/case drift in a supplied target.
+        row = (await db.execute(text(
+            "SELECT id FROM analyte_standards WHERE lower(btrim(canonical_name)) = lower(btrim(:n))"
+        ), {"n": name})).first()
     return str(row[0]) if row else None
 
 
