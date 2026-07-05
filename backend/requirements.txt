@@ -1,5 +1,8 @@
-# Обновлено для совместимости с mcp (anyio>=4.5) — starlette 0.31+ требуется
-fastapi>=0.115.0
+# Обновлено для совместимости с mcp (anyio>=4.5) — starlette 0.31+ требуется.
+# fastapi/starlette запинены: starlette 1.x ломает prometheus-fastapi-instrumentator==6.1.0
+# (route.path на _IncludedRouter → 500 на всех /api/v1/*). Держим на 0.115.x + starlette 0.41.x.
+fastapi==0.115.6
+starlette==0.41.3
 uvicorn[standard]>=0.30.0
 pydantic[email]==2.13.4
 pydantic-settings==2.13.1
