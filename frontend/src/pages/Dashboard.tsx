@@ -7,12 +7,16 @@ import { useAuthStore } from '../stores/authStore'
 import UploadModal from '../components/Documents/UploadModal'
 import DocumentListItem from '../components/Documents/DocumentListItem'
 import DocumentModal from '../components/Documents/DocumentModal'
+import RemindersCard from '../components/Reminders/RemindersCard'
+import ReminderFormModal from '../components/Reminders/ReminderFormModal'
+import type { Reminder } from '../types'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 
 export default function Dashboard() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null)
+  const [reminderForm, setReminderForm] = useState<{ open: boolean; reminder: Reminder | null }>({ open: false, reminder: null })
   const { user } = useAuthStore()
   const queryClient = useQueryClient()
 
@@ -110,6 +114,12 @@ export default function Dashboard() {
         </button>
       </div>
 
+      {/* Reminders */}
+      <RemindersCard
+        onAdd={() => setReminderForm({ open: true, reminder: null })}
+        onOpen={(reminder) => setReminderForm({ open: true, reminder })}
+      />
+
       {/* Recent Documents */}
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
         <div className="flex items-center justify-between mb-5">
@@ -174,6 +184,16 @@ export default function Dashboard() {
           onClose={() => setSelectedDocumentId(null)}
         />
       )}
+
+      <ReminderFormModal
+        isOpen={reminderForm.open}
+        reminder={reminderForm.reminder}
+        onClose={() => setReminderForm({ open: false, reminder: null })}
+        onOpenDocument={(docId) => {
+          setReminderForm({ open: false, reminder: null })
+          setSelectedDocumentId(docId)
+        }}
+      />
     </div>
   )
 }

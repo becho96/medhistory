@@ -127,6 +127,7 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
       queryClient.invalidateQueries({ queryKey: ['documents'] })
       queryClient.invalidateQueries({ queryKey: ['documents-count'] })
       queryClient.invalidateQueries({ queryKey: ['documents-all'] })
+      queryClient.invalidateQueries({ queryKey: ['reminders'] })
       toast.success('Статус назначения обновлён')
     },
     onError: () => {

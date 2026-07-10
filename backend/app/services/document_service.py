@@ -249,6 +249,14 @@ class DocumentService:
         result = await document_metadata_collection.insert_one(mongo_doc)
         document.mongodb_metadata_id = str(result.inserted_id)
 
+        # Materialize reminders from extracted orders (auto rows, idempotent upsert).
+        # Soft-fails: a reminders error must not block document ingestion.
+        try:
+            from app.services.reminder_service import sync_document_reminders
+            await sync_document_reminders(document, metadata.orders or [], db)
+        except Exception as e:
+            print(f"⚠️  Reminder sync skipped for {document.id}: {e}")
+
         # Compute summary embedding for semantic search. Soft-fails: if the
         # sidecar is unreachable, the document is still saved and can be
         # backfilled later by scripts/backfill_embeddings.py.

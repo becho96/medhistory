@@ -4,7 +4,7 @@ from app.api.v1.endpoints import (
     auth, documents, timeline, reports, interpretations,
     metrics, family, health_events, internal, assistant,
     oauth_consent, mcp_connections, subscription, admin, bot,
-    feedback,
+    feedback, reminders,
 )
 
 api_router = APIRouter()
@@ -25,4 +25,5 @@ api_router.include_router(subscription.router,    prefix="/subscription",    tag
 api_router.include_router(admin.router,           prefix="/admin",           tags=["Admin"])
 api_router.include_router(bot.router,             prefix="/bot",             tags=["Telegram Bot"])
 api_router.include_router(feedback.router,        prefix="/feedback",        tags=["Feedback"])
+api_router.include_router(reminders.router,        prefix="/reminders",       tags=["Reminders"])
 

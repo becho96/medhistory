@@ -213,10 +213,25 @@ class AIService:
   "orders": [
     {{
       "title": "УЗИ брюшной полости",
+      "kind": "referral_research",
       "order_type": "instrumental",
       "target_document_type": "Инструментальное исследование",
       "target_document_subtype": "УЗИ",
-      "target_research_area": "Брюшная полость"
+      "target_research_area": "Брюшная полость",
+      "target_specialty": null,
+      "due_date": null,
+      "due_after": {{"amount": 1, "unit": "month"}}
+    }},
+    {{
+      "title": "Повторный приём кардиолога",
+      "kind": "follow_up_appointment",
+      "order_type": "consultation",
+      "target_document_type": "Прием врача",
+      "target_document_subtype": null,
+      "target_research_area": null,
+      "target_specialty": "Кардиология",
+      "due_date": "2026-09-15",
+      "due_after": null
     }}
   ]
 }}
@@ -280,12 +295,23 @@ class AIService:
 7. document_language - ISO 639-1 код языка оригинала ("ru", "en", "nl", "de" и т.д.)
 8. orders - список назначений/направлений врача, если они явно указаны в документе.
    Заполняй его прежде всего для "Прием врача". Если назначений нет, верни [].
-   Включай только направления на анализы, инструментальные исследования и функциональную диагностику.
-   Не включай лекарства, общие рекомендации по режиму, питанию и повторный прием без обследования.
-   order_type: "lab", "instrumental" или "functional".
-   target_document_type должен быть одним из:
-   "Результаты анализа", "Инструментальное исследование", "Функциональная диагностика".
-   target_document_subtype и target_research_area заполняй, когда это можно понять из текста.
+   Каждому назначению задай "kind" (один из):
+   - "referral_research" - направление на анализ/инструментальное/функциональное исследование;
+     order_type: "lab", "instrumental" или "functional";
+     target_document_type: "Результаты анализа", "Инструментальное исследование" или "Функциональная диагностика";
+     target_document_subtype и target_research_area заполняй, когда это можно понять из текста.
+   - "referral_specialist" - направление к врачу ДРУГОЙ специальности (консультация);
+     order_type: "consultation"; target_document_type: "Прием врача";
+     target_specialty - название специальности из справочника выше (существительное, напр. "Неврология").
+   - "follow_up_appointment" - повторный приём у того же/лечащего врача;
+     order_type: "consultation"; target_document_type: "Прием врача";
+     target_specialty - специальность приёма, если известна.
+   Не включай лекарства и общие рекомендации по режиму, питанию, образу жизни.
+   Срок (когда явно указан): "due_date" - абсолютная дата "YYYY-MM-DD", ТОЛЬКО если она прямо
+   названа в документе. Для относительных формулировок ("через 3 месяца", "через 2 недели")
+   заполняй "due_after" объектом {{"amount": <число>, "unit": "day"|"week"|"month"|"year"}}, а
+   "due_date" оставляй null - точную дату вычислит система от даты приёма. Если срок не указан -
+   оба поля null.
 {content_rules}
 
 # ИНОСТРАННЫЕ ДОКУМЕНТЫ:

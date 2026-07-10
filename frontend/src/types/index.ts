@@ -202,6 +202,30 @@ export interface DocumentOrdersSummary {
   items: DocumentOrderStatus[]
 }
 
+export type ReminderKind = 'follow_up_appointment' | 'referral_research' | 'referral_specialist'
+export type ReminderStatus = 'active' | 'done' | 'dismissed'
+export type ReminderUrgency = 'overdue' | 'urgent' | 'soon' | 'planned' | 'no_date'
+
+export interface Reminder {
+  id: string
+  origin: 'auto' | 'manual'
+  kind: ReminderKind
+  title: string
+  due_date?: string | null
+  urgency_level: ReminderUrgency
+  days_left?: number | null
+  status: ReminderStatus
+  target_document_type?: string | null
+  target_specialty?: string | null
+  note?: string | null
+  source_document_id?: string | null
+  source_document_title?: string | null
+  source_document_date?: string | null
+  source_specialty?: string | null
+  completed_document_id?: string | null
+  created_at?: string | null
+}
+
 export interface DocumentExtractedTable {
   title?: string | null
   columns?: string[]

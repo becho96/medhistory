@@ -12,6 +12,7 @@ from app.models.analyte import (
 from app.models.health_event import HealthEvent
 from app.models.consent import UserConsent
 from app.models.feedback import Feedback
+from app.models.reminder import Reminder
 
 __all__ = [
     "User",
@@ -39,5 +40,7 @@ __all__ = [
     "UserConsent",
     # User feedback
     "Feedback",
+    # Reminders
+    "Reminder",
 ]
 
