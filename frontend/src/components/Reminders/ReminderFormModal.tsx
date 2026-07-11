@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
-import { X, Trash2, FileText, Stethoscope, Check } from 'lucide-react'
+import { X, Trash2, FileText, Stethoscope, Check, Calendar } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { format, parseISO } from 'date-fns'
+import { ru } from 'date-fns/locale'
 import { remindersService } from '../../services/reminders'
 import type { Reminder, ReminderKind } from '../../types'
 
@@ -114,6 +116,12 @@ export default function ReminderFormModal({ isOpen, onClose, reminder, onOpenDoc
                   ? `Назначено после приёма — ${reminder.source_specialty}${reminder.source_doctor_name ? `, ${reminder.source_doctor_name}` : ''}`
                   : 'Назначено после приёма врача'}
               </p>
+              {reminder?.source_document_date && (
+                <p className="mt-1.5 text-[12.5px] text-emerald-700 flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5 shrink-0" />
+                  Направление от {format(parseISO(reminder.source_document_date), 'd MMMM yyyy', { locale: ru })}
+                </p>
+              )}
               {reminder?.source_document_id && onOpenDocument && (
                 <button
                   type="button"

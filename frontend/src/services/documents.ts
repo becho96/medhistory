@@ -103,8 +103,8 @@ export const documentsService = {
 
   async updateDocumentMeta(
     documentId: string,
-    updates: { document_date?: string; patient_name?: string }
-  ): Promise<{ id: string; document_date: string | null; patient_name: string | null }> {
+    updates: { document_date?: string; patient_name?: string; doctor_name?: string }
+  ): Promise<{ id: string; document_date: string | null; patient_name: string | null; doctor_name: string | null }> {
     const response = await api.patch(`/documents/${documentId}`, updates)
     return response.data
   },

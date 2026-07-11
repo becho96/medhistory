@@ -63,9 +63,15 @@ class DocumentOrderStatusUpdateRequest(BaseModel):
 
 
 class DocumentMetaUpdateRequest(BaseModel):
-    """Manual fill-in of required fields missing from AI extraction."""
+    """Manual fill-in of required fields missing from AI extraction.
+
+    ``document_date``/``patient_name`` are PostgreSQL columns; ``doctor_name``
+    lives in MongoDB (classification.doctor_name). One request may carry any
+    subset — the endpoint routes each field to its backing store.
+    """
     document_date: Optional[date] = None
     patient_name: Optional[str] = Field(None, max_length=255)
+    doctor_name: Optional[str] = Field(None, max_length=255)
 
 class Document(DocumentBase):
     id: uuid.UUID
@@ -88,6 +94,7 @@ class DocumentWithMetadata(Document):
     specialty: Optional[str] = None  # Joined specialties from MongoDB
     document_subtype: Optional[str] = None  # From MongoDB
     research_area: Optional[str] = None  # From MongoDB
+    doctor_name: Optional[str] = None  # From MongoDB (classification.doctor_name)
     summary: Optional[str] = None  # From MongoDB
     orders_summary: Optional[DocumentOrdersSummary] = None
 

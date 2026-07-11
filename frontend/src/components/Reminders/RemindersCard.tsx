@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { BellRing, Plus, Check, X, Stethoscope, FlaskConical, ChevronRight } from 'lucide-react'
+import { BellRing, Plus, Check, X, Stethoscope, FlaskConical, ChevronRight, FileText } from 'lucide-react'
 import { toast } from 'sonner'
 import { format, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
@@ -9,6 +9,7 @@ import type { Reminder, ReminderKind, ReminderUrgency } from '../../types'
 interface RemindersCardProps {
   onAdd: () => void
   onOpen: (reminder: Reminder) => void
+  onOpenDocument?: (documentId: string) => void
 }
 
 const URGENCY_STYLE: Record<ReminderUrgency, { badge: string; badgeClass: string; dot: string }> = {
@@ -43,15 +44,27 @@ const dueText = (r: Reminder): string | null => {
   }
 }
 
-// Плашка «кто направил»: специализация приёма + ФИО врача, иначе тип напоминания.
-function ReferrerChip({ reminder }: { reminder: Reminder }) {
+// Плашка «кто направил»: приём-источник (специализация + ФИО + дата). Кликабельна —
+// открывает карточку документа-источника. Для ручных — тип напоминания (без ссылки).
+function ReferrerChip({
+  reminder,
+  onOpenDocument,
+}: {
+  reminder: Reminder
+  onOpenDocument?: (documentId: string) => void
+}) {
   const kind = KIND_META[reminder.kind] ?? KIND_META.referral_research
   const specialty = reminder.source_specialty || reminder.target_specialty
   const doctor = reminder.source_doctor_name
+  const sourceDate = reminder.source_document_date
+    ? format(parseISO(reminder.source_document_date), 'dd.MM.yyyy')
+    : null
+  const canOpen = Boolean(reminder.source_document_id && onOpenDocument)
+  const base = 'inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[12px] text-slate-700 max-w-full flex-wrap'
 
   if (specialty) {
-    return (
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[12px] text-slate-700">
+    const inner = (
+      <>
         <Stethoscope className="h-3.5 w-3.5 text-slate-500 shrink-0" />
         <span className="font-semibold">{specialty}</span>
         {doctor && (
@@ -60,20 +73,40 @@ function ReferrerChip({ reminder }: { reminder: Reminder }) {
             <span>{doctor}</span>
           </>
         )}
-      </span>
+        {sourceDate && (
+          <>
+            <span className="text-slate-300">·</span>
+            <span>{sourceDate}</span>
+          </>
+        )}
+        {canOpen && <FileText className="h-3 w-3 text-slate-400 shrink-0" />}
+      </>
     )
+    if (canOpen) {
+      return (
+        <button
+          type="button"
+          title="Открыть документ-источник (приём)"
+          onClick={(e) => { e.stopPropagation(); onOpenDocument!(reminder.source_document_id!) }}
+          className={`${base} text-left hover:bg-slate-200 transition-colors`}
+        >
+          {inner}
+        </button>
+      )
+    }
+    return <span className={base}>{inner}</span>
   }
 
   const KindIcon = kind.Icon
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[12px] text-slate-700">
+    <span className={base}>
       <KindIcon className="h-3.5 w-3.5 text-slate-500 shrink-0" />
       <span className="font-medium">{kind.label}</span>
     </span>
   )
 }
 
-export default function RemindersCard({ onAdd, onOpen }: RemindersCardProps) {
+export default function RemindersCard({ onAdd, onOpen, onOpenDocument }: RemindersCardProps) {
   const queryClient = useQueryClient()
 
   const { data: reminders } = useQuery({
@@ -141,7 +174,7 @@ export default function RemindersCard({ onAdd, onOpen }: RemindersCardProps) {
                     )}
                   </div>
                   <div className="mt-1.5">
-                    <ReferrerChip reminder={r} />
+                    <ReferrerChip reminder={r} onOpenDocument={onOpenDocument} />
                   </div>
                   {due && <p className="text-[12.5px] text-gray-600 mt-1.5">{due}</p>}
                 </div>

@@ -168,6 +168,7 @@ export interface Document {
   research_area?: string
   document_date?: string
   patient_name?: string
+  doctor_name?: string
   medical_facility?: string
   document_language?: string
   processing_status: 'pending' | 'processing' | 'completed' | 'failed'

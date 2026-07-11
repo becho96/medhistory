@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { X, Download, Trash2, FileText, Calendar, User, Building2, Stethoscope, FlaskConical, Eye, ClipboardList, CheckCircle2, AlertTriangle, ArrowLeft, MoreVertical } from 'lucide-react'
+import { X, Download, Trash2, FileText, Calendar, User, UserRound, Building2, Stethoscope, FlaskConical, Eye, ClipboardList, CheckCircle2, AlertTriangle, ArrowLeft, MoreVertical } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
@@ -7,7 +7,7 @@ import { documentsService } from '../../services/documents'
 import type { DocumentOrderManualStatus } from '../../services/documents'
 import type { DocumentExtractedTable } from '../../types'
 import LabResultsTable from './LabResultsTable'
-import MissingMetaField from './MissingMetaField'
+import MissingFieldsPanel, { type MissingFieldDef, type MissingFieldKey } from './MissingFieldsPanel'
 
 interface DocumentModalProps {
   documentId: string | null
@@ -19,6 +19,32 @@ const ORDER_STATUS_OPTIONS: Array<{ value: DocumentOrderManualStatus; label: str
   { value: 'completed', label: 'Выполнено без загрузки' },
   { value: 'not_required', label: 'Не требуется' },
   { value: 'incorrect', label: 'Ошибка распознавания' },
+]
+
+// Обязательные поля, которые можно дозаполнить вручную, если AI их не распознал.
+// Панель показывает только те, что отсутствуют у документа.
+const MISSING_FIELD_DEFS: MissingFieldDef[] = [
+  {
+    key: 'document_date',
+    icon: <Calendar className="h-4 w-4" />,
+    label: 'Дата документа',
+    type: 'date',
+    hint: 'Пока дата не указана, назначения из этого документа не закрываются автоматически — мы не можем определить, какие документы были после него.',
+  },
+  {
+    key: 'patient_name',
+    icon: <User className="h-4 w-4" />,
+    label: 'ФИО пациента',
+    type: 'text',
+    placeholder: 'Иванов Иван Иванович',
+  },
+  {
+    key: 'doctor_name',
+    icon: <UserRound className="h-4 w-4" />,
+    label: 'ФИО врача',
+    type: 'text',
+    placeholder: 'Иванов И.И.',
+  },
 ]
 
 const orderStatusMeta = (status: DocumentOrderManualStatus) => ({
@@ -142,7 +168,7 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
       updates,
     }: {
       documentId: string
-      updates: { document_date?: string; patient_name?: string }
+      updates: { document_date?: string; patient_name?: string; doctor_name?: string }
     }) => documentsService.updateDocumentMeta(documentId, updates),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['document', variables.documentId] })
@@ -157,9 +183,9 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
     },
   })
 
-  const handleSaveMeta = (updates: { document_date?: string; patient_name?: string }) => {
+  const handleSaveMeta = (key: MissingFieldKey, value: string) => {
     if (!doc) return
-    metaMutation.mutate({ documentId: doc.id, updates })
+    metaMutation.mutate({ documentId: doc.id, updates: { [key]: value } })
   }
 
   const handleDownload = () => {
@@ -440,32 +466,14 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
               {/* Info tab */}
               {!showFullContent && (!isLabResult || activeTab === 'info') && (
                 <div className="p-4 sm:p-6 space-y-4">
-                  {/* Situational editors for required fields missing after AI extraction */}
-                  {doc.processing_status === 'completed' && (!doc.document_date || !doc.patient_name) && (
-                    <div className="space-y-2">
-                      {!doc.document_date && (
-                        <MissingMetaField
-                          key={`date-${doc.id}`}
-                          icon={<Calendar className="h-4 w-4" />}
-                          label="Дата документа"
-                          type="date"
-                          hint="Пока дата не указана, назначения из этого документа не закрываются автоматически — мы не можем определить, какие документы были после него."
-                          isSaving={metaMutation.isPending}
-                          onSave={(value) => handleSaveMeta({ document_date: value })}
-                        />
-                      )}
-                      {!doc.patient_name && (
-                        <MissingMetaField
-                          key={`name-${doc.id}`}
-                          icon={<User className="h-4 w-4" />}
-                          label="ФИО пациента"
-                          type="text"
-                          placeholder="Иванов Иван Иванович"
-                          isSaving={metaMutation.isPending}
-                          onSave={(value) => handleSaveMeta({ patient_name: value })}
-                        />
-                      )}
-                    </div>
+                  {/* Unified situational editor: any required field missing after AI extraction */}
+                  {doc.processing_status === 'completed' && (
+                    <MissingFieldsPanel
+                      key={doc.id}
+                      fields={MISSING_FIELD_DEFS.filter((field) => !doc[field.key])}
+                      isSaving={metaMutation.isPending}
+                      onSave={handleSaveMeta}
+                    />
                   )}
 
                   {/* Compact metadata rows */}
@@ -492,6 +500,15 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
                         <span className="text-xs text-gray-500 w-28 shrink-0">Пациент</span>
                         <span className="text-sm font-medium text-gray-900 flex-1 text-right truncate">
                           {doc.patient_name}
+                        </span>
+                      </div>
+                    )}
+                    {doc.doctor_name && (
+                      <div className="flex items-center gap-3 px-3 py-2.5">
+                        <UserRound className="w-4 h-4 text-gray-400 shrink-0" />
+                        <span className="text-xs text-gray-500 w-28 shrink-0">Врач</span>
+                        <span className="text-sm font-medium text-gray-900 flex-1 text-right truncate">
+                          {doc.doctor_name}
                         </span>
                       </div>
                     )}

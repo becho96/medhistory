@@ -311,6 +311,7 @@ async def get_document(
         "specialty": None,
         "document_subtype": None,
         "research_area": None,
+        "doctor_name": None,
         "summary": None,
         "orders_summary": None
     }
@@ -330,6 +331,7 @@ async def get_document(
             doc_dict["specialty"] = ", ".join(specialties) if specialties else None
             doc_dict["document_subtype"] = classification.get("document_subtype")
             doc_dict["research_area"] = classification.get("research_area")
+            doc_dict["doctor_name"] = classification.get("doctor_name")
             doc_dict["summary"] = extracted_data.get("summary")
             metadata_by_doc_id[str(document.id)] = {
                 "specialties": specialties,
@@ -402,12 +404,14 @@ async def update_document_meta(
     profile_user_id: uuid.UUID = Depends(get_profile_user_id),
     db: AsyncSession = Depends(get_db),
 ):
-    """Manually fill required document fields (date, patient name) missing from AI extraction.
+    """Manually fill required document fields (date, patient name, doctor name) missing from AI extraction.
 
-    Setting ``document_date`` is what re-enables read-time auto-close of this
-    document's referrals: without a date the ordering versus other documents is
-    unknown, so nothing is auto-closed. Relative reminder deadlines
-    ("через N месяцев") are re-materialized from the new date.
+    ``document_date``/``patient_name`` are PostgreSQL columns; ``doctor_name``
+    is stored in MongoDB (classification.doctor_name) — each field is routed to
+    its backing store. Setting ``document_date`` is what re-enables read-time
+    auto-close of this document's referrals: without a date the ordering versus
+    other documents is unknown, so nothing is auto-closed. Relative reminder
+    deadlines ("через N месяцев") are re-materialized from the new date.
     """
     updates = body.model_dump(exclude_unset=True)
     if not updates:
@@ -428,6 +432,8 @@ async def update_document_meta(
         )
 
     date_changed = False
+    doctor_name_changed = False
+    new_doctor_name: Optional[str] = None
     if "document_date" in updates:
         new_date = updates["document_date"]
         if new_date and new_date > date.today():
@@ -440,8 +446,21 @@ async def update_document_meta(
     if "patient_name" in updates:
         name = (updates["patient_name"] or "").strip()
         document.patient_name = name or None
+    if "doctor_name" in updates:
+        new_doctor_name = (updates["doctor_name"] or "").strip() or None
+        doctor_name_changed = True
 
     await db.commit()
+
+    # doctor_name хранится в MongoDB (classification.doctor_name) — пишем туда.
+    if doctor_name_changed:
+        await document_metadata_collection.update_one(
+            {"document_id": str(document.id)},
+            {"$set": {
+                "classification.doctor_name": new_doctor_name,
+                "updated_at": datetime.utcnow(),
+            }},
+        )
 
     # Сроки относительных напоминаний считаются от document_date —
     # пере-материализуем строки документа. Soft-fail: не блокируем ответ.
@@ -464,6 +483,7 @@ async def update_document_meta(
         "id": str(document.id),
         "document_date": document.document_date.isoformat() if document.document_date else None,
         "patient_name": document.patient_name,
+        "doctor_name": new_doctor_name if doctor_name_changed else None,
     }
 
 

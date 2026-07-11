@@ -118,6 +118,7 @@ export default function Dashboard() {
       <RemindersCard
         onAdd={() => setReminderForm({ open: true, reminder: null })}
         onOpen={(reminder) => setReminderForm({ open: true, reminder })}
+        onOpenDocument={(id) => setSelectedDocumentId(id)}
       />
 
       {/* Recent Documents */}

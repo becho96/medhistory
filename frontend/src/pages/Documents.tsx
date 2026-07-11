@@ -9,8 +9,10 @@ import DocumentFilters, { DocumentFilterValues } from '../components/Documents/D
 import InterpretationConfirmModal from '../components/Documents/InterpretationConfirmModal'
 import DocumentModal from '../components/Documents/DocumentModal'
 import DocumentListItem from '../components/Documents/DocumentListItem'
+import RemindersCard from '../components/Reminders/RemindersCard'
+import ReminderFormModal from '../components/Reminders/ReminderFormModal'
 
-import type { TimelineEvent } from '../types'
+import type { TimelineEvent, Reminder } from '../types'
 import 'vis-timeline/styles/vis-timeline-graph2d.min.css'
 
 const ITEMS_PER_PAGE = 50
@@ -108,6 +110,7 @@ export default function Documents() {
   const [labsByDoc, setLabsByDoc] = useState<Record<string, Array<{ test_name: string; value: string; unit?: string | null; reference_range?: string | null; flag?: string | null }>>>({})
   const [labsSummary, setLabsSummary] = useState<Record<string, { has_labs: boolean; count: number }>>({})
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null)
+  const [reminderForm, setReminderForm] = useState<{ open: boolean; reminder: Reminder | null }>({ open: false, reminder: null })
 
   // Semantic search: input, debounced query, and result query
   const [searchInput, setSearchInput] = useState('')
@@ -989,6 +992,13 @@ export default function Documents() {
         </button>
       </div>
 
+      {/* Reminders */}
+      <RemindersCard
+        onAdd={() => setReminderForm({ open: true, reminder: null })}
+        onOpen={(reminder) => setReminderForm({ open: true, reminder })}
+        onOpenDocument={(id) => setSelectedDocumentId(id)}
+      />
+
       {/* Filters */}
       <DocumentFilters
         filters={filters}
@@ -1578,6 +1588,16 @@ export default function Documents() {
       <DocumentModal
         documentId={selectedDocumentId}
         onClose={() => setSelectedDocumentId(null)}
+      />
+
+      <ReminderFormModal
+        isOpen={reminderForm.open}
+        reminder={reminderForm.reminder}
+        onClose={() => setReminderForm({ open: false, reminder: null })}
+        onOpenDocument={(docId) => {
+          setReminderForm({ open: false, reminder: null })
+          setSelectedDocumentId(docId)
+        }}
       />
     </div>
   )
