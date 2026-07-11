@@ -222,6 +222,7 @@ export interface Reminder {
   source_document_title?: string | null
   source_document_date?: string | null
   source_specialty?: string | null
+  source_doctor_name?: string | null
   completed_document_id?: string | null
   created_at?: string | null
 }

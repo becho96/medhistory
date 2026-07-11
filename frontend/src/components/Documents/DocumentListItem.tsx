@@ -1,4 +1,4 @@
-import { FileText, Download, Trash2, FlaskConical, AlertTriangle, CheckCircle2 } from 'lucide-react'
+import { FileText, Download, Trash2, FlaskConical, AlertTriangle, CheckCircle2, CalendarOff } from 'lucide-react'
 import { format } from 'date-fns'
 import type { DocumentOrdersSummary } from '../../types'
 
@@ -71,6 +71,15 @@ export default function DocumentListItem({
           {doc.document_type || '—'}
           {doc.document_date && ` · ${format(new Date(doc.document_date), 'dd.MM.yy')}`}
         </p>
+        {!doc.document_date && (
+          <span
+            className="mt-1 inline-flex max-w-full items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700"
+            title="У документа нет даты — добавьте её в карточке, чтобы назначения закрывались корректно"
+          >
+            <CalendarOff className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">Добавьте дату</span>
+          </span>
+        )}
         {!!doc.orders_summary?.total && (
           <div
             className={`mt-1 inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 py-0.5 text-[11px] font-medium ${

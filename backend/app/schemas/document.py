@@ -18,7 +18,8 @@ class DocumentMetadata(BaseModel):
     document_date: Optional[date] = None
     patient_name: Optional[str] = None
     medical_facility: Optional[str] = None
-    
+    doctor_name: Optional[str] = None  # ФИО врача, выдавшего документ/направление
+
     # MongoDB classification fields
     document_subtype: Optional[str] = None  # Required for some types
     research_area: Optional[str] = None  # Only for "Инструментальное исследование"
@@ -59,6 +60,12 @@ class DocumentOrdersSummary(BaseModel):
 
 class DocumentOrderStatusUpdateRequest(BaseModel):
     status: Literal["pending", "completed", "not_required", "incorrect"]
+
+
+class DocumentMetaUpdateRequest(BaseModel):
+    """Manual fill-in of required fields missing from AI extraction."""
+    document_date: Optional[date] = None
+    patient_name: Optional[str] = Field(None, max_length=255)
 
 class Document(DocumentBase):
     id: uuid.UUID

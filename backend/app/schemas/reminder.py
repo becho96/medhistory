@@ -45,6 +45,7 @@ class ReminderRead(BaseModel):
     source_document_title: Optional[str] = None
     source_document_date: Optional[date] = None
     source_specialty: Optional[str] = None  # специальность приёма, где назначили
+    source_doctor_name: Optional[str] = None  # ФИО врача, назначившего
 
     # Автозакрытие по подходящему документу (read-time overlay)
     completed_document_id: Optional[uuid.UUID] = None

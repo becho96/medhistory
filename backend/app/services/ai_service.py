@@ -206,6 +206,7 @@ class AIService:
   "document_date": "YYYY-MM-DD",
   "patient_name": "Фамилия И.О.",
   "medical_facility": "название учреждения",
+  "doctor_name": "ФИО врача, выдавшего документ, в формате Фамилия И.О., или null",
   "document_language": "ISO 639-1 код языка документа (например: ru, en, nl, de, fr)",
   "confidence": 0.95,
   "summary": "краткое содержание",
@@ -288,7 +289,9 @@ class AIService:
 
 1. document_type - ВСЕГДА ОБЯЗАТЕЛЬНО, используй точное название из списка выше
 2. Дата документа - это дата процедуры/приема, НЕ дата печати
-3. Формат ФИО: "Иванов И.И." (с точками)
+3. Формат ФИО: "Иванов И.И." (с точками). doctor_name - ФИО врача, который вёл приём/
+   выдал заключение или направление (лечащий/консультирующий врач), если оно указано;
+   иначе null. Не путай с пациентом (patient_name).
 4. Специальности (specialties) - СУЩЕСТВИТЕЛЬНЫЕ: "Кардиология", а НЕ "Кардиолог"
 5. Если информация не найдена - используй null
 6. confidence (0.0-1.0) - твоя уверенность в классификации
@@ -399,6 +402,7 @@ document_subtype, research_area, specialties, summary, patient_name и medical_f
                 document_date=data.get("document_date"),
                 patient_name=data.get("patient_name"),
                 medical_facility=data.get("medical_facility"),
+                doctor_name=data.get("doctor_name"),
                 
                 # MongoDB classification fields
                 document_subtype=data.get("document_subtype"),

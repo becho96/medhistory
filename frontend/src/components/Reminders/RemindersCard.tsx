@@ -16,7 +16,7 @@ const URGENCY_STYLE: Record<ReminderUrgency, { badge: string; badgeClass: string
   urgent: { badge: 'Скоро', badgeClass: 'bg-amber-100 text-amber-700', dot: 'bg-amber-500' },
   soon: { badge: 'На горизонте', badgeClass: 'bg-amber-50 text-amber-600', dot: 'bg-amber-400' },
   planned: { badge: 'Запланировано', badgeClass: 'bg-emerald-50 text-emerald-600', dot: 'bg-emerald-400' },
-  no_date: { badge: 'Без срока', badgeClass: 'bg-gray-100 text-gray-500', dot: 'bg-gray-300' },
+  no_date: { badge: '', badgeClass: '', dot: 'bg-gray-300' },
 }
 
 const KIND_META: Record<ReminderKind, { label: string; Icon: typeof Stethoscope }> = {
@@ -28,12 +28,7 @@ const KIND_META: Record<ReminderKind, { label: string; Icon: typeof Stethoscope 
 const formatDate = (value?: string | null) =>
   value ? format(parseISO(value), 'd MMMM yyyy', { locale: ru }) : ''
 
-const contextLine = (r: Reminder): string =>
-  r.source_specialty
-    ? `Назначено после приёма — ${r.source_specialty}`
-    : (KIND_META[r.kind] ?? KIND_META.referral_research).label
-
-const dueText = (r: Reminder): string => {
+const dueText = (r: Reminder): string | null => {
   switch (r.urgency_level) {
     case 'overdue':
       return `Срок был ${formatDate(r.due_date)}. Если ещё актуально — стоит запланировать`
@@ -44,8 +39,38 @@ const dueText = (r: Reminder): string => {
     case 'planned':
       return `Запланировано на ${formatDate(r.due_date)}`
     default:
-      return 'Срок не указан — можно уточнить у врача'
+      return null
   }
+}
+
+// Плашка «кто направил»: специализация приёма + ФИО врача, иначе тип напоминания.
+function ReferrerChip({ reminder }: { reminder: Reminder }) {
+  const kind = KIND_META[reminder.kind] ?? KIND_META.referral_research
+  const specialty = reminder.source_specialty || reminder.target_specialty
+  const doctor = reminder.source_doctor_name
+
+  if (specialty) {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[12px] text-slate-700">
+        <Stethoscope className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+        <span className="font-semibold">{specialty}</span>
+        {doctor && (
+          <>
+            <span className="text-slate-300">·</span>
+            <span>{doctor}</span>
+          </>
+        )}
+      </span>
+    )
+  }
+
+  const KindIcon = kind.Icon
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[12px] text-slate-700">
+      <KindIcon className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+      <span className="font-medium">{kind.label}</span>
+    </span>
+  )
 }
 
 export default function RemindersCard({ onAdd, onOpen }: RemindersCardProps) {
@@ -95,8 +120,7 @@ export default function RemindersCard({ onAdd, onOpen }: RemindersCardProps) {
         <div className="space-y-2.5">
           {items.map((r) => {
             const urgency = URGENCY_STYLE[r.urgency_level]
-            const kind = KIND_META[r.kind] ?? KIND_META.referral_research
-            const KindIcon = kind.Icon
+            const due = dueText(r)
             return (
               <div
                 key={r.id}
@@ -110,15 +134,16 @@ export default function RemindersCard({ onAdd, onOpen }: RemindersCardProps) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-[14px] font-medium text-gray-900">{r.title}</span>
-                    <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium ${urgency.badgeClass}`}>
-                      {urgency.badge}
-                    </span>
+                    {urgency.badge && (
+                      <span className={`text-[11px] px-1.5 py-0.5 rounded-md font-medium ${urgency.badgeClass}`}>
+                        {urgency.badge}
+                      </span>
+                    )}
                   </div>
-                  <p className="text-[12.5px] text-gray-500 mt-0.5 flex items-center gap-1.5">
-                    <KindIcon className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-                    <span className="truncate">{contextLine(r)}</span>
-                  </p>
-                  <p className="text-[12.5px] text-gray-600 mt-0.5">{dueText(r)}</p>
+                  <div className="mt-1.5">
+                    <ReferrerChip reminder={r} />
+                  </div>
+                  {due && <p className="text-[12.5px] text-gray-600 mt-1.5">{due}</p>}
                 </div>
                 <div className="flex items-center gap-1 shrink-0" onClick={stop}>
                   <button

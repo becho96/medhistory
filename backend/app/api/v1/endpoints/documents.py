@@ -7,7 +7,7 @@ from io import BytesIO
 import uuid
 import logging
 from urllib.parse import quote
-from datetime import datetime
+from datetime import datetime, date
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +21,7 @@ from app.schemas.document import (
     DocumentWithMetadata,
     DocumentUploadResponse,
     DocumentOrderStatusUpdateRequest,
+    DocumentMetaUpdateRequest,
 )
 from app.services.document_service import DocumentService
 from app.services.document_search_service import search_documents_semantic
@@ -391,6 +392,79 @@ async def get_document_content(
         tables=extracted_data.get("tables") or [],
         lab_results=extracted_data.get("lab_results") or [],
     )
+
+
+@router.patch("/{document_id}")
+async def update_document_meta(
+    document_id: uuid.UUID,
+    body: DocumentMetaUpdateRequest,
+    current_user: User = Depends(get_current_user),
+    profile_user_id: uuid.UUID = Depends(get_profile_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    """Manually fill required document fields (date, patient name) missing from AI extraction.
+
+    Setting ``document_date`` is what re-enables read-time auto-close of this
+    document's referrals: without a date the ordering versus other documents is
+    unknown, so nothing is auto-closed. Relative reminder deadlines
+    ("через N месяцев") are re-materialized from the new date.
+    """
+    updates = body.model_dump(exclude_unset=True)
+    if not updates:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Нет полей для обновления",
+        )
+
+    document = await DocumentService.get_document_by_id(
+        document_id=document_id,
+        user_id=profile_user_id,
+        db=db,
+    )
+    if not document:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Документ не найден",
+        )
+
+    date_changed = False
+    if "document_date" in updates:
+        new_date = updates["document_date"]
+        if new_date and new_date > date.today():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Дата документа не может быть в будущем",
+            )
+        document.document_date = new_date
+        date_changed = True
+    if "patient_name" in updates:
+        name = (updates["patient_name"] or "").strip()
+        document.patient_name = name or None
+
+    await db.commit()
+
+    # Сроки относительных напоминаний считаются от document_date —
+    # пере-материализуем строки документа. Soft-fail: не блокируем ответ.
+    if date_changed:
+        try:
+            from app.services.reminder_service import sync_document_reminders
+            orders: List[Dict[str, Any]] = []
+            if document.mongodb_metadata_id:
+                mongo_doc = await document_metadata_collection.find_one(
+                    {"document_id": str(document.id)},
+                    {"extracted_data.orders": 1},
+                )
+                orders = ((mongo_doc or {}).get("extracted_data", {}) or {}).get("orders") or []
+            await sync_document_reminders(document, orders, db)
+            await db.commit()
+        except Exception as e:
+            logger.warning("Reminder re-sync skipped for %s: %s", document.id, e)
+
+    return {
+        "id": str(document.id),
+        "document_date": document.document_date.isoformat() if document.document_date else None,
+        "patient_name": document.patient_name,
+    }
 
 
 @router.patch("/{document_id}/orders/{order_index}/status")

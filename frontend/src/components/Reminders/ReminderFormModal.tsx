@@ -111,7 +111,7 @@ export default function ReminderFormModal({ isOpen, onClose, reminder, onOpenDoc
               <p className="text-[13px] text-emerald-800 flex items-center gap-1.5">
                 <Stethoscope className="h-4 w-4 shrink-0" />
                 {reminder?.source_specialty
-                  ? `Назначено после приёма — ${reminder.source_specialty}`
+                  ? `Назначено после приёма — ${reminder.source_specialty}${reminder.source_doctor_name ? `, ${reminder.source_doctor_name}` : ''}`
                   : 'Назначено после приёма врача'}
               </p>
               {reminder?.source_document_id && onOpenDocument && (

@@ -227,6 +227,7 @@ class DocumentService:
                 "document_subtype": metadata.document_subtype,
                 "research_area": metadata.research_area,
                 "specialties": metadata.specialties,  # Array or null
+                "doctor_name": metadata.doctor_name,
                 "document_language": metadata.document_language,
                 "confidence": metadata.confidence
             },

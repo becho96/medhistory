@@ -214,17 +214,21 @@ def _reminder_as_order(row: Reminder) -> Dict[str, Any]:
 
 
 def _find_match(row: Reminder, source_date: Optional[date], candidates: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+    # Без даты документа-источника очерёдность во времени неизвестна: любой
+    # подходящий документ (в т.ч. более ранний, «задним числом») закрыл бы
+    # назначение. Пока пользователь не проставит дату — не закрываем.
+    if source_date is None:
+        return None
     order = _reminder_as_order(row)
     for candidate in candidates:
         if candidate["id"] == row.source_document_id:
             continue
         candidate_date = candidate.get("document_date")
         candidate_created = candidate.get("created_at")
-        if source_date:
-            if candidate_date and candidate_date < source_date:
-                continue
-            if not candidate_date and candidate_created and candidate_created.date() < source_date:
-                continue
+        if candidate_date and candidate_date < source_date:
+            continue
+        if not candidate_date and candidate_created and candidate_created.date() < source_date:
+            continue
         if _order_matches_candidate(order, candidate):
             return candidate
     return None
@@ -248,6 +252,7 @@ async def list_reminders(
     source_ids = [r.source_document_id for r in reminders if r.source_document_id]
     source_docs: Dict[uuid.UUID, DocumentModel] = {}
     source_specialty_by_id: Dict[str, Optional[str]] = {}
+    source_doctor_by_id: Dict[str, Optional[str]] = {}
     if source_ids:
         src_result = await db.execute(
             select(DocumentModel).where(DocumentModel.id.in_(source_ids))
@@ -257,11 +262,13 @@ async def list_reminders(
         src_str_ids = [str(i) for i in source_ids]
         cursor = document_metadata_collection.find(
             {"document_id": {"$in": src_str_ids}},
-            {"document_id": 1, "classification.specialties": 1},
+            {"document_id": 1, "classification.specialties": 1, "classification.doctor_name": 1},
         )
         for m in await cursor.to_list(length=len(src_str_ids)):
-            specialties = (m.get("classification") or {}).get("specialties") or []
+            classification = m.get("classification") or {}
+            specialties = classification.get("specialties") or []
             source_specialty_by_id[m.get("document_id")] = ", ".join(specialties) if specialties else None
+            source_doctor_by_id[m.get("document_id")] = classification.get("doctor_name") or None
 
     candidates = await _load_candidates(user_id, db)
 
@@ -300,6 +307,7 @@ async def list_reminders(
             "source_document_title": source_doc.original_filename if source_doc else None,
             "source_document_date": source_date,
             "source_specialty": source_specialty_by_id.get(str(row.source_document_id)) if row.source_document_id else None,
+            "source_doctor_name": source_doctor_by_id.get(str(row.source_document_id)) if row.source_document_id else None,
             "completed_document_id": completed_document_id,
             "created_at": row.created_at,
         })

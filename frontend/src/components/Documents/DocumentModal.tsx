@@ -7,6 +7,7 @@ import { documentsService } from '../../services/documents'
 import type { DocumentOrderManualStatus } from '../../services/documents'
 import type { DocumentExtractedTable } from '../../types'
 import LabResultsTable from './LabResultsTable'
+import MissingMetaField from './MissingMetaField'
 
 interface DocumentModalProps {
   documentId: string | null
@@ -134,6 +135,32 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
       toast.error('Не удалось обновить статус назначения')
     },
   })
+
+  const metaMutation = useMutation({
+    mutationFn: ({
+      documentId,
+      updates,
+    }: {
+      documentId: string
+      updates: { document_date?: string; patient_name?: string }
+    }) => documentsService.updateDocumentMeta(documentId, updates),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['document', variables.documentId] })
+      queryClient.invalidateQueries({ queryKey: ['documents'] })
+      queryClient.invalidateQueries({ queryKey: ['documents-count'] })
+      queryClient.invalidateQueries({ queryKey: ['documents-all'] })
+      queryClient.invalidateQueries({ queryKey: ['reminders'] })
+      toast.success('Данные документа обновлены')
+    },
+    onError: () => {
+      toast.error('Не удалось сохранить данные документа')
+    },
+  })
+
+  const handleSaveMeta = (updates: { document_date?: string; patient_name?: string }) => {
+    if (!doc) return
+    metaMutation.mutate({ documentId: doc.id, updates })
+  }
 
   const handleDownload = () => {
     if (!doc) return
@@ -413,6 +440,34 @@ export default function DocumentModal({ documentId, onClose }: DocumentModalProp
               {/* Info tab */}
               {!showFullContent && (!isLabResult || activeTab === 'info') && (
                 <div className="p-4 sm:p-6 space-y-4">
+                  {/* Situational editors for required fields missing after AI extraction */}
+                  {doc.processing_status === 'completed' && (!doc.document_date || !doc.patient_name) && (
+                    <div className="space-y-2">
+                      {!doc.document_date && (
+                        <MissingMetaField
+                          key={`date-${doc.id}`}
+                          icon={<Calendar className="h-4 w-4" />}
+                          label="Дата документа"
+                          type="date"
+                          hint="Пока дата не указана, назначения из этого документа не закрываются автоматически — мы не можем определить, какие документы были после него."
+                          isSaving={metaMutation.isPending}
+                          onSave={(value) => handleSaveMeta({ document_date: value })}
+                        />
+                      )}
+                      {!doc.patient_name && (
+                        <MissingMetaField
+                          key={`name-${doc.id}`}
+                          icon={<User className="h-4 w-4" />}
+                          label="ФИО пациента"
+                          type="text"
+                          placeholder="Иванов Иван Иванович"
+                          isSaving={metaMutation.isPending}
+                          onSave={(value) => handleSaveMeta({ patient_name: value })}
+                        />
+                      )}
+                    </div>
+                  )}
+
                   {/* Compact metadata rows */}
                   <div className="bg-gray-50 rounded-xl overflow-hidden divide-y divide-gray-100">
                     {doc.document_date && (
