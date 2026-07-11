@@ -13,6 +13,7 @@ from app.models.health_event import HealthEvent
 from app.models.consent import UserConsent
 from app.models.feedback import Feedback
 from app.models.reminder import Reminder
+from app.models.plan_override import PlanOverride
 
 __all__ = [
     "User",
@@ -42,5 +43,7 @@ __all__ = [
     "Feedback",
     # Reminders
     "Reminder",
+    # Treatment-plan overrides
+    "PlanOverride",
 ]
 

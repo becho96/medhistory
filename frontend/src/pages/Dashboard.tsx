@@ -9,6 +9,7 @@ import DocumentListItem from '../components/Documents/DocumentListItem'
 import DocumentModal from '../components/Documents/DocumentModal'
 import RemindersCard from '../components/Reminders/RemindersCard'
 import ReminderFormModal from '../components/Reminders/ReminderFormModal'
+import TreatmentPlanCard from '../components/Dashboard/TreatmentPlanCard'
 import type { Reminder } from '../types'
 import { format } from 'date-fns'
 import { ru } from 'date-fns/locale'
@@ -113,6 +114,9 @@ export default function Dashboard() {
           </div>
         </button>
       </div>
+
+      {/* Treatment plan — entry point */}
+      <TreatmentPlanCard />
 
       {/* Reminders */}
       <RemindersCard
