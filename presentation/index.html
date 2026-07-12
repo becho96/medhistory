@@ -1,0 +1,448 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MedHistory для клиник — помогаем врачу фокусироваться на важном</title>
+  <meta name="description" content="MedHistory собирает полный контекст пациента из разрозненных документов и подсвечивает ключевое, чтобы врач тратил время только на важное. Встраивается в вашу МИС." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2032%2032'%3E%3Crect%20width='32'%20height='32'%20rx='8'%20fill='%230f3e17'/%3E%3Cpath%20d='M16%206c0%205%204%206.5%204%2012a4%204%200%201%201-8%200c0-5.5%204-7%204-12z'%20fill='%23fffefc'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- ============================ NAV ============================ -->
+  <header class="nav">
+    <div class="container nav-inner">
+      <a class="brand" href="#top" aria-label="MedHistory">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 3c0 4 3 5 3 9a3 3 0 1 1-6 0c0-4 3-5 3-9z" fill="#fffefc"/>
+          </svg>
+        </span>
+        MedHistory
+      </a>
+      <nav class="nav-links">
+        <a href="#problem">Проблема</a>
+        <a href="#capabilities">Возможности</a>
+        <a href="#scenario">Сценарий приёма</a>
+        <a href="#integration">Интеграция</a>
+      </nav>
+      <a class="btn btn-forest" href="#contact">Обсудить пилот
+        <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#fffefc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </header>
+
+  <span id="top"></span>
+
+  <!-- ============================ HERO ============================ -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <p class="eyebrow">MedHistory для клиник и МИС</p>
+        <h1 class="display">Помогаем врачу фокусироваться только на&nbsp;важном</h1>
+        <p class="lead" style="margin-top:20px;">
+          Собираем полный контекст пациента из разрозненных документов, приводим его к
+          сравнимому виду и подсвечиваем ключевое. Врач видит суть за секунды —
+          и принимает решение сам. Встраивается в вашу МИС.
+        </p>
+        <div class="hero-actions">
+          <a class="btn btn-forest" href="#contact">Обсудить пилот
+            <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#fffefc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+          <a class="btn btn-ghost" href="#capabilities">Смотреть возможности</a>
+        </div>
+      </div>
+
+      <div class="hero-visual" aria-label="Превью продукта">
+        <!-- Preview 1: patient context card -->
+        <div class="card-inner">
+          <div class="mock-head">
+            <span class="mock-title">Контекст пациента</span>
+            <span class="mini-badge soft">14 документов</span>
+          </div>
+          <div class="mock-row"><span class="mock-key">Приёмы врачей</span><span class="mock-val">6</span></div>
+          <div class="mock-row"><span class="mock-key">Результаты анализов</span><span class="mock-val">5</span></div>
+          <div class="mock-row"><span class="mock-key">Исследования</span><span class="mock-val">3</span></div>
+        </div>
+        <!-- Preview 2: trend mini-chart -->
+        <div class="card-inner">
+          <div class="mock-head">
+            <span class="mock-title">ТТГ · динамика</span>
+            <span class="mini-badge outline">мЕд/л</span>
+          </div>
+          <div class="chart-wrap" aria-hidden="true">
+            <svg viewBox="0 0 320 96" preserveAspectRatio="none" role="img">
+              <rect x="0" y="34" width="320" height="30" fill="#e1f4df"></rect>
+              <polyline points="8,70 70,58 132,60 194,40 256,44 312,26" fill="none" stroke="#0f3e17" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></polyline>
+              <g fill="#0f3e17">
+                <circle cx="8" cy="70" r="3.5"/><circle cx="70" cy="58" r="3.5"/><circle cx="132" cy="60" r="3.5"/>
+                <circle cx="194" cy="40" r="3.5"/><circle cx="256" cy="44" r="3.5"/><circle cx="312" cy="26" r="3.5"/>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ PROBLEM ============================ -->
+  <section class="section" id="problem">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Проблема</p>
+        <h2 class="h">История пациента разбросана — и врач тратит приём на её сбор</h2>
+        <p class="lead">Пациент приходит с пакетом бумаг и фразой «я всё принёс». Прежде чем
+          начать думать о лечении, врач вынужден заниматься археологией.</p>
+      </div>
+      <div class="grid grid-3">
+        <div class="card-keylime card">
+          <h3 class="h-sm">Разрозненность</h3>
+          <p class="body" style="margin-top:12px;">История размазана по PDF, фото, бумаге и разным
+            системам. Единой картины нет ни у пациента, ни у врача.</p>
+        </div>
+        <div class="card-keylime card">
+          <h3 class="h-sm">Потерянное время</h3>
+          <p class="body" style="margin-top:12px;">Минуты приёма уходят на чтение и сопоставление
+            вместо разговора с пациентом и решения.</p>
+        </div>
+        <div class="card-keylime card">
+          <h3 class="h-sm">Упущенное важное</h3>
+          <p class="body" style="margin-top:12px;">В шуме теряются незакрытые направления,
+            отклонения показателей и динамика между визитами.</p>
+        </div>
+      </div>
+
+      <!-- Cost row -->
+      <div class="grid grid-3" style="margin-top:21px;">
+        <div class="card-mint card">
+          <p class="eyebrow">Цена · время</p>
+          <p class="body">Меньше пропускная способность врача — каждый приём дороже.</p>
+        </div>
+        <div class="card-mint card">
+          <p class="eyebrow">Цена · качество</p>
+          <p class="body">Упущенный follow-up или отклонение — это риск для пациента и репутации.</p>
+        </div>
+        <div class="card-mint card">
+          <p class="eyebrow">Цена · лояльность</p>
+          <p class="body">Пациент, которого «ведут» внимательно, возвращается и рекомендует.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ MANIFESTO ============================ -->
+  <section class="section section-tint-sage">
+    <div class="container manifesto">
+      <p class="eyebrow">Во что мы верим</p>
+      <h2 class="h-lg">Ответственность за здоровье лежит на враче — и должна там оставаться</h2>
+      <p class="lead" style="margin-top:20px; color:var(--color-forest-ink);">
+        Мы не строим искусственный интеллект, который лечит вместо врача. Чтобы врач принимал
+        максимально верные решения, его нужно избавить от рутины, которая на приёме отвлекает
+        от главного. Мы делаем это, потому что детально изучаем работу врачей и проектируем
+        инструменты под реальный приём.
+      </p>
+      <div class="manifesto-list">
+        <div class="manifesto-item">
+          <div class="num">01</div>
+          <p class="lead-sm">Решение и ответственность — за врачом. Мы усиливаем, а не заменяем.</p>
+        </div>
+        <div class="manifesto-item">
+          <div class="num">02</div>
+          <p class="lead-sm">Убираем рутину сбора и разбора истории, чтобы освободить время на важное.</p>
+        </div>
+        <div class="manifesto-item">
+          <div class="num">03</div>
+          <p class="lead-sm">Изучаем реальный приём и проектируем инструменты под него, а не наоборот.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ SOLUTION ============================ -->
+  <section class="section">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Решение</p>
+        <h2 class="h">Полный контекст плюс фокус на важном</h2>
+      </div>
+      <div class="grid grid-2">
+        <div class="card-sage card">
+          <p class="eyebrow">Полный контекст</p>
+          <h3 class="h-sm">Собрали, структурировали, свели к сравнимому виду</h3>
+          <p class="body" style="margin-top:14px;">Любой документ пациента становится частью единой
+            карты: тип, врач, дата, специальность, краткое содержание, значения анализов —
+            в одном месте и в сопоставимой форме.</p>
+        </div>
+        <div class="card-slate card">
+          <p class="eyebrow">Фокус на важном</p>
+          <h3 class="h-sm">Подсвечиваем отклонения, незакрытые назначения, динамику</h3>
+          <p class="body" style="margin-top:14px;">Система выносит на первый план то, что легко
+            потерять в потоке: значения вне нормы, невыполненные направления, тренды показателей
+            во времени.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ PIPELINE ============================ -->
+  <section class="section section-tint-keylime">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Как это работает</p>
+        <h2 class="h">От документа до сравнимого контекста</h2>
+        <p class="lead">Один и тот же показатель из разных лабораторий, единиц и языков сводится
+          к одному сравнимому ряду. Именно это делает контекст пригодным для сравнения во
+          времени — а не просто набором распознанных файлов.</p>
+      </div>
+      <div class="pipeline">
+        <span class="pipe-step">Документ · фото / PDF / DOCX</span>
+        <span class="pipe-arrow">→</span>
+        <span class="pipe-step">Структура · тип, врач, дата, специальность</span>
+        <span class="pipe-arrow">→</span>
+        <span class="pipe-step">Анализы · значения и единицы</span>
+        <span class="pipe-arrow">→</span>
+        <span class="pipe-step">Сравнимый вид</span>
+        <span class="pipe-arrow">→</span>
+        <span class="pipe-step">Тренды · напоминания · ассистент</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ CAPABILITIES ============================ -->
+  <section class="section" id="capabilities">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Возможности</p>
+        <h2 class="h">Что получает врач</h2>
+      </div>
+
+      <!-- Feature 1 -->
+      <div class="feature" style="margin-bottom:64px;">
+        <div class="feature-copy">
+          <span class="badge">01 · Контекст</span>
+          <h3 class="h">Единый структурированный контекст пациента</h3>
+          <p class="lead">Приём любого документа и превращение его в данные: тип, специальность,
+            врач, дата, краткое содержание, таблицы и назначения. Оригинал сохраняется.</p>
+          <ul class="feature-list">
+            <li>Внешние документы пациента за секунды становятся частью карты</li>
+            <li>На выходе — структурированные данные, а не скан</li>
+            <li>Автоматическое определение типа и специальности</li>
+          </ul>
+        </div>
+        <div class="feature-media">
+          <div class="card-inner">
+            <div class="mock-head"><span class="mock-title">Карточка документа</span><span class="mini-badge soft">Кардиология</span></div>
+            <div class="mock-row"><span class="mock-key">Тип</span><span class="mock-val">Приём врача</span></div>
+            <div class="mock-row"><span class="mock-key">Врач</span><span class="mock-val">Иванова А. П.</span></div>
+            <div class="mock-row"><span class="mock-key">Дата</span><span class="mock-val">14.05.2026</span></div>
+            <div class="mock-row"><span class="mock-key">Назначения</span><span class="mock-val">2</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature 2 — killer -->
+      <div class="feature reverse" style="margin-bottom:64px;">
+        <div class="feature-copy">
+          <span class="badge tag-killer">★ 02 · Динамика</span>
+          <h3 class="h">Сравнимые показатели во времени</h3>
+          <p class="lead">Один показатель из разных лабораторий, единиц и языков — это одна линия
+            тренда с референсным коридором. Динамика видна за две секунды.</p>
+          <ul class="feature-list">
+            <li>Обычно два анализа из двух лабораторий — две несравнимые строки</li>
+            <li>Мы показываем одну линию с нормой и переходом к источнику</li>
+            <li>Референс учитывает пол пациента</li>
+          </ul>
+        </div>
+        <div class="feature-media">
+          <div class="card-inner">
+            <div class="mock-head"><span class="mock-title">Гемоглобин · г/л</span><span class="mini-badge outline">2023 — 2026</span></div>
+            <div class="chart-wrap" aria-hidden="true">
+              <svg viewBox="0 0 420 180" role="img">
+                <rect x="0" y="60" width="420" height="60" fill="#e1f4df"></rect>
+                <line x1="0" y1="60" x2="420" y2="60" stroke="#b1dbb8" stroke-width="1"></line>
+                <line x1="0" y1="120" x2="420" y2="120" stroke="#b1dbb8" stroke-width="1"></line>
+                <polyline points="20,150 100,132 180,138 260,96 340,104 400,72" fill="none" stroke="#0f3e17" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></polyline>
+                <g fill="#0f3e17">
+                  <circle cx="20" cy="150" r="5"/><circle cx="100" cy="132" r="5"/><circle cx="180" cy="138" r="5"/>
+                  <circle cx="260" cy="96" r="5"/><circle cx="340" cy="104" r="5"/><circle cx="400" cy="72" r="5"/>
+                </g>
+                <text x="6" y="54" font-family="Inter, sans-serif" font-size="11" fill="#5a6b5c">норма</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature 3 — highlight -->
+      <div class="feature" style="margin-bottom:64px;">
+        <div class="feature-copy">
+          <span class="badge">03 · Внимание</span>
+          <h3 class="h">Подсветка пропущенного — «вторая пара глаз»</h3>
+          <p class="lead">Незакрытые назначения и направления автоматически ставятся на трекинг и
+            закрываются, когда появляется результат. Значения вне нормы выносятся на первый план.</p>
+          <ul class="feature-list">
+            <li>Система отслеживает незакрытые петли между визитами</li>
+            <li>Помечает отклонения показателей от референса</li>
+            <li>То, что легко теряется в шуме, — на виду</li>
+          </ul>
+        </div>
+        <div class="feature-media">
+          <div class="card-inner">
+            <div class="mock-head"><span class="mock-title">Требуют внимания</span><span class="mini-badge soft">3</span></div>
+            <div class="mock-row"><span class="mock-key">УЗИ щитовидной железы</span><span class="mini-badge solid">просрочено</span></div>
+            <div class="mock-row"><span class="mock-key">Повторный приём эндокринолога</span><span class="mini-badge outline">через 3 дня</span></div>
+            <div class="mock-row"><span class="mock-key">ТТГ выше нормы</span><span class="mini-badge outline">отклонение</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature 4 — assistant -->
+      <div class="feature reverse">
+        <div class="feature-copy">
+          <span class="badge">04 · Ассистент</span>
+          <h3 class="h">Ассистент по всей карте пациента</h3>
+          <p class="lead">Интерпретация документов на человеческом языке и ассистент, который
+            отвечает по всей карте — со ссылками на даты и строго по документам пациента.</p>
+          <ul class="feature-list">
+            <li>Что в норме, что отклоняется и насколько, какая динамика</li>
+            <li>Ответы по анализам, приёмам, исследованиям и референсам</li>
+            <li>Сила — не в «мозговитости», а в опоре на реальные документы</li>
+          </ul>
+        </div>
+        <div class="feature-media">
+          <div class="card-inner stack-14">
+            <div class="chat-bubble chat-user">Как менялся гемоглобин за последний год?</div>
+            <div class="chat-bubble chat-ai">
+              За год гемоглобин вырос со 118 до 141&nbsp;г/л и вернулся в референсный коридор.
+              Последнее значение — в норме.
+              <span class="src">Источники: анализы от 12.06.2025, 18.11.2025, 03.05.2026</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ TRUST ============================ -->
+  <section class="section section-tint-mint">
+    <div class="container">
+      <div class="grid grid-2" style="align-items:center;">
+        <div>
+          <p class="eyebrow">Доверие к качеству</p>
+          <h2 class="h">Качество извлечения мы измеряем, а не декларируем</h2>
+        </div>
+        <div class="stack-21">
+          <p class="lead">Точность распознавания и краткого содержания проверяется воспроизводимо —
+            включая отдельную проверку на выдумки. Регрессии отслеживаются.</p>
+          <p class="lead"><strong>Принцип «не ставим диагноз».</strong> Система усиливает врача и
+            экономит его время; клиническое решение остаётся за человеком.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================ SCENARIO ============================ -->
+  <section class="section" id="scenario">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Сценарий приёма</p>
+        <h2 class="h">До, во время и после приёма — врач занят решением, а не рутиной</h2>
+      </div>
+      <div class="scenario">
+        <div class="scenario-step card card-keylime">
+          <span class="badge when">До приёма</span>
+          <h3 class="h-sm">Готовая сводка пациента</h3>
+          <p class="body" style="margin-top:12px;">Автособранный контекст и блок «на что обратить
+            внимание»: незакрытые направления, свежие отклонения, ключевая динамика.</p>
+        </div>
+        <div class="scenario-step card card-sage">
+          <span class="badge when">Во время</span>
+          <h3 class="h-sm">Контекст под рукой</h3>
+          <p class="body" style="margin-top:12px;">Врач видит тренды и историю без ручного поиска;
+            ассистент отвечает на уточнения прямо по карте.</p>
+        </div>
+        <div class="scenario-step card card-slate">
+          <span class="badge when">После</span>
+          <h3 class="h-sm">Ничего не теряется</h3>
+          <p class="body" style="margin-top:12px;">Назначил направление или повторный приём — система
+            ставит его на трекинг и закроет, когда придёт результат.</p>
+        </div>
+      </div>
+      <p class="lead" style="margin-top:28px;">Другой специалист получает тот же сравнимый контекст —
+        непрерывность сохраняется между врачами и визитами.</p>
+    </div>
+  </section>
+
+  <!-- ============================ INTEGRATION ============================ -->
+  <section class="section section-tint-keylime" id="integration">
+    <div class="container">
+      <div class="section-head">
+        <p class="eyebrow">Интеграция</p>
+        <h2 class="h">Встраивается в вашу МИС</h2>
+        <p class="lead">Наш слой работает рядом с МИС и обменивается данными через API — единая
+          точка контекста пациента. Интеграционный слой уже существует, его не нужно строить
+          с нуля под вас.</p>
+      </div>
+      <div class="integration-diagram">
+        <div class="int-node">
+          <p class="eyebrow" style="margin-bottom:6px;">Ваша сторона</p>
+          <h3 class="h-sm">МИС клиники</h3>
+        </div>
+        <div class="int-link">
+          <svg viewBox="0 0 46 16" fill="none"><path d="M2 8h42M38 3l6 5-6 5" stroke="#0f3e17" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          API
+        </div>
+        <div class="int-node" style="background:var(--color-sage-mist); border-color:transparent;">
+          <p class="eyebrow" style="margin-bottom:6px;">MedHistory</p>
+          <h3 class="h-sm">Слой контекста</h3>
+        </div>
+        <div class="int-link">
+          <svg viewBox="0 0 46 16" fill="none"><path d="M2 8h42M38 3l6 5-6 5" stroke="#0f3e17" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Врач
+        </div>
+        <div class="int-node">
+          <p class="eyebrow" style="margin-bottom:6px;">Результат</p>
+          <h3 class="h-sm">Контекст + подсветка</h3>
+        </div>
+      </div>
+      <p class="caption" style="margin-top:24px;">Модели встраивания: интеграция для МИС-вендора или
+        add-on рядом с МИС для клиники. Безопасность и требования 152-ФЗ обсуждаем отдельно под
+        контур клиники.</p>
+    </div>
+  </section>
+
+  <!-- ============================ CTA ============================ -->
+  <section class="section section-tint-sage" id="contact">
+    <div class="container cta-final">
+      <p class="eyebrow">Следующий шаг</p>
+      <h2 class="display">Запустим пилот на одном сценарии</h2>
+      <p class="lead">Узкий сценарий — например, автосводка пациента и трекинг направлений на
+        нескольких врачах — с измеримыми метриками: время на изучение истории и доля закрытых
+        направлений. Посчитаем эффект вместе.</p>
+      <a class="btn btn-forest-lg" href="mailto:hello@medhistory.ru?subject=Пилот%20MedHistory%20для%20клиники">
+        Обсудить пилот
+        <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="#fffefc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- ============================ FOOTER ============================ -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3c0 4 3 5 3 9a3 3 0 1 1-6 0c0-4 3-5 3-9z" fill="#fffefc"/></svg>
+        </span>
+        MedHistory
+      </div>
+      <p class="caption disclaimer">MedHistory усиливает врача и не ставит диагнозы. Клиническое
+        решение всегда остаётся за медицинским специалистом. medhistory.ru</p>
+    </div>
+  </footer>
+
+</body>
+</html>

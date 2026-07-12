@@ -126,6 +126,29 @@ Workflow запускается вручную через **Actions → Deploy t
    docker compose -f docker-compose.prod.yml --env-file .env.production up -d nginx
    ```
 
+## Runbook — B2B-презентация `medhistory.ru/b2b`
+
+Статический лендинг из [presentation/](../../presentation/) (`index.html` + `styles.css`),
+отдаётся напрямую nginx по пути `/b2b` на основном домене — отдельные DNS-запись и
+сертификат **не нужны**. В репозитории уже готовы: `location /b2b/` в основном HTTPS-блоке
+[nginx/nginx.conf](../../nginx/nginx.conf) (alias на смонтированный том) и монтирование
+`./presentation` в контейнер nginx ([docker-compose.prod.yml](../../docker-compose.prod.yml)).
+
+1. **Задеплоить код** (влитые изменения nginx.conf + монтирование + `presentation/`) и
+   перезапустить nginx:
+   ```bash
+   git pull        # или ручной workflow_dispatch, см. ниже
+   docker compose -f docker-compose.prod.yml --env-file .env.production up -d nginx
+   ```
+   Проверка: `curl -I https://medhistory.ru/b2b/` → `200`, страница открывается в браузере
+   по адресу https://medhistory.ru/b2b. Запрос `/b2b` без слэша делает 301 на `/b2b/`.
+
+**Обновление контента** презентации: правки в `presentation/*` подхватываются
+`up -d nginx` (том смонтирован read-only, пересборка образа не нужна).
+
+**Локальный предпросмотр:** `cd presentation && python3 -m http.server 8080` →
+http://localhost:8080.
+
 ## Полезные команды
 
 ```bash

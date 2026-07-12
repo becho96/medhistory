@@ -173,6 +173,8 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - certbot_certs:/etc/letsencrypt:ro
       - certbot_www:/var/www/certbot
+      # B2B presentation static content — served at medhistory.ru/b2b
+      - ./presentation:/usr/share/nginx/b2b:ro
     ports:
       - "${NGINX_PORT:-80}:80"
       - "443:443"
