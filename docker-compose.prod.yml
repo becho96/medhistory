@@ -85,6 +85,13 @@ services:
       MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-google/gemini-2.5-flash}
+      # Route outbound LLM HTTPS (OpenRouter/Anthropic) through an offshore
+      # proxy — the prod RU IP is geoblocked by OpenRouter (403). Internal
+      # http services (embeddings/minio) and DBs are excluded via NO_PROXY.
+      HTTPS_PROXY: ${HTTPS_PROXY:-}
+      https_proxy: ${HTTPS_PROXY:-}
+      NO_PROXY: ${NO_PROXY:-localhost,127.0.0.1,postgres,mongodb,minio,embeddings}
+      no_proxy: ${NO_PROXY:-localhost,127.0.0.1,postgres,mongodb,minio,embeddings}
       JWT_SECRET: ${JWT_SECRET}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
