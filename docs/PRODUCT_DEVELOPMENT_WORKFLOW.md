@@ -72,7 +72,6 @@ Priority labels:
    - Frontend changes: run `npm run build` or `npx tsc --noEmit` before marking ready.
    - UI changes: verify locally on dev build, not production.
    - Backend changes: run targeted tests where available.
-   - Document analysis changes: consider `benchmarks/document_analysis/`.
    - Never log PII or medical document contents; use IDs only.
 
 7. **Deploy**

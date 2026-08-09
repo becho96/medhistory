@@ -23,7 +23,6 @@
 - Auth deps: [backend/app/api/deps.py](backend/app/api/deps.py) — `get_current_user`, `get_db`
 - Frontend entry: [frontend/src/App.tsx](frontend/src/App.tsx)
 - JWT хранится в `localStorage` под ключом `auth_token`.
-- Benchmark качества анализа документов: [benchmarks/document_analysis/](benchmarks/document_analysis/) — версионируемая выборка + CLI для прогона prod-pipeline с подменяемой LLM (`run`/`score`/`compare`). README в папке.
 - Telegram-бот: отдельный сервис [bot/](bot/) — aiogram, long-polling, свой контейнер; backend-роутер `/api/v1/bot/*`.
 
 ## 4. Сборка и запуск

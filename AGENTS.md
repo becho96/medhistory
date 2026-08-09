@@ -25,7 +25,6 @@ User is a Russian-speaking solo developer. Explanations should be in Russian unl
 - Auth deps: [backend/app/api/deps.py](backend/app/api/deps.py): `get_current_user`, `get_db`.
 - Frontend entry: [frontend/src/App.tsx](frontend/src/App.tsx).
 - JWT is stored in `localStorage` as `auth_token`.
-- Document analysis benchmark: [benchmarks/document_analysis/](benchmarks/document_analysis/), with `run`, `score`, and `compare`.
 - Telegram bot: [bot/](bot/), aiogram long-polling, separate container; backend routes live under `/api/v1/bot/*`.
 
 ## 4. Build, Run, Verify
