@@ -24,7 +24,9 @@ class Settings(BaseSettings):
     # Output cap for extraction calls. Must fit the largest analysis JSON
     # (multi-page lab reports can have 50+ analytes) — too low truncates the
     # JSON and the parse falls back to an empty result.
-    OPENROUTER_MAX_TOKENS: int = 8000
+    # PDF уходит в модель целиком, вместе с полной транскрипцией текста в ответе:
+    # многостраничным документам 8000 не хватало и JSON обрывался на середине.
+    OPENROUTER_MAX_TOKENS: int = 32000
     
     # Authentication
     JWT_SECRET: str

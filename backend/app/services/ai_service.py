@@ -3,11 +3,15 @@ import httpx
 import json
 from typing import Optional, Tuple
 from io import BytesIO
-import PyPDF2
 from docx import Document as DocxDocument
 
 from app.core.config import settings
 from app.schemas.document import DocumentMetadata
+
+# Модель читает PDF нативно (и текстовый слой, и сканы). Движок задан явно,
+# чтобы OpenRouter не переключился на платный mistral-ocr.
+PDF_PARSER_PLUGINS = [{"id": "file-parser", "pdf": {"engine": "native"}}]
+
 
 class AIService:
     def __init__(self):
@@ -18,28 +22,18 @@ class AIService:
     async def analyze_document(self, file_bytes: bytes, file_type: str, filename: str) -> Tuple[DocumentMetadata, Optional[dict]]:
         """Analyze document and extract metadata using AI. Returns (metadata, usage)."""
         
+        plugins = None
+
         try:
             # Handle different file types
             if file_type == 'pdf':
-                # Extract text from PDF
-                print("📄 Извлекаем текст из PDF...")
-                text_content = self._extract_text_from_pdf(file_bytes)
-                
-                if not text_content or len(text_content.strip()) < 50:
-                    raise ValueError("PDF содержит слишком мало текста или это отсканированное изображение. Требуется OCR.")
-                
-                print(f"  ✅ Извлечено {len(text_content)} символов текста")
+                # Send the PDF itself — the model reads both text layers and scans
+                print("📄 Отправляем PDF в модель...")
 
-                # Prepare text-only message
-                prompt = self._build_extraction_prompt(include_full_text=False)
-                messages = [
-                    {
-                        "role": "user",
-                        "content": f"{prompt}\n\nТекст медицинского документа:\n\n{text_content}"
-                    }
-                ]
-                extracted_full_text = text_content
-                full_text_source = "pdf_text_extraction"
+                messages = self._build_pdf_messages(file_bytes, filename, include_full_text=True)
+                plugins = PDF_PARSER_PLUGINS
+                extracted_full_text = None
+                full_text_source = "ai_vision_transcription"
 
             elif file_type == 'docx':
                 print("📝 Извлекаем текст из DOCX...")
@@ -98,8 +92,17 @@ class AIService:
                 raise ValueError(f"Unsupported file type: {file_type}")
             
             # Call OpenRouter API
-            response_data = await self._call_openrouter(messages)
-            
+            response_data = await self._call_openrouter(messages, plugins)
+
+            # На очень длинных PDF транскрипция full_text может упереться в
+            # max_tokens — ответ обрывается на середине JSON. Повторяем без неё:
+            # классификация и summary важнее полного текста.
+            if file_type == 'pdf' and self._is_truncated(response_data):
+                print("✂️ Ответ обрезан по max_tokens — повтор без полной транскрипции")
+                messages = self._build_pdf_messages(file_bytes, filename, include_full_text=False)
+                response_data = await self._call_openrouter(messages, plugins)
+                full_text_source = None
+
             # Parse response
             metadata = self._parse_ai_response(response_data)
             if extracted_full_text:
@@ -122,25 +125,33 @@ class AIService:
                 None,
             )
     
-    def _extract_text_from_pdf(self, file_bytes: bytes) -> str:
-        """Extract text content from PDF file"""
-        try:
-            pdf_file = BytesIO(file_bytes)
-            pdf_reader = PyPDF2.PdfReader(pdf_file)
-            
-            text_parts = []
-            for page_num in range(len(pdf_reader.pages)):
-                page = pdf_reader.pages[page_num]
-                text = page.extract_text()
-                if text:
-                    text_parts.append(text)
-            
-            full_text = "\n\n".join(text_parts)
-            return full_text.strip()
-            
-        except Exception as e:
-            print(f"❌ Ошибка извлечения текста из PDF: {e}")
-            raise ValueError(f"Не удалось извлечь текст из PDF: {str(e)}")
+    def _is_truncated(self, response_data: dict) -> bool:
+        """True when the model ran out of output budget mid-answer."""
+        return response_data["choices"][0].get("finish_reason") == "length"
+
+    def _build_pdf_messages(self, file_bytes: bytes, filename: str, include_full_text: bool) -> list:
+        """Message payload that hands the PDF itself to the model."""
+        prompt = self._build_extraction_prompt(include_full_text=include_full_text)
+        return [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    self._build_pdf_content_part(file_bytes, filename),
+                ],
+            }
+        ]
+
+    def _build_pdf_content_part(self, file_bytes: bytes, filename: str) -> dict:
+        """Wrap raw PDF bytes into an OpenRouter file content part."""
+        file_base64 = base64.b64encode(file_bytes).decode('utf-8')
+        return {
+            "type": "file",
+            "file": {
+                "filename": filename,
+                "file_data": f"data:application/pdf;base64,{file_base64}",
+            },
+        }
 
     def _extract_text_from_docx(self, file_bytes: bytes) -> str:
         """Extract paragraphs and tables from a DOCX file as readable text."""
@@ -329,16 +340,18 @@ document_subtype, research_area, specialties, summary, patient_name и medical_f
 - Без дополнительного текста
 - Проверь, что структура соответствует типу документа"""
     
-    async def _call_openrouter(self, messages: list) -> dict:
+    async def _call_openrouter(self, messages: list, plugins: Optional[list] = None) -> dict:
         """Make API call to OpenRouter"""
-        
+
         payload = {
             "model": self.model,
             "messages": messages,
             "max_tokens": settings.OPENROUTER_MAX_TOKENS,
             "temperature": 0.1  # Low temperature for consistent extraction
         }
-        
+        if plugins:
+            payload["plugins"] = plugins
+
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json",
@@ -349,7 +362,8 @@ document_subtype, research_area, specialties, summary, patient_name и medical_f
         # PII-safe logging: model + payload shape only, no content
         print(f"🔍 OpenRouter Request: model={self.model}, messages={len(messages)}")
 
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        # Транскрипция многостраничного скана легко переваливает за минуту
+        async with httpx.AsyncClient(timeout=180.0) as client:
             try:
                 response = await client.post(
                     self.base_url,
@@ -483,14 +497,18 @@ document_subtype, research_area, specialties, summary, patient_name и medical_f
         prompt = self._build_labs_extraction_prompt()
 
         # Prepare messages similarly to analyze_document
+        plugins = None
         if file_type == 'pdf':
-            text_content = self._extract_text_from_pdf(file_bytes)
             messages = [
                 {
                     "role": "user",
-                    "content": f"{prompt}\n\nТекст медицинского документа:\n\n{text_content}"
+                    "content": [
+                        {"type": "text", "text": prompt},
+                        self._build_pdf_content_part(file_bytes, filename),
+                    ],
                 }
             ]
+            plugins = PDF_PARSER_PLUGINS
         elif file_type == 'docx':
             text_content = self._extract_text_from_docx(file_bytes)
             messages = [
@@ -514,7 +532,7 @@ document_subtype, research_area, specialties, summary, patient_name и medical_f
         else:
             raise ValueError(f"Unsupported file type: {file_type}")
 
-        response_data = await self._call_openrouter(messages)
+        response_data = await self._call_openrouter(messages, plugins)
         return self._parse_labs_response(response_data)
 
     def _build_labs_extraction_prompt(self) -> str:
