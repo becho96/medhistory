@@ -204,6 +204,7 @@ export const documentsService = {
       reference_range?: string | null
       flag?: string | null
     }>
+    skipped?: Array<{ unit: string; count: number }>
   }> {
     const response = await api.get(`/documents/labs/timeseries`, { params: { analyte } })
     return response.data

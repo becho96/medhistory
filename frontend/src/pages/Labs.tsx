@@ -6,6 +6,14 @@ import DocumentModal from '../components/Documents/DocumentModal'
 import LineChart from '../components/Labs/LineChart'
 
 
+function pluralMeasurements(count: number): string {
+  const mod10 = count % 10
+  const mod100 = count % 100
+  if (mod10 === 1 && mod100 !== 11) return 'измерение'
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'измерения'
+  return 'измерений'
+}
+
 const categoryIcons: Record<string, string> = {
   'Общий анализ крови': '🩸',
   'Биохимия крови': '🧪',
@@ -168,6 +176,10 @@ export default function Labs() {
     _id: `${p.document_id || 'unknown'}_${p.date || 'nodate'}_${p.value_num}_${index}`,
   }))
 
+  // Измерения, которые не удалось привести к стандартной единице: без пояснения
+  // график выглядит пустым, хотя в списке анализов у показателя есть измерения.
+  const skipped = seriesData?.skipped || []
+
   useEffect(() => {
     setExcludedPoints(new Set())
   }, [selected])
@@ -277,6 +289,11 @@ export default function Labs() {
               referenceMin={seriesData?.reference_min || null}
               referenceMax={seriesData?.reference_max || null}
             />
+            {skipped.length > 0 && (
+              <p className="mt-3 text-xs text-gray-500">
+                Не показано на графике: {skipped.map(s => `${s.count} ${pluralMeasurements(s.count)} в единицах «${s.unit}»`).join(', ')}
+              </p>
+            )}
           </div>
         ) : (
           <div className="text-center py-12">
@@ -286,6 +303,12 @@ export default function Labs() {
             <p className="text-xs sm:text-sm text-gray-500">
               {selected ? 'Нет данных для отображения' : 'Выберите анализ для просмотра'}
             </p>
+            {skipped.length > 0 && (
+              <p className="mt-2 text-xs text-gray-400">
+                {skipped.map(s => `${s.count} ${pluralMeasurements(s.count)} в единицах «${s.unit}»`).join(', ')}
+                {seriesData?.standard_unit ? ` не приведены к «${seriesData.standard_unit}»` : ' не удалось распознать'}
+              </p>
+            )}
           </div>
         )}
       </div>

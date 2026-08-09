@@ -1068,7 +1068,10 @@ async def get_lab_timeseries(
     cursor = document_metadata_collection.aggregate(pipeline)
     points = []
     doc_ids = set()
-    
+    # Единицы, которые не удалось привести к стандартной: без этого измерения
+    # молча пропадали и график выглядел пустым при непустом списке анализов.
+    skipped_units: Dict[str, int] = {}
+
     async for doc in cursor:
         lr = doc.get("extracted_data", {}).get("lab_results", {})
         if not isinstance(lr, dict):
@@ -1104,8 +1107,10 @@ async def get_lab_timeseries(
             converted_unit = original_unit
         
         if converted_value is None:
+            unit_label = original_unit.strip() or "без единицы"
+            skipped_units[unit_label] = skipped_units.get(unit_label, 0) + 1
             continue
-        
+
         if doc_id:
             doc_ids.add(doc_id)
             
@@ -1173,7 +1178,11 @@ async def get_lab_timeseries(
         "category": category,
         "reference_min": reference_min,
         "reference_max": reference_max,
-        "points": points
+        "points": points,
+        "skipped": [
+            {"unit": unit, "count": count}
+            for unit, count in sorted(skipped_units.items(), key=lambda kv: -kv[1])
+        ],
     }
 
 
